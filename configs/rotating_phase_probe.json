@@ -1,0 +1,31 @@
+{
+  "grid_size": 41,
+  "steps": 700,
+  "dt": 0.04,
+  "base_stiffness": 1.0,
+  "coupling_strength": 0.95,
+  "global_damping": 0.02,
+  "nonlinear_strength": 0.08,
+  "boundary_mode": "reflective",
+  "boundary_damping_width": 6,
+  "boundary_damping_strength": 0.08,
+  "sample_every": 1,
+  "defect": {
+    "radius": 5,
+    "stiffness_multiplier": 0.55,
+    "damping_multiplier": 0.5,
+    "coupling_multiplier": 0.5,
+    "nonlinear_strength": 0.05
+  },
+  "driver": {
+    "sides": ["left", "right", "top", "bottom"],
+    "frequency": 0.95,
+    "amplitude": 0.65,
+    "phase_offset": 0.0,
+    "mode": "continuous",
+    "drive_cutoff_time": 16.0,
+    "phase_mode": "rotating",
+    "rotating_phase_winding": 1
+  },
+  "seed": 11
+}

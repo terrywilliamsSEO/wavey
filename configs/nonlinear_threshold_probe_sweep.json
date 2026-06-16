@@ -1,0 +1,18 @@
+{
+  "max_runs": 3,
+  "seed": 11,
+  "output_root": "runs",
+  "drive_frequency": [0.95],
+  "drive_amplitude": [0.25, 0.55, 0.9],
+  "defect_radius": [5],
+  "defect_stiffness_multiplier": [0.55],
+  "defect_damping_multiplier": [0.5],
+  "defect_coupling_multiplier": [0.5],
+  "global_damping": [0.02],
+  "coupling_strength": [0.95],
+  "nonlinear_strength": [0.08],
+  "boundary_mode": ["sponge"],
+  "boundary_damping_width": [6],
+  "boundary_damping_strength": [0.08],
+  "phase_mode": ["uniform"]
+}

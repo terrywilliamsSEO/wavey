@@ -1,0 +1,23 @@
+{
+  "max_runs": 3,
+  "seed": 31,
+  "output_root": "runs",
+  "sampling_mode": "hybrid",
+  "report_top_n": 3,
+  "export_frame_sequences": true,
+  "frame_sequence_top_n": 1,
+  "frame_sequence_count": 5,
+  "drive_frequency": [0.75, 0.95, 1.15],
+  "drive_amplitude": [0.55],
+  "defect_radius": [5],
+  "defect_stiffness_multiplier": [0.55, 0.65],
+  "defect_damping_multiplier": [0.5, 0.75],
+  "defect_coupling_multiplier": [0.5, 0.6],
+  "global_damping": [0.02],
+  "coupling_strength": [0.9, 0.95],
+  "nonlinear_strength": [0.0, 0.08],
+  "boundary_mode": ["sponge"],
+  "boundary_damping_width": [6],
+  "boundary_damping_strength": [0.08],
+  "phase_mode": ["uniform"]
+}
