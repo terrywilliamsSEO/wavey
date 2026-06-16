@@ -1,6 +1,6 @@
-# WaveEngine
+# WaveEngine / wavey
 
-WaveEngine is a simulation-first experiment engine for a 2D lattice wave system with a configurable central defect or cavity. It computes the lattice dynamics directly, logs localization metrics every sampled step, ranks unusual runs, and saves evidence files under `runs/`.
+WaveEngine, repo name `wavey`, is a simulation-first wave simulation engine for a 2D lattice wave system with a configurable central defect or cavity. It computes the lattice dynamics directly, logs localization metrics every sampled step, ranks unusual runs, and saves evidence files under `runs/`.
 
 There is no dashboard yet. The current project is focused on the physics engine, metrics, parameter sweeps, and evidence export.
 
