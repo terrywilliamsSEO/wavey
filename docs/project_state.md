@@ -13,8 +13,9 @@ Current interpretation:
 - The 0.92 candidate shows persistent post-cutoff breathing localization across sponge and time-step controls.
 - The candidate is not yet fixed-domain resolution-resistant.
 - Under true fixed-domain refinement, breathing persists, but the physical radial peak shifts inward and retention weakens at 81x81.
+- The latest resolution diagnostic classified the current fixed-domain comparison as `mask_discretization_issue` because the emitter/source mask physical area is not invariant across 41/63/81.
 - Do not call this exotic physics.
-- Do not run broad long sweeps until the fixed-domain resolution sensitivity is understood.
+- Do not run broad long sweeps until the fixed-domain emitter/source discretization is fixed or controlled.
 
 ## Latest Evidence
 
@@ -127,14 +128,45 @@ Important values:
 
 Current conclusion: the 0.92 breathing localization survives as a phenomenon, but the radial structure and retention are resolution-sensitive under fixed-domain physics. Next work should diagnose source normalization, radial profile behavior, and fixed-domain injection scaling before any broad search.
 
+### Resolution-Sensitivity Diagnostics
+
+Command:
+
+```powershell
+python main.py resolution-diagnostics --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\resolution_diagnostics_20260616_161612\resolution_diagnostics_report.md`
+- Classification: `mask_discretization_issue`
+- Primary finding: core/defect masks are comparable, but the emitter/source mask is not physically invariant at 63x63.
+- Source work per physical boundary length is within tolerance but elevated at 63x63.
+- Secondary finding: 63x63 and 81x81 radial profiles converge inward, so the 41-grid radial peak likely has a coarse-grid component once the emitter issue is controlled.
+
+Important values:
+
+| Grid | dx | Ratio | Retention | Best Time | Period | Radial Peak | m=4 Strength | Work/Length | Emitter Area |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 41 | 1.000 | 0.506 | 0.875 | 47.76 | 2.667 | 10.00 | 0.361 | 0.159 | 160.0 |
+| 63 | 0.645 | 0.400 | 0.783 | 41.84 | 2.632 | 3.75 | 0.231 | 0.206 | 203.1 |
+| 81 | 0.500 | 0.318 | 0.716 | 38.20 | 2.993 | 3.75 | 0.231 | 0.163 | 158.0 |
+
+Pairwise best radial correlations:
+
+| Pair | Spatial Corr | Best Radial Corr | Tail Radial Corr | Radial Peak Shift |
+| --- | ---: | ---: | ---: | ---: |
+| 41 vs 63 | 0.739 | 0.878 | 0.609 | 6.25 |
+| 41 vs 81 | 0.613 | 0.830 | 0.525 | 6.25 |
+| 63 vs 81 | 0.675 | 0.964 | 0.722 | 0.00 |
+
 ## Current Next Step
 
-Diagnose fixed-domain resolution sensitivity:
+Fix or control fixed-domain emitter/source discretization:
 
-- Review boundary source normalization across 41/63/81 grids.
-- Inspect radial profile heatmaps and best-frame resampled similarity.
-- Decide whether fixed-domain source amplitude should be normalized by emitter area, edge length, or cell area.
-- Run a small source-normalization control if needed.
+- Make emitter physical strip semantics resolution-invariant, likely with area/coverage weighting or source-amplitude normalization.
+- Rerun `python main.py resolution-diagnostics --config configs\long_validation_peak_0_92.json`.
+- If the emitter/mask issue disappears and 63/81 still converge inward, treat the original 41-grid radial peak as likely coarse-grid structure and update the claim accordingly.
 
 ## Documentation Must Stay In Sync
 

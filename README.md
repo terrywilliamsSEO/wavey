@@ -96,7 +96,7 @@ If the larger-grid best event lands too close to the end of the run, extend only
 python main.py grid-control --config configs\long_validation_peak_0_92.json --larger-physical-duration 86
 ```
 
-This scales the grid, defect radius, and sponge width together, then compares the same diagnostics plus absolute energy, core fraction, and per-cell energy density. It is a discrete matched-proportion check; the engine does not yet have an explicit `dx`/fixed-domain grid-refinement model.
+This scales the grid, defect radius, and sponge width together, then compares the same diagnostics plus absolute energy, core fraction, and per-cell energy density. It is a historical matched-proportion check that intentionally confounds grid size with physical domain size; prefer fixed-domain controls for true resolution tests.
 
 Run the fixed-domain grid-refinement control with:
 
@@ -111,6 +111,14 @@ python main.py fixed-domain-grid-control --config configs\long_validation_peak_0
 ```
 
 This enables fixed-domain physics for the control variants, keeps the physical domain size, defect radius, sponge width, and emitter strip width fixed, scales the coupling operator by `1/dx^2` and `1/dy^2`, records dt stability guidance, and compares best frames after resampling to a common physical grid.
+
+Run fixed-domain resolution-sensitivity diagnostics with:
+
+```powershell
+python main.py resolution-diagnostics --config configs\long_validation_peak_0_92.json
+```
+
+This reruns the 41x41, 63x63, and 81x81 same-domain variants, then audits source normalization, mask/area equivalence, energy budgets, radial profiles, and pairwise mode-shape similarity before any broad long sweeps.
 
 ## Run one simulation
 
@@ -230,6 +238,17 @@ When `fixed-domain-grid-control` is used, the control folder includes:
 - `fixed_domain_grid_control_summary.csv`
 - `fixed_domain_grid_control_summary.json`
 - `fixed_domain_grid_control_report.md`
+- one diagnosed run folder per fixed-domain grid variant
+
+When `resolution-diagnostics` is used, the diagnostic folder includes:
+
+- `resolution_diagnostics_summary.csv`
+- `resolution_diagnostics_summary.json`
+- `source_audit.csv`
+- `mask_area_audit.csv`
+- `energy_budget_audit.csv`
+- `radial_profile_comparison.csv`
+- `resolution_diagnostics_report.md`
 - one diagnosed run folder per fixed-domain grid variant
 
 ## Metrics

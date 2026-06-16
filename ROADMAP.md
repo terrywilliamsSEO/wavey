@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Diagnose fixed-domain resolution sensitivity before broader long sweeps.
+Fix or control fixed-domain boundary-emitter discretization before broader long sweeps.
 
-Recommended next task: inspect why fixed-domain refinement moves the best-frame radial peak inward and weakens retention at 81x81. The fixed-domain control now separates larger-domain effects from resolution effects: breathing persists, timing is not the main failure, and dt is within the stability estimate, but the physical radial structure is not resolution-invariant.
+Recommended next task: make the fixed-domain emitter/source region more physically invariant across 41/63/81 grids, or add a source-normalized control that removes the emitter-area discrepancy. The new resolution diagnostics show that breathing persists and 63/81 radial profiles converge inward, but the 63-grid emitter strip covers a larger physical area and receives more pre-cutoff injected work.
 
 ## Status
 
@@ -75,16 +75,20 @@ Recommended next task: inspect why fixed-domain refinement moves the best-frame 
 - Ran fixed-domain 41/63/81 controls for the long 0.92 candidate; result classified as `resolution_sensitive`.
 - Added repository handoff documentation in `AGENTS.md`, `docs/project_state.md`, and `docs/architecture.md`.
 - Configured the local Git branch as `main` and added the private GitHub remote through the dedicated `github-wavey` SSH alias.
+- Added `resolution-diagnostics` for fixed-domain source, mask, energy-budget, radial-profile, and pairwise mode-shape audits.
+- Ran fixed-domain 41/63/81 resolution diagnostics for the long 0.92 candidate; result classified as `mask_discretization_issue`.
+- Found that core/defect masks are comparable, injected work per boundary length is within tolerance, breathing period stays stable, and m=4 remains the strongest angular structure, but emitter mask area varies substantially at 63x63.
+- Found a secondary coarse-grid signal: the 63x63 and 81x81 radial peaks agree at 3.75 with best radial correlation 0.964, while 41x41 peaks at 10.0.
 
 ### In Progress
 
-- Fixed-domain resolution-sensitivity diagnosis for the long 0.92 breathing tail.
+- Fixed-domain emitter/source normalization for the long 0.92 breathing tail.
 
 ### Next
 
-- Review fixed-domain source normalization and boundary emitter energy injection across 41/63/81 grids.
-- Inspect radial profile heatmaps and best-frame resampled similarity to determine whether the inward radial peak shift is physical, diagnostic, or source-scaling related.
-- Consider a small fixed-domain source-normalization control before any additional long-frequency runs.
+- Make emitter physical strip semantics resolution-invariant, likely by replacing the current hard `edge_distance < width` cell mask with an area/coverage weighting or source-amplitude normalization.
+- Rerun `python main.py resolution-diagnostics --config configs\long_validation_peak_0_92.json` after the emitter/source fix.
+- If emitter/source normalization removes the mask issue and 63/81 still converge inward, reclassify the refined radial structure as likely coarse-grid artifact plus refined-mode convergence.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive, even though m=4 structure survives the half-step control.
 - Do not run neighboring-frequency long controls until the artifact and numerical controls are understood.
 
@@ -207,3 +211,7 @@ Possible work:
 - 2026-06-16: Classified the fixed-domain refinement result as `resolution_sensitive`; updated the next step to diagnose source normalization and radial-structure sensitivity before broader long sweeps.
 - 2026-06-16: Created a dedicated local SSH key for the private GitHub repo `terrywilliamsSEO/wavey` and added an SSH config alias `github-wavey`.
 - 2026-06-16: Added `AGENTS.md`, `docs/project_state.md`, and `docs/architecture.md` so future agents can audit state, understand commands, and maintain docs without needing the chat transcript.
+- 2026-06-16: Added `python main.py resolution-diagnostics --config configs\long_validation_peak_0_92.json`.
+- 2026-06-16: Ran resolution diagnostics in `runs\resolution_diagnostics_20260616_161612`; result classified as `mask_discretization_issue` because emitter physical area from the source mask varies across fixed-domain resolutions.
+- 2026-06-16: The resolution diagnostic found source work per physical boundary length remained within tolerance (relative range 0.264), core area was comparable (relative range 0.0447), breathing period stayed stable at 2.67/2.63/2.99, and strongest angular mode stayed m=4.
+- 2026-06-16: The same diagnostic found 63/81 refined radial structure converging inward: radial peak 3.75 for both, best radial correlation 0.964, compared with the 41-grid radial peak at 10.0.

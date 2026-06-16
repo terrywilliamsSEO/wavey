@@ -13,6 +13,7 @@ Last updated: 2026-06-16
 - `dt-control`: targeted smaller-time-step controls.
 - `grid-control`: larger matched-proportion grid control.
 - `fixed-domain-grid-control`: true same-domain grid-refinement control.
+- `resolution-diagnostics`: fixed-domain source, mask, energy-budget, radial-profile, and mode-shape resolution audit.
 
 ## Core Modules
 
@@ -28,6 +29,7 @@ Last updated: 2026-06-16
 - `simulation/numerical_controls.py`: smaller-dt controls.
 - `simulation/grid_controls.py`: matched-proportion larger-grid controls.
 - `simulation/fixed_domain_controls.py`: same-domain grid-refinement controls with best-frame resampling.
+- `simulation/resolution_diagnostics.py`: fixed-domain resolution-sensitivity audits for source normalization, mask areas, energy budgets, radial profiles, and pairwise best-frame/mode-shape similarity.
 - `simulation/stability.py`: conservative dt guidance for current `dx`/`dy`.
 - `simulation/reporting.py` and `simulation/band_analysis.py`: sweep-level reporting and frequency-band analysis.
 
@@ -60,6 +62,9 @@ Controls should be preferred over broad sweeps while validating one candidate:
 - Use `dt-control` to test time-step sensitivity.
 - Use `grid-control` only for historical matched-proportion domain scaling.
 - Use `fixed-domain-grid-control` for true resolution checks.
+- Use `resolution-diagnostics` when a fixed-domain resolution check changes radial structure, retention, timing, or source/mask comparability.
+
+Current fixed-domain caution: `resolution-diagnostics` found the 0.92 candidate's emitter/source mask area is not physically invariant across 41/63/81 grids. Fix or control emitter/source discretization before broad long sweeps.
 
 ## Generated Artifacts
 

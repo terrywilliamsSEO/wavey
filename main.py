@@ -17,6 +17,7 @@ from simulation.config import (
 from simulation.fixed_domain_controls import FixedDomainGridControlOptions, run_fixed_domain_grid_control
 from simulation.grid_controls import GridControlOptions, run_grid_control
 from simulation.numerical_controls import DtControlOptions, run_dt_control
+from simulation.resolution_diagnostics import ResolutionDiagnosticsOptions, run_resolution_diagnostics
 from simulation.sweep import run_single_experiment, run_sweep
 from simulation.time_resolved_diagnostics import DiagnosticOptions, diagnose_existing_run
 
@@ -91,6 +92,23 @@ def build_parser() -> argparse.ArgumentParser:
     fixed_grid_parser.add_argument("--window-steps", type=int, default=30, help="Extra frame-capture radius around cutoff, best event, and late tail")
     fixed_grid_parser.add_argument("--refined-grid-size", type=int, default=63, help="Same-domain refined grid size")
     fixed_grid_parser.add_argument("--include-81", action="store_true", help="Also run an optional 81x81 same-domain variant")
+
+    resolution_parser = subparsers.add_parser(
+        "resolution-diagnostics",
+        help="Audit source, mask, energy-budget, radial, and mode-shape resolution sensitivity",
+    )
+    resolution_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the baseline candidate")
+    resolution_parser.add_argument("--output-root", default="runs", help="Directory for resolution diagnostic outputs")
+    resolution_parser.add_argument("--reference-root", type=Path, default=Path("runs"), help="Directory containing sweep summaries for short-peak references")
+    resolution_parser.add_argument("--frame-interval", type=int, default=20, help="Base step interval for diagnostic frame snapshots")
+    resolution_parser.add_argument("--window-steps", type=int, default=30, help="Extra frame-capture radius around cutoff, best event, and late tail")
+    resolution_parser.add_argument(
+        "--grid-sizes",
+        type=int,
+        nargs="+",
+        default=(41, 63, 81),
+        help="Fixed-domain grid sizes to audit; default is 41 63 81",
+    )
 
     return parser
 
@@ -227,6 +245,21 @@ def main() -> None:
             reference_root=args.reference_root,
         )
         _print_fixed_domain_grid_control_summary(result)
+        return
+
+    if args.command == "resolution-diagnostics":
+        config = _load_sim_config(args.config)
+        result = run_resolution_diagnostics(
+            config,
+            options=ResolutionDiagnosticsOptions(
+                output_root=args.output_root,
+                frame_interval=args.frame_interval,
+                window_steps=args.window_steps,
+                grid_sizes=tuple(args.grid_sizes),
+            ),
+            reference_root=args.reference_root,
+        )
+        _print_resolution_diagnostics_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -409,6 +442,33 @@ def _print_fixed_domain_grid_control_summary(result: dict[str, Any]) -> None:
             f"similarity={_format_optional(row.get('best_frame_similarity_to_baseline'))}"
         )
     print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_resolution_diagnostics_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("Resolution diagnostics complete")
+    print(f"diagnostic ID: {result['diagnostic_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"grid={row.get('grid_size')}, "
+            f"dx={_format_optional(row.get('dx'))}, "
+            f"ratio={float(row.get('best_energy_well_ratio', 0.0)):.6g}, "
+            f"retention={float(row.get('retention_score', 0.0)):.6g}, "
+            f"best_time={_format_optional(row.get('best_event_time'))}, "
+            f"period={_format_optional(row.get('breathing_period'))}, "
+            f"radial_peak={_format_optional(row.get('radial_peak_radius'))}, "
+            f"m={row.get('strongest_angular_mode')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"source audit: {result['source_audit_csv']}")
+    print(f"mask audit: {result['mask_area_audit_csv']}")
+    print(f"energy budget audit: {result['energy_budget_audit_csv']}")
+    print(f"radial comparison: {result['radial_profile_comparison_csv']}")
     print(f"report: {result['report_path']}")
 
 

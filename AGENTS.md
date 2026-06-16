@@ -12,9 +12,10 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps until the fixed-domain resolution sensitivity is understood.
+- Do not run broad long sweeps until the fixed-domain emitter/source discretization issue is fixed or controlled.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
-- The current 0.92 candidate has persistent breathing under multiple controls, but it is fixed-domain resolution-sensitive because radial structure shifts inward at finer grids.
+- The current 0.92 candidate has persistent breathing under multiple controls, but the latest resolution diagnostic classified the fixed-domain 41/63/81 comparison as `mask_discretization_issue` because emitter/source mask area is not resolution-invariant.
+- 63x63 and 81x81 radial profiles converge inward, so the 41x41 outward radial peak may be a coarse-grid artifact after the emitter issue is controlled.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -50,6 +51,7 @@ If a long simulation/control was run, include its command, classification, repor
 ```powershell
 python main.py fixed-domain-grid-control --config configs\long_validation_peak_0_92.json
 python main.py fixed-domain-grid-control --config configs\long_validation_peak_0_92.json --include-81
+python main.py resolution-diagnostics --config configs\long_validation_peak_0_92.json
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json
 python -m unittest discover -s tests
