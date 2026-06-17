@@ -9,7 +9,13 @@ import numpy as np
 
 from simulation.config import DefectConfig, DriverConfig, SimulationConfig, simulation_config_from_dict
 from simulation.lattice import Lattice2D
-from simulation.transport_controls import classify_transport_controls
+from simulation.transport_controls import (
+    TransportControlOptions,
+    _boundary_geometry_config,
+    _boundary_length,
+    _target_work_for_variant,
+    classify_transport_controls,
+)
 
 
 class TransportControlTests(unittest.TestCase):
@@ -67,6 +73,30 @@ class TransportControlTests(unittest.TestCase):
         result = classify_transport_controls(rows)
 
         self.assertEqual(result["label"], "annulus_transport_supported")
+
+    def test_work_per_length_target_scales_with_boundary_length(self) -> None:
+        base = _annulus_config()
+        base.drive_location = "boundary"
+        base.driver.amplitude = 0.55
+        reference = _boundary_geometry_config(
+            base,
+            41,
+            sides=("left", "right", "top", "bottom"),
+            phase_mode="uniform",
+        )
+        one_side = _boundary_geometry_config(base, 41, sides=("left",), phase_mode="uniform")
+        reference_work = 16.0
+        work_per_length = reference_work / _boundary_length(reference)
+
+        target = _target_work_for_variant(
+            one_side,
+            "boundary",
+            reference_work,
+            work_per_length,
+            TransportControlOptions(boundary_match_mode="work_per_length"),
+        )
+
+        self.assertAlmostEqual(target, reference_work * 0.25)
 
 
 def _annulus_config() -> SimulationConfig:

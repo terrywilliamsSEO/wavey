@@ -160,6 +160,12 @@ Run the same transport-control plan at a refined fixed-domain grid with:
 python main.py transport-controls --config configs\long_validation_peak_0_92.json --grid-size 81
 ```
 
+Run boundary-only transport controls with matched work per physical boundary length using:
+
+```powershell
+python main.py transport-controls --config configs\long_validation_peak_0_92.json --boundary-only --boundary-match-mode work_per_length --grid-size 81
+```
+
 ## Run one simulation
 
 ```powershell

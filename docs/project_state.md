@@ -22,8 +22,9 @@ Current interpretation:
 - The 81x81 transport confirmation also classified as `boundary_geometry_sensitive`; `boundary_rotating_m4_81` became the best non-reference match.
 - `annulus_radial_peak_63` produced a retained short-period response, but it did not match the reference period/radial structure closely enough to count as the same family.
 - `annulus_radial_peak_81` retained more energy, but still looked like a separate short-period response rather than the reference family.
+- Boundary-only work-per-length controls at 63x63 and 81x81 kept the `boundary_geometry_sensitive` classification; `boundary_rotating_m4_81` still reproduced the family after boundary flux density was normalized.
 - Do not call this exotic physics.
-- Do not run broad long sweeps until boundary flux-density sensitivity is controlled under fixed-domain source-normalized controls.
+- Do not run broad long sweeps. The next step is a small 31^3 3D prototype focused on spherical shell breathing.
 
 ## Latest Evidence
 
@@ -350,14 +351,54 @@ Interpretation:
 - Direct annulus variants still do not reproduce the reference family. `annulus_radial_peak_81` is a stronger retained short-period response, but it has period near 1.71, radial peak 6.25, weak m4, and low frame similarity.
 - New confound: one-side and two-side boundary variants match total injected work, so work per physical boundary length is higher than in four-side variants. The next control should normalize boundary flux density.
 
+### Boundary Work-Per-Length Controls
+
+Commands:
+
+```powershell
+python main.py transport-controls --config configs\long_validation_peak_0_92.json --boundary-only --boundary-match-mode work_per_length --grid-size 63
+python main.py transport-controls --config configs\long_validation_peak_0_92.json --boundary-only --boundary-match-mode work_per_length --grid-size 81
+```
+
+Latest summarized runs:
+
+- 63x63 report: `runs\transport_controls_20260617_115911\transport_control_report.md`
+- 81x81 report: `runs\transport_controls_20260617_120129\transport_control_report.md`
+- Classification for both: `boundary_geometry_sensitive`
+
+Important 63x63 values:
+
+| Variant | Boundary Length | Work | Work/Length | Core E | Retention | Metric Period | Radial Peak | m4 | Radial Sim | Frame Sim |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| boundary_reference_63 | 160 | 21.822 | 0.136388 | 0.0404 | 0.863 | 2.491 | 10.00 | 0.124 | 1.000 | 1.000 |
+| boundary_left_63 | 40 | 5.456 | 0.136388 | 0.00984 | 0.816 | 3.024 | 11.25 | 0.186 | 0.982 | 0.368 |
+| boundary_left_right_63 | 80 | 10.911 | 0.136388 | 0.0190 | 0.795 | 2.976 | 5.00 | 0.234 | 0.978 | 0.644 |
+| boundary_rotating_m4_63 | 160 | 21.823 | 0.136392 | 0.114 | 0.866 | 2.513 | 10.00 | 0.226 | 0.945 | 0.355 |
+
+Important 81x81 values:
+
+| Variant | Boundary Length | Work | Work/Length | Core E | Retention | Metric Period | Radial Peak | m4 | Radial Sim | Frame Sim |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| boundary_reference_81 | 160 | 20.528 | 0.128298 | 0.0431 | 0.853 | 3.080 | 10.00 | 0.116 | 1.000 | 1.000 |
+| boundary_left_81 | 40 | 5.132 | 0.128298 | 0.0113 | 0.795 | 2.528 | 10.00 | 0.104 | 0.952 | 0.365 |
+| boundary_left_right_81 | 80 | 10.264 | 0.128298 | 0.0232 | 0.786 | 2.184 | 10.00 | 0.094 | 0.958 | 0.465 |
+| boundary_rotating_m4_81 | 160 | 20.527 | 0.128295 | 0.131 | 0.891 | 2.147 | 10.00 | 0.219 | 0.890 | 0.329 |
+
+Interpretation:
+
+- Work per physical boundary length is now controlled across one-side, two-side, and four-side boundary variants.
+- The one-side and two-side responses did not disappear when their total work was reduced to match flux density; their absolute core energies dropped roughly with total work, but retention and radial similarity remained high.
+- `boundary_rotating_m4_81` still reproduces the retained family and remains the strongest refined-grid non-reference match under this control.
+- The 2D boundary mechanism is strong enough to justify a small 3D prototype, but not a broad 2D sweep.
+
 ## Current Next Step
 
-Control boundary flux density:
+Build a small 3D prototype:
 
-- Add or run a boundary-only control that compares one-side, left-right, four-side uniform, and four-side rotating m=4 at matched work per physical boundary length, not only matched total work.
-- Run the boundary-only flux-normalized check at 63x63 and 81x81.
-- Check whether `boundary_rotating_m4` remains the strongest refined-grid non-reference match when flux density is normalized.
-- Recheck `annulus_radial_peak` only as a possible separate retained short-period response, not as the current reference-family mechanism.
+- Start with `31^3`, not a large grid.
+- Port only the narrow fixed-domain/sponge/boundary-source semantics needed to test the 2D mechanism in 3D.
+- Look for retained spherical shell breathing and shell-radius stability, not just high core energy.
+- Keep `boundary_rotating_m4_81` as the 2D source-geometry reference.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

@@ -187,6 +187,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     transport_parser.add_argument("--grid-size", type=int, default=63, help="Fixed-domain grid size for this narrow transport control")
     transport_parser.add_argument("--min-peak-separation", type=float, default=1.5, help="Minimum time separation for full-metric breathing peaks")
+    transport_parser.add_argument(
+        "--boundary-match-mode",
+        choices=("total_work", "work_per_length"),
+        default="total_work",
+        help="How boundary geometry variants are matched to the four-side reference",
+    )
+    transport_parser.add_argument("--boundary-only", action="store_true", help="Run only boundary-geometry variants, skipping annulus probes")
 
     return parser
 
@@ -400,6 +407,8 @@ def main() -> None:
                 source_normalization=args.source_normalization,
                 reference_grid_size=args.grid_size,
                 min_peak_separation=args.min_peak_separation,
+                boundary_match_mode=args.boundary_match_mode,
+                boundary_only=args.boundary_only,
             ),
             reference_root=args.reference_root,
         )

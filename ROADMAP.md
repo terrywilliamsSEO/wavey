@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Control boundary flux density for the source-normalized fixed-domain 0.92 boundary-geometry variants before broader long sweeps.
+Build a small 3D prototype after the 2D boundary work-per-length control passed.
 
-Recommended next task: separate true boundary/interference geometry from per-boundary-length flux concentration. The 63x63 and 81x81 transport-control passes both classified as `boundary_geometry_sensitive`, but the one-side and two-side matched-total-work variants concentrate the same injected work over shorter physical boundary length. Add or run a boundary-only control that compares one-side, left-right, four-side uniform, and four-side rotating m=4 under both matched total work and matched work per physical boundary length.
+Recommended next task: add a minimal 31^3 3D prototype that ports only the trusted pieces of the 2D fixed-domain engine: sponge boundary damping, a central spherical defect/cavity, a boundary rotating m=4-style source around one axis, matched work accounting, and diagnostics for spherical shell breathing. Do not start with huge grids and do not rank by high core energy alone.
 
 ## Status
 
@@ -103,20 +103,23 @@ Recommended next task: separate true boundary/interference geometry from per-bou
 - Ran 81x81 confirmation transport controls in `runs\transport_controls_20260617_094822`; classification stayed `boundary_geometry_sensitive`.
 - At 81x81, boundary left, boundary left-right, and boundary rotating m=4 variants retained breathing with radial peak 10.0; `boundary_rotating_m4_81` was the best non-reference match.
 - At 81x81, direct annulus radial-peak and sector variants retained short-period responses, but their periods and radial/frame similarities did not match the reference family.
+- Added `--boundary-match-mode work_per_length` and `--boundary-only` to `transport-controls`.
+- Ran boundary-only work-per-length controls at 63x63 in `runs\transport_controls_20260617_115911`; classification stayed `boundary_geometry_sensitive`.
+- Ran boundary-only work-per-length controls at 81x81 in `runs\transport_controls_20260617_120129`; classification stayed `boundary_geometry_sensitive`, and `boundary_rotating_m4_81` still reproduced the reference family.
 
 ### In Progress
 
-- Boundary flux-density / side-count controls.
+- Small 3D prototype design.
 
 ### Next
 
-- Add or run a boundary-only source-geometry control with matched work per physical boundary length, not only matched total work.
-- Compare one-side, left-right, four-side uniform, and four-side rotating m=4 at 63x63 and 81x81 under the same hardened detector.
-- Check whether `boundary_rotating_m4` remains the strongest refined-grid non-reference match when flux density is normalized.
-- Recheck whether the `annulus_radial_peak` response is a separate short-period retained family or just a non-reference forcing artifact.
+- Add a minimal 3D lattice prototype command, starting at 31^3.
+- Use the 2D fixed-domain/sponge/source-normalized semantics as the reference, but keep the first 3D pass narrow and auditable.
+- Diagnose spherical shell breathing, shell-radius drift, angular/non-axisymmetric structure, and retained shell/core energy after cutoff.
+- Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls until boundary flux-density sensitivity is controlled.
+- Do not run neighboring-frequency long controls until the small 3D prototype has either shown or failed to show shell breathing under the analogous boundary source.
 
 ## Phases
 
@@ -267,3 +270,7 @@ Possible work:
 - 2026-06-17: The 81x81 best non-reference match was `boundary_rotating_m4_81` with retention 0.891, metric period 2.147, radial peak 10.0, m4 strength 0.219, and radial similarity 0.890.
 - 2026-06-17: The 81x81 annulus radial-peak response retained energy (retention 0.506) but had short period 1.712, radial peak 6.25, m4 strength 0.0497, and low frame similarity 0.251, so it remains a likely separate response rather than the reference family.
 - 2026-06-17: Updated the next step to boundary flux-density / side-count controls, because matched total work concentrates more work per boundary length in one-side and two-side boundary variants.
+- 2026-06-17: Added `--boundary-match-mode work_per_length` and `--boundary-only` to `transport-controls`.
+- 2026-06-17: Ran work-per-length boundary controls at 63x63 in `runs\transport_controls_20260617_115911`; boundary left, left-right, and rotating m=4 still retained breathing after work per physical boundary length was normalized.
+- 2026-06-17: Ran work-per-length boundary controls at 81x81 in `runs\transport_controls_20260617_120129`; `boundary_rotating_m4_81` still reproduced the family with retention 0.891, metric period 2.147, radial peak 10.0, m4 strength 0.219, and radial similarity 0.890.
+- 2026-06-17: Updated the next step to a small 31^3 3D prototype focused on spherical shell breathing, not high core energy alone.

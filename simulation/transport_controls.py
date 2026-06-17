@@ -24,6 +24,7 @@ from .core_modal_probe import (
     _write_csv,
 )
 from .fixed_domain_controls import _fixed_domain_config
+from .lattice import Lattice2D
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,8 @@ class TransportControlOptions:
     min_similarity_to_reference: float = 0.35
     min_radial_similarity_to_reference: float = 0.45
     min_m4_strength: float = 0.08
+    boundary_match_mode: str = "total_work"
+    boundary_only: bool = False
 
 
 TRANSPORT_EXTRA_FIELDS = [
@@ -55,6 +58,10 @@ TRANSPORT_EXTRA_FIELDS = [
     "core_drive_outer_radius_physical",
     "core_drive_angle_center",
     "core_drive_angle_width",
+    "boundary_match_mode",
+    "boundary_physical_length",
+    "target_work_before_cutoff",
+    "reference_work_per_boundary_length",
     "transport_match_score",
 ]
 
@@ -93,9 +100,24 @@ def run_transport_controls(
         reference_root,
     )
     target_work = float(rows[0].get("injected_work_before_cutoff") or 0.0)
+    reference_length = _boundary_length(boundary_reference)
+    reference_work_per_length = target_work / (reference_length + 1e-12)
+    rows[0]["boundary_match_mode"] = options.boundary_match_mode
+    rows[0]["boundary_physical_length"] = reference_length
+    rows[0]["target_work_before_cutoff"] = target_work
+    rows[0]["reference_work_per_boundary_length"] = reference_work_per_length
 
     for variant, question, config, drive_kind in _transport_variant_plan(base_config, options.reference_grid_size):
-        _calibrate_drive_amplitude(config, target_work, drive_kind=drive_kind)
+        if options.boundary_only and drive_kind != "boundary":
+            continue
+        variant_target_work = _target_work_for_variant(
+            config,
+            drive_kind,
+            target_work,
+            reference_work_per_length,
+            options,
+        )
+        _calibrate_drive_amplitude(config, variant_target_work, drive_kind=drive_kind)
         _run_variant(
             variant,
             config,
@@ -105,6 +127,9 @@ def run_transport_controls(
             control_root,
             probe_options,
             reference_root,
+            boundary_match_mode=options.boundary_match_mode,
+            target_work_before_cutoff=variant_target_work,
+            reference_work_per_boundary_length=reference_work_per_length,
         )
 
     _attach_reference_similarities(rows, configs_by_variant)
@@ -140,6 +165,8 @@ def run_transport_controls(
         "classification": classification,
         "best_transport_match": best_transport,
         "variants": rows,
+        "boundary_match_mode": options.boundary_match_mode,
+        "boundary_only": options.boundary_only,
         "summary_csv": str(summary_path),
         "report_path": str(report_path),
         "comparison_plots_path": str(plots_dir),
@@ -304,6 +331,26 @@ def _transport_variant_plan(base_config: SimulationConfig, grid_size: int) -> li
     ]
 
 
+def _target_work_for_variant(
+    config: SimulationConfig,
+    drive_kind: str,
+    reference_total_work: float,
+    reference_work_per_length: float,
+    options: TransportControlOptions,
+) -> float:
+    if drive_kind != "boundary" or options.boundary_match_mode == "total_work":
+        return reference_total_work
+    if options.boundary_match_mode != "work_per_length":
+        raise ValueError(f"Unsupported boundary_match_mode: {options.boundary_match_mode}")
+    return reference_work_per_length * _boundary_length(config)
+
+
+def _boundary_length(config: SimulationConfig) -> float:
+    if config.drive_location != "boundary":
+        return 0.0
+    return float(getattr(Lattice2D(config).driver, "physical_boundary_length", 0.0))
+
+
 def _boundary_geometry_config(
     base_config: SimulationConfig,
     grid_size: int,
@@ -363,15 +410,33 @@ def _run_variant(
     control_root: Path,
     probe_options: CoreModalProbeOptions,
     reference_root: str | Path,
+    boundary_match_mode: str = "total_work",
+    target_work_before_cutoff: float | None = None,
+    reference_work_per_boundary_length: float | None = None,
 ) -> None:
     configs_by_variant[variant] = config
     summary, diagnostics = _run_and_diagnose(variant, config, control_root, probe_options, reference_root)
     row = _summary_row(variant, config, summary, diagnostics, probe_options)
-    row.update(_transport_metadata(config, question))
+    row.update(
+        _transport_metadata(
+            config,
+            question,
+            boundary_match_mode=boundary_match_mode,
+            target_work_before_cutoff=target_work_before_cutoff,
+            reference_work_per_boundary_length=reference_work_per_boundary_length,
+        )
+    )
     rows.append(row)
 
 
-def _transport_metadata(config: SimulationConfig, question: str) -> dict[str, Any]:
+def _transport_metadata(
+    config: SimulationConfig,
+    question: str,
+    *,
+    boundary_match_mode: str,
+    target_work_before_cutoff: float | None,
+    reference_work_per_boundary_length: float | None,
+) -> dict[str, Any]:
     return {
         "transport_question": question,
         "driver_sides": ",".join(config.driver.sides),
@@ -383,6 +448,10 @@ def _transport_metadata(config: SimulationConfig, question: str) -> dict[str, An
         "core_drive_outer_radius_physical": config.core_drive_outer_radius_physical,
         "core_drive_angle_center": config.core_drive_angle_center,
         "core_drive_angle_width": config.core_drive_angle_width,
+        "boundary_match_mode": boundary_match_mode,
+        "boundary_physical_length": _boundary_length(config),
+        "target_work_before_cutoff": target_work_before_cutoff,
+        "reference_work_per_boundary_length": reference_work_per_boundary_length,
     }
 
 
@@ -448,7 +517,7 @@ def _write_report(
         "",
         (
             "Narrow source-geometry controls for the source-normalized fixed-domain 0.92 candidate. "
-            "All variants are matched to the 63x63 boundary-reference injected work before cutoff."
+            "Variants are matched against the four-side boundary reference for the selected control grid."
         ),
         "",
         "## Base Case",
@@ -458,6 +527,8 @@ def _write_report(
         f"- Drive frequency: `{base_config.driver.frequency}`",
         f"- Drive cutoff time: `{base_config.driver.drive_cutoff_time}`",
         f"- Source normalization for boundary references: `{options.source_normalization}`",
+        f"- Boundary match mode: `{options.boundary_match_mode}`",
+        f"- Boundary-only: `{options.boundary_only}`",
         "",
         "## Classification",
         "",
@@ -504,8 +575,8 @@ def _write_report(
             "",
             "## Source Geometry",
             "",
-            "| Variant | Boundary Sides | Boundary Phase | Core Phase | Inner R | Outer R | Angle Center | Angle Width | Core Area | Work / Core Area |",
-            "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            "| Variant | Boundary Sides | Boundary Length | Work / Boundary Length | Boundary Phase | Core Phase | Inner R | Outer R | Angle Center | Angle Width | Core Area | Work / Core Area |",
+            "| --- | --- | ---: | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
     for row in rows:
@@ -513,6 +584,8 @@ def _write_report(
             "| "
             f"{row['variant']} | "
             f"{row.get('driver_sides')} | "
+            f"{_format(row.get('boundary_physical_length'))} | "
+            f"{_format(row.get('injected_work_per_boundary_length'))} | "
             f"{row.get('boundary_phase_mode')}:{row.get('boundary_phase_winding')} | "
             f"{row.get('core_drive_phase_mode') or 'n/a'}:{row.get('core_drive_phase_winding') or 'n/a'} | "
             f"{_format(row.get('core_drive_inner_radius_physical'))} | "
