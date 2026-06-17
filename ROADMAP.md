@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Harden breathing-period detection globally, then run targeted boundary-transport controls before broader long sweeps.
+Add targeted annulus / near-defect transport controls before broader long sweeps.
 
-Recommended next task: update `_detect_breathing_state` so it uses minimum-separated and/or prominence-filtered peaks, then rerun source-normalized diagnostics or `diagnose-run` on the existing 63-grid source-normalized run. The new core-modal probe already uses the safer full-metric minimum-separated logic and classified direct core excitation as `boundary_transport_required`, but the time-resolved diagnostic reports still carry the older subpeak-overcounting caveat.
+Recommended next task: add a narrow transport-control command or extend `core-modal-probe` with annulus / inner-ring / near-boundary source variants using matched injected work. The hardened global breathing detector now reports raw diagnostic-frame peak periods separately from envelope-scale periods, flags `subpeak_overcounting_possible`, and requires retained post-cutoff energy before applying the `breathing_localized_state` label.
 
 ## Status
 
@@ -93,20 +93,23 @@ Recommended next task: update `_detect_breathing_state` so it uses minimum-separ
 - Added `core-modal-probe` for source-normalized fixed-domain 63/81 boundary references plus work-normalized core impulse and burst controls.
 - Ran `core-modal-probe` for the long 0.92 candidate in `runs\core_modal_probe_20260616_230134`; result classified as `boundary_transport_required`.
 - The boundary references retained breathing with controlled injected work, but direct core impulse/burst did not reproduce the boundary-reference post-cutoff breathing, radial peak, and m=4 structure.
+- Hardened `_detect_breathing_state` globally with full-metric envelope-scale peak detection, minimum peak separation, low-amplitude prominence filtering, smoothing, post-cutoff retention gating, raw/envelope period reporting, and `subpeak_overcounting_possible`.
+- Reran source-normalized fixed-domain diagnostics in `runs\source_normalized_resolution_20260616_233009`; classification stayed `coarse_grid_artifact_likely`, and 41/63/81 envelope-scale periods reported as 2.547 / 3.040 / 2.850.
+- Refreshed `core-modal-probe` in `runs\core_modal_probe_20260616_233711`; classification stayed `boundary_transport_required`, with combined reports now separating diagnostic envelope period, metric min-separated period, and raw diagnostic-frame period.
 
 ### In Progress
 
-- Breathing-period detector hardening in `time_resolved_diagnostics`.
-- Targeted boundary-transport mechanism controls, after the detector caveat is fixed.
+- Targeted boundary-transport mechanism controls.
 
 ### Next
 
-- Add minimum-separation and/or prominence logic to `_detect_breathing_state`, matching the safer logic used by `breathing-period-audit` and `core-modal-probe`.
-- Re-run source-normalized diagnostics or at least `diagnose-run` on the 63-grid source-normalized run to confirm the reported period moves to the envelope-scale value.
-- Then run narrow transport-mechanism controls, such as annulus drive or physically closer boundary/annulus source variants, to test why boundary-driven transport reaches the retained 0.92 state while direct core drive does not.
-- Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with the detector caveat noted.
+- Add annulus drive and inner-ring drive variants with matched injected work.
+- Add closer-boundary / near-defect source variants to test transport distance.
+- Add one-side versus symmetric source variants to test interference geometry.
+- Add rotating versus non-rotating phase variants to test whether angular injection seeds m=4.
+- Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls until the detector and transport-mechanism controls are understood.
+- Do not run neighboring-frequency long controls until the transport-mechanism controls are understood.
 
 ## Phases
 
@@ -244,3 +247,7 @@ Possible work:
 - 2026-06-16: Ran core-modal probe in `runs\core_modal_probe_20260616_230134`; boundary references at 63/81 retained breathing with equal injected work, but direct core impulse/burst controls did not reproduce the reference post-cutoff breathing/radial/m=4 state.
 - 2026-06-16: Classified the core-modal result as `boundary_transport_required`; best matching core probe was `core_impulse_63`, but it had slow natural ringing period 22.32, radial similarity 0.285, and m=4 strength 0.0177.
 - 2026-06-16: Updated the next step to harden the global breathing detector first, then run narrow boundary-transport mechanism controls rather than broad neighboring-frequency long sweeps.
+- 2026-06-17: Hardened the global time-resolved breathing detector with raw/envelope period reporting, minimum separation, smoothing, prominence filtering, subpeak-overcounting labels, and retained-energy gating.
+- 2026-06-17: Reran source-normalized fixed-domain diagnostics in `runs\source_normalized_resolution_20260616_233009`; classification stayed `coarse_grid_artifact_likely`, while the 63-grid period now reports an envelope-scale 3.040 with `subpeak_overcounting_possible` instead of overclaiming the raw 1.689 subpeak period.
+- 2026-06-17: Refreshed core-modal probe in `runs\core_modal_probe_20260616_233711`; classification stayed `boundary_transport_required`, and the combined report now separates diagnostic envelope period from metric min-separated and raw diagnostic-frame periods.
+- 2026-06-17: Updated the next step to targeted annulus / near-defect transport controls before any broad long sweeps.

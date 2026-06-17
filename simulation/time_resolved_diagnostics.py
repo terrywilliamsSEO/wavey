@@ -73,7 +73,7 @@ def diagnose_existing_run(
         _write_csv(diagnostics_dir / "reference_mode_comparison.csv", reference_rows)
 
     plots = _write_plots(diagnostics_dir, frame_rows, radial_rows, radial_bins, angular_rows, reference_rows, summary, config)
-    breathing = _detect_breathing_state(frame_rows, radial_rows, config)
+    breathing = _detect_breathing_state(frame_rows, radial_rows, config, samples)
     transition = _detect_mode_transition(frame_rows, radial_rows, config)
     angular = _detect_angular_modes(angular_rows, config)
     reference = _detect_reference_relationship(reference_rows, summary)
@@ -748,48 +748,94 @@ def _annotate_cutoff_best(ax: Any, summary: dict[str, Any], config: SimulationCo
         ax.axvline(float(summary["time_of_best_event"]), color="#aa3377", linestyle=":", linewidth=1.1, alpha=0.9)
 
 
-def _detect_breathing_state(frame_rows: list[dict[str, Any]], radial_rows: list[dict[str, Any]], config: SimulationConfig) -> dict[str, Any]:
-    post = [row for row in frame_rows if row["time"] > (config.driver.drive_cutoff_time or 0.0)]
-    if len(post) < 8:
-        return {"status": "inconclusive", "reason": "not enough post-cutoff frames", "label": None}
-    values = np.asarray([row["core_energy"] for row in post], dtype=float)
-    times = np.asarray([row["time"] for row in post], dtype=float)
-    peaks = _local_peaks(values)
-    if peaks.size:
-        strong_cutoff = np.percentile(values, 55)
-        peaks = peaks[values[peaks] >= strong_cutoff]
-    intervals = np.diff(times[peaks]) if peaks.size >= 2 else np.array([])
-    period = float(np.mean(intervals)) if intervals.size else None
-    interval_cv = float(np.std(intervals) / (np.mean(intervals) + EPSILON)) if intervals.size else None
-    envelope_strength = float((np.percentile(values, 90) - np.percentile(values, 10)) / (np.percentile(values, 90) + EPSILON))
-    radial_values = np.asarray([row["radial_peak_radius"] for row in post], dtype=float)
+def _detect_breathing_state(
+    frame_rows: list[dict[str, Any]],
+    radial_rows: list[dict[str, Any]],
+    config: SimulationConfig,
+    metric_rows: list[dict[str, float]] | None = None,
+) -> dict[str, Any]:
+    cutoff = _diagnostic_cutoff(config)
+    frame_post = [row for row in frame_rows if row["time"] > cutoff]
+    metric_source = metric_rows if metric_rows is not None else frame_rows
+    metric_post = [row for row in metric_source if row["time"] > cutoff]
+    if len(frame_post) < 8 or len(metric_post) < 8:
+        return {"status": "inconclusive", "reason": "not enough post-cutoff frames", "label": None, "labels": []}
+
+    frame_times = np.asarray([row["time"] for row in frame_post], dtype=float)
+    frame_values = np.asarray([row["core_energy"] for row in frame_post], dtype=float)
+    metric_times = np.asarray([row["time"] for row in metric_post], dtype=float)
+    metric_values = np.asarray([row["core_energy"] for row in metric_post], dtype=float)
+
+    raw = _peak_period_summary(frame_times, frame_values, percentile=55.0)
+    expected_period = _expected_breathing_period(config, metric_times)
+    min_separation = _minimum_peak_separation(config, metric_times, expected_period)
+    smoothed_values, smoothing_window = _smoothed_envelope(metric_values, metric_times, min_separation)
+    prominence_threshold = _prominence_threshold(smoothed_values)
+    envelope = _peak_period_summary(
+        metric_times,
+        smoothed_values,
+        percentile=55.0,
+        min_separation=min_separation,
+        prominence_threshold=prominence_threshold,
+    )
+
+    envelope_strength = float(
+        (np.percentile(metric_values, 90) - np.percentile(metric_values, 10))
+        / (np.percentile(metric_values, 90) + EPSILON)
+    )
+    radial_values = np.asarray([row["radial_peak_radius"] for row in frame_post], dtype=float)
     radial_range = float(np.max(radial_values) - np.min(radial_values)) if radial_values.size else 0.0
     profile_corrs = [
         float(row["corr_prev_profile"])
         for row in radial_rows
-        if row.get("corr_prev_profile") not in (None, "") and row["time"] > (config.driver.drive_cutoff_time or 0.0)
+        if row.get("corr_prev_profile") not in (None, "") and row["time"] > cutoff
     ]
     profile_coherence = float(np.nanmean(profile_corrs)) if profile_corrs else 0.0
+    retention = _post_cutoff_retention(metric_source, cutoff)
 
-    cycle_count = int(peaks.size)
+    cycle_count = int(envelope["peak_count"])
+    interval_cv = envelope["interval_cv"]
     score = float(
-        np.clip(envelope_strength, 0.0, 1.0) * 0.45
-        + np.clip(radial_range / 0.75, 0.0, 1.0) * 0.25
+        np.clip(envelope_strength, 0.0, 1.0) * 0.35
+        + np.clip(radial_range / 0.75, 0.0, 1.0) * 0.2
         + np.clip((profile_coherence + 1.0) / 2.0, 0.0, 1.0) * 0.2
-        + np.clip(cycle_count / 4.0, 0.0, 1.0) * 0.1
+        + np.clip(cycle_count / 4.0, 0.0, 1.0) * 0.15
+        + np.clip(retention / 0.25, 0.0, 1.0) * 0.1
     )
-    consistent = interval_cv is not None and interval_cv <= 0.65
-    detected = cycle_count >= 3 and envelope_strength >= 0.2 and profile_coherence >= 0.35 and consistent
+    consistent = interval_cv is not None and interval_cv <= 0.75
+    retained = retention >= 0.05
+    detected = cycle_count >= 3 and envelope_strength >= 0.2 and profile_coherence >= 0.35 and consistent and retained
+    subpeak_possible = _subpeak_overcounting_possible(raw, envelope)
+    labels = []
+    if detected:
+        labels.append("breathing_localized_state")
+    if subpeak_possible:
+        labels.append("subpeak_overcounting_possible")
+
     return {
         "status": "detected" if detected else "inconclusive",
         "label": "breathing_localized_state" if detected else None,
-        "estimated_period": period,
+        "labels": labels,
+        "estimated_period": envelope["period"],
         "breathing_strength_score": score,
         "detected_cycles": cycle_count,
         "interval_cv": interval_cv,
         "core_envelope_strength": envelope_strength,
         "radial_peak_range": radial_range,
         "mean_radial_profile_correlation": profile_coherence,
+        "post_cutoff_retention": retention,
+        "raw_peak_period": raw["period"],
+        "raw_peak_count": raw["peak_count"],
+        "raw_interval_cv": raw["interval_cv"],
+        "envelope_period": envelope["period"],
+        "envelope_peak_count": envelope["peak_count"],
+        "envelope_interval_cv": envelope["interval_cv"],
+        "expected_envelope_period": expected_period,
+        "min_peak_separation": min_separation,
+        "prominence_threshold": prominence_threshold,
+        "smoothing_window_samples": smoothing_window,
+        "subpeak_overcounting_possible": subpeak_possible,
+        "retained_energy_required": True,
     }
 
 
@@ -797,6 +843,142 @@ def _local_peaks(values: np.ndarray) -> np.ndarray:
     if values.size < 3:
         return np.array([], dtype=int)
     return np.where((values[1:-1] > values[:-2]) & (values[1:-1] > values[2:]))[0] + 1
+
+
+def _peak_period_summary(
+    times: np.ndarray,
+    values: np.ndarray,
+    *,
+    percentile: float,
+    min_separation: float | None = None,
+    prominence_threshold: float | None = None,
+) -> dict[str, Any]:
+    if times.size < 3 or values.size < 3:
+        return {"peak_count": 0, "period": None, "interval_cv": None, "peak_times": []}
+    peaks = _local_peaks(values)
+    if peaks.size:
+        value_threshold = float(np.percentile(values, percentile))
+        peaks = peaks[values[peaks] >= value_threshold]
+    if peaks.size and prominence_threshold is not None and prominence_threshold > 0.0:
+        prominences = _peak_prominences(values, peaks)
+        peaks = peaks[prominences >= prominence_threshold]
+    if peaks.size and min_separation is not None and min_separation > 0.0:
+        peaks = _filter_peaks_by_min_separation(times, values, peaks, min_separation)
+    intervals = np.diff(times[peaks]) if peaks.size >= 2 else np.asarray([], dtype=float)
+    return {
+        "peak_count": int(peaks.size),
+        "period": float(np.mean(intervals)) if intervals.size else None,
+        "interval_cv": float(np.std(intervals) / (np.mean(intervals) + EPSILON)) if intervals.size else None,
+        "peak_times": [float(times[idx]) for idx in peaks],
+    }
+
+
+def _peak_prominences(values: np.ndarray, peaks: np.ndarray) -> np.ndarray:
+    if not peaks.size:
+        return np.asarray([], dtype=float)
+    prominences = []
+    for idx, peak in enumerate(peaks):
+        left_bound = int(peaks[idx - 1]) if idx > 0 else 0
+        right_bound = int(peaks[idx + 1]) if idx + 1 < peaks.size else values.size - 1
+        left_min = float(np.min(values[left_bound : peak + 1]))
+        right_min = float(np.min(values[peak : right_bound + 1]))
+        prominences.append(float(values[peak] - max(left_min, right_min)))
+    return np.asarray(prominences, dtype=float)
+
+
+def _filter_peaks_by_min_separation(
+    times: np.ndarray,
+    values: np.ndarray,
+    peaks: np.ndarray,
+    min_separation: float,
+) -> np.ndarray:
+    kept: list[int] = []
+    for peak in peaks[np.argsort(values[peaks])[::-1]]:
+        if all(abs(float(times[peak] - times[other])) >= min_separation for other in kept):
+            kept.append(int(peak))
+    return np.asarray(sorted(kept), dtype=int)
+
+
+def _expected_breathing_period(config: SimulationConfig, times: np.ndarray) -> float:
+    frequency = float(config.driver.frequency or 0.0)
+    if frequency > EPSILON:
+        return max(2.0, 2.25 / frequency)
+    sample_dt = _median_sample_dt(times)
+    return max(2.0, 8.0 * sample_dt)
+
+
+def _minimum_peak_separation(config: SimulationConfig, times: np.ndarray, expected_period: float) -> float:
+    sample_dt = _median_sample_dt(times)
+    return float(max(1.5, 0.6 * expected_period, 3.0 * sample_dt))
+
+
+def _smoothed_envelope(values: np.ndarray, times: np.ndarray, min_separation: float) -> tuple[np.ndarray, int]:
+    if values.size < 5:
+        return values.copy(), 1
+    sample_dt = _median_sample_dt(times)
+    window = int(round(0.5 * min_separation / max(sample_dt, EPSILON)))
+    window = max(3, window)
+    if window % 2 == 0:
+        window += 1
+    window = min(window, 31, values.size if values.size % 2 == 1 else values.size - 1)
+    if window < 3:
+        return values.copy(), 1
+    pad = window // 2
+    padded = np.pad(values, (pad, pad), mode="edge")
+    kernel = np.ones(window, dtype=float) / float(window)
+    return np.convolve(padded, kernel, mode="valid"), int(window)
+
+
+def _prominence_threshold(values: np.ndarray) -> float:
+    if values.size < 3:
+        return 0.0
+    dynamic_range = float(np.max(values) - np.min(values))
+    if dynamic_range <= EPSILON:
+        return 0.0
+    return max(0.002 * dynamic_range, 0.002 * float(np.percentile(values, 90)))
+
+
+def _post_cutoff_retention(rows: list[dict[str, Any]], cutoff: float) -> float:
+    pre = np.asarray([row.get("core_energy", 0.0) for row in rows if float(row.get("time", 0.0)) <= cutoff], dtype=float)
+    post = np.asarray([row.get("core_energy", 0.0) for row in rows if float(row.get("time", 0.0)) > cutoff], dtype=float)
+    if not post.size:
+        return 0.0
+    reference = max(
+        float(np.max(pre)) if pre.size else 0.0,
+        float(np.max(post)),
+        EPSILON,
+    )
+    tail_start = max(0, int(post.size * 0.35))
+    return float(np.clip(np.mean(post[tail_start:]) / reference, 0.0, 1.0))
+
+
+def _subpeak_overcounting_possible(raw: dict[str, Any], envelope: dict[str, Any]) -> bool:
+    raw_period = raw.get("period")
+    envelope_period = envelope.get("period")
+    if raw_period is None or envelope_period is None:
+        return False
+    return (
+        int(raw.get("peak_count") or 0) >= int(envelope.get("peak_count") or 0) + 2
+        and float(raw_period) < 0.75 * float(envelope_period)
+    )
+
+
+def _median_sample_dt(times: np.ndarray) -> float:
+    if times.size < 2:
+        return 1.0
+    diffs = np.diff(times)
+    diffs = diffs[diffs > EPSILON]
+    if not diffs.size:
+        return 1.0
+    return float(np.median(diffs))
+
+
+def _diagnostic_cutoff(config: SimulationConfig) -> float:
+    if getattr(config, "drive_location", "boundary") != "boundary":
+        cutoff = config.effective_core_drive_cutoff_time
+    else:
+        cutoff = config.driver.drive_cutoff_time
+    return float(cutoff or 0.0)
 
 
 def _detect_mode_transition(frame_rows: list[dict[str, Any]], radial_rows: list[dict[str, Any]], config: SimulationConfig) -> dict[str, Any]:
@@ -939,13 +1121,14 @@ def _diagnostic_labels(
     reference: dict[str, Any],
 ) -> list[str]:
     labels = []
+    labels.extend(breathing.get("labels", []))
     if breathing.get("label"):
         labels.append(breathing["label"])
     if transition.get("label"):
         labels.append(transition["label"])
     labels.extend(angular.get("labels", []))
     labels.extend(reference.get("labels", []))
-    return labels
+    return list(dict.fromkeys(labels))
 
 
 def _mean(values: Iterable[Any]) -> float:
@@ -1037,9 +1220,17 @@ def _write_report(
         "## Breathing Detection",
         "",
         f"- Status: `{breathing.get('status')}`",
-        f"- Estimated period: `{_format_optional(breathing.get('estimated_period'))}`",
+        f"- Estimated envelope-scale period: `{_format_optional(breathing.get('estimated_period'))}`",
+        f"- Raw diagnostic-frame peak period: `{_format_optional(breathing.get('raw_peak_period'))}`",
+        f"- Envelope peak period: `{_format_optional(breathing.get('envelope_period'))}`",
         f"- Breathing strength score: `{_format_optional(breathing.get('breathing_strength_score'))}`",
-        f"- Detected cycles: `{breathing.get('detected_cycles', 0)}`",
+        f"- Detected envelope cycles: `{breathing.get('detected_cycles', 0)}`",
+        f"- Raw peak count: `{breathing.get('raw_peak_count', 0)}`",
+        f"- Minimum peak separation: `{_format_optional(breathing.get('min_peak_separation'))}`",
+        f"- Prominence threshold: `{_format_optional(breathing.get('prominence_threshold'))}`",
+        f"- Smoothing window samples: `{breathing.get('smoothing_window_samples', 'n/a')}`",
+        f"- Post-cutoff retention: `{_format_optional(breathing.get('post_cutoff_retention'))}`",
+        f"- Subpeak overcounting possible: `{breathing.get('subpeak_overcounting_possible', False)}`",
         "",
         "## Mode Transition Detection",
         "",
@@ -1096,7 +1287,15 @@ def _diagnostic_interpretation(
     sentences = []
     if breathing.get("status") == "detected":
         sentences.append(
-            "Core energy shows repeated post-cutoff envelope peaks while radial profiles remain coherent enough to support a breathing localized state."
+            "Core energy shows repeated retained post-cutoff envelope-scale peaks while radial profiles remain coherent enough to support a breathing localized state."
+        )
+        if breathing.get("subpeak_overcounting_possible"):
+            sentences.append(
+                "Raw diagnostic-frame peaks include smaller subpeaks, so the envelope-scale period is the safer breathing-period estimate."
+            )
+    elif breathing.get("subpeak_overcounting_possible"):
+        sentences.append(
+            "Raw local peaks may overcount small subpeaks; the report does not treat those tiny peaks alone as meaningful breathing."
         )
     if transition.get("status") == "detected":
         sentences.append(

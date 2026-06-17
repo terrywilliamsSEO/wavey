@@ -26,7 +26,7 @@ Last updated: 2026-06-16
 - `simulation/metrics.py`: per-step metrics and post-hoc spectral/retention estimates.
 - `simulation/anomaly_detection.py`: run-level summary and event labels.
 - `simulation/mode_diagnostics.py`: radial profiles, shape correlations, spatial distribution metrics.
-- `simulation/time_resolved_diagnostics.py`: diagnostic frame capture, radial/angular diagnostics, reports, and plots.
+- `simulation/time_resolved_diagnostics.py`: diagnostic frame capture, radial/angular diagnostics, hardened breathing detection, reports, and plots.
 - `simulation/breathing_period_audit.py`: compares current diagnostic breathing periods with full-resolution metric peak periods and minimum-separated peak periods.
 - `simulation/control_metrics.py`: absolute energy, decay rate, and post-cutoff core-peak metrics shared by controls.
 - `simulation/artifact_controls.py`: sponge-boundary artifact controls.
@@ -76,7 +76,7 @@ Controls should be preferred over broad sweeps while validating one candidate:
 - Use `breathing-period-audit` when a diagnostic breathing period appears too short or inconsistent with neighboring controls.
 - Use `core-modal-probe` to test whether direct core excitation reproduces the source-normalized fixed-domain boundary-reference tail before any broad long sweeps.
 
-Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. `breathing-period-audit` traced the 63-grid short period to subpeak overcounting. `core-modal-probe` classified the direct-core test as `boundary_transport_required`, so harden `_detect_breathing_state` and then use targeted transport controls before broad long sweeps.
+Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. The global breathing detector now flags raw subpeak overcounting and reports envelope-scale periods. `core-modal-probe` classified the direct-core test as `boundary_transport_required`, so use targeted annulus / near-defect transport controls before broad long sweeps.
 
 ## Generated Artifacts
 

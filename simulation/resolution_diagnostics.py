@@ -1254,13 +1254,14 @@ def _diagnostic_labels(diagnostics: dict[str, Any]) -> list[str]:
     labels = []
     breathing = diagnostics.get("breathing_detection", {})
     transition = diagnostics.get("mode_transition_detection", {})
+    labels.extend(breathing.get("labels", []))
     if breathing.get("label"):
         labels.append(breathing["label"])
     if transition.get("label"):
         labels.append(transition["label"])
     labels.extend(diagnostics.get("angular_detection", {}).get("labels", []))
     labels.extend(diagnostics.get("reference_comparison", {}).get("labels", []))
-    return labels
+    return list(dict.fromkeys(labels))
 
 
 def _read_csv_rows(path: Path) -> list[dict[str, Any]]:

@@ -188,7 +188,12 @@ def classify_core_modal_probe(
         return {"label": "inconclusive", "reason": "Boundary references and core probes are both required.", "checks": {}}
 
     reference = next((row for row in boundary_rows if row["variant"] == "boundary_reference_63"), boundary_rows[0])
-    reference_period = float(reference.get("breathing_period_after_cutoff") or reference.get("raw_diagnostic_frame_period") or 0.0)
+    reference_period = float(
+        reference.get("diagnostic_envelope_period")
+        or reference.get("breathing_period_after_cutoff")
+        or reference.get("raw_diagnostic_frame_period")
+        or 0.0
+    )
     boundary_support = any(bool(row.get("breathing_detected_after_cutoff")) for row in boundary_rows)
     core_successes = [_core_success(row, reference_period, options) for row in core_rows]
     checks = {
@@ -489,6 +494,7 @@ def _summary_row(
         min_separation=options.secondary_min_peak_separation,
     )
     raw_frame = _diagnostic_frame_peak_summary(summary, cutoff, options)
+    diagnostic_breathing = diagnostics.get("breathing_detection", {})
     envelope_strength = _post_cutoff_envelope_strength(post)
     retention_value = float(summary.get("retention_score") or 0.0)
     peak_breathing_detected = _breathing_detected_from_peak_summary(full_metric, envelope_strength)
@@ -552,7 +558,11 @@ def _summary_row(
         "breathing_detected_after_cutoff": breathing_detected,
         "breathing_period_after_cutoff": full_metric.get("period"),
         "breathing_period_after_cutoff_min_sep_2": full_metric_secondary.get("period"),
-        "raw_diagnostic_frame_period": raw_frame.get("period"),
+        "diagnostic_breathing_detected": diagnostic_breathing.get("status") == "detected",
+        "diagnostic_envelope_period": diagnostic_breathing.get("estimated_period"),
+        "diagnostic_raw_peak_period": diagnostic_breathing.get("raw_peak_period"),
+        "diagnostic_subpeak_overcounting_possible": diagnostic_breathing.get("subpeak_overcounting_possible"),
+        "raw_diagnostic_frame_period": diagnostic_breathing.get("raw_peak_period", raw_frame.get("period")),
         "breathing_strength_after_cutoff": envelope_strength,
         "breathing_cycles_after_cutoff": full_metric.get("peak_count", 0),
         "breathing_interval_cv_after_cutoff": full_metric.get("interval_cv"),
@@ -798,6 +808,7 @@ def _best_matching_core_probe(rows: list[dict[str, Any]]) -> dict[str, Any] | No
         "score": _core_match_score(best),
         "retention": best.get("post_cutoff_retention"),
         "period": best.get("breathing_period_after_cutoff"),
+        "diagnostic_period": best.get("diagnostic_envelope_period"),
         "radial_similarity": best.get("radial_profile_similarity_to_boundary_reference"),
         "frame_similarity": best.get("best_frame_similarity_to_boundary_reference"),
         "m4_strength": best.get("m4_strength_after_cutoff"),
@@ -832,13 +843,14 @@ def _diagnostic_labels(diagnostics: dict[str, Any]) -> list[str]:
     labels = []
     breathing = diagnostics.get("breathing_detection", {})
     transition = diagnostics.get("mode_transition_detection", {})
+    labels.extend(breathing.get("labels", []))
     if breathing.get("label"):
         labels.append(breathing["label"])
     if transition.get("label"):
         labels.append(transition["label"])
     labels.extend(diagnostics.get("angular_detection", {}).get("labels", []))
     labels.extend(diagnostics.get("reference_comparison", {}).get("labels", []))
-    return labels
+    return list(dict.fromkeys(labels))
 
 
 def _plot_injected_work(samples: list[dict[str, Any]], path: Path) -> None:
@@ -966,8 +978,8 @@ def _write_report(
             "",
             "## Variant Summary",
             "",
-            "| Variant | Grid | Drive | Work Before Cutoff | Retention | Period min_sep=1.5 | Raw frame period | Breathing | Radial Peak | m4 | Radial Sim | Frame Sim |",
-            "| --- | ---: | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: |",
+            "| Variant | Grid | Drive | Work Before Cutoff | Retention | Diagnostic Envelope Period | Metric min_sep=1.5 | Raw Frame Period | Subpeak Flag | Breathing | Radial Peak | m4 | Radial Sim | Frame Sim |",
+            "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- | --- | ---: | ---: | ---: | ---: |",
         ]
     )
     for row in rows:
@@ -979,8 +991,10 @@ def _write_report(
             f"{drive} | "
             f"{_format(row.get('injected_work_before_cutoff'))} | "
             f"{_format(row.get('post_cutoff_retention'))} | "
+            f"{_format(row.get('diagnostic_envelope_period'))} | "
             f"{_format(row.get('breathing_period_after_cutoff'))} | "
             f"{_format(row.get('raw_diagnostic_frame_period'))} | "
+            f"{row.get('diagnostic_subpeak_overcounting_possible')} | "
             f"{row.get('breathing_detected_after_cutoff')} | "
             f"{_format(row.get('radial_peak_after_cutoff_physical'))} | "
             f"{_format(row.get('m4_strength_after_cutoff'))} | "
@@ -1043,7 +1057,7 @@ def _report_answers(rows: list[dict[str, Any]], best_core: dict[str, Any] | None
             f"`{', '.join(_format(row.get('breathing_period_after_cutoff')) for row in impulse_rows) or 'n/a'}`."
         ),
         (
-            f"The primary boundary-reference period is `{_format(boundary.get('breathing_period_after_cutoff'))}`; "
+            f"The primary boundary-reference diagnostic envelope period is `{_format(boundary.get('diagnostic_envelope_period'))}`; "
             f"best core match `{best_variant}` has period `{_format((best_core or {}).get('period'))}`."
         ),
         (
@@ -1163,6 +1177,10 @@ def _summary_fields() -> list[str]:
         "breathing_detected_after_cutoff",
         "breathing_period_after_cutoff",
         "breathing_period_after_cutoff_min_sep_2",
+        "diagnostic_breathing_detected",
+        "diagnostic_envelope_period",
+        "diagnostic_raw_peak_period",
+        "diagnostic_subpeak_overcounting_possible",
         "raw_diagnostic_frame_period",
         "breathing_strength_after_cutoff",
         "breathing_cycles_after_cutoff",

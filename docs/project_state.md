@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 ## One-Screen Summary
 
@@ -15,10 +15,11 @@ Current interpretation:
 - Source-normalized fixed-domain controls now make emitter effective area and injected work comparable across 41/63/81.
 - Under source-normalized fixed-domain controls, 63x63 and 81x81 converge to the same refined physical radial peak at `10.0`, while 41x41 peaks at `5.0`.
 - The latest source-normalized diagnostic classified the radial result as `coarse_grid_artifact_likely`.
-- The 63x63 short breathing period was audited and traced to peak-detector overcounting of small subpeaks on a broad core-energy plateau.
+- The global time-resolved breathing detector is now hardened: reports include raw diagnostic-frame period, hardened envelope-scale period, minimum separation, prominence threshold, smoothing window, retained-energy gating, and `subpeak_overcounting_possible`.
+- The refreshed source-normalized 63x63 diagnostic now reports an envelope-scale period of `3.040` while flagging the old raw `1.689` diagnostic-frame period as subpeak overcounting.
 - A controlled direct core-modal probe classified the 0.92 candidate as `boundary_transport_required`: source-normalized boundary references retained the 0.92 breathing family, but work-normalized core impulse/burst controls did not reproduce the same post-cutoff breathing, radial peak, and m=4 structure.
 - Do not call this exotic physics.
-- Do not run broad long sweeps until the breathing detector is hardened against subpeak overcounting and the boundary-transport mechanism is narrowed with targeted controls.
+- Do not run broad long sweeps until the boundary-transport mechanism is narrowed with targeted controls.
 
 ## Latest Evidence
 
@@ -175,13 +176,13 @@ python main.py source-normalized-resolution-diagnostics --config configs\long_va
 
 Latest summarized run:
 
-- Local report: `runs\source_normalized_resolution_20260616_215926\source_normalized_resolution_report.md`
+- Local report: `runs\source_normalized_resolution_20260616_233009\source_normalized_resolution_report.md`
 - Source normalization: `constant_total_work`
 - Classification: `coarse_grid_artifact_likely`
 - Primary finding: source geometry and injected work are now comparable across 41/63/81.
 - Refined result: 63x63 and 81x81 converge at physical radial peak `10.0`, not the legacy `3.75`.
 - 41x41 source-normalized peak is `5.0`, making the coarse grid the outlier under the controlled source.
-- Caveat: the 63-grid diagnostic breathing period is short at `1.689`, so breathing-period stability needs a targeted audit.
+- Detector update: the 63-grid raw diagnostic-frame period is still `1.689`, but the hardened envelope-scale period is `3.040` and the run is flagged `subpeak_overcounting_possible`.
 
 Important source audit values:
 
@@ -193,11 +194,11 @@ Important source audit values:
 
 Important mode values:
 
-| Grid | Ratio | Retention | Best Time | Period | Radial Peak | m=4 Strength |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 41 | 0.485 | 0.829 | 52.00 | 2.640 | 5.00 | 0.303 |
-| 63 | 0.324 | 0.863 | 44.24 | 1.689 | 10.00 | 0.124 |
-| 81 | 0.328 | 0.853 | 43.64 | 2.566 | 10.00 | 0.116 |
+| Grid | Ratio | Retention | Best Time | Envelope Period | Raw Frame Period | Radial Peak | m=4 Strength |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 41 | 0.485 | 0.829 | 52.00 | 2.547 | n/a | 5.00 | 0.303 |
+| 63 | 0.324 | 0.863 | 44.24 | 3.040 | 1.689 | 10.00 | 0.124 |
+| 81 | 0.328 | 0.853 | 43.64 | 2.850 | 2.566 | 10.00 | 0.116 |
 
 Pairwise source-normalized radial correlations:
 
@@ -233,7 +234,7 @@ Important values:
 | 63 | 1.689 | 1.557 | 2.491 | 2.907 |
 | 81 | 2.566 | 1.370 | 3.080 | 3.080 |
 
-Current conclusion: the source-normalized 63-grid run does not clearly have a true doubled-frequency breathing envelope. The current detector overcounts subpeaks; future breathing detection should require peak separation and/or prominence.
+Current conclusion: the source-normalized 63-grid run does not clearly have a true doubled-frequency breathing envelope. The hardened detector treats the `1.689` value as raw subpeak overcounting and uses envelope-scale periods for breathing classification.
 
 ### Core-Modal Probe
 
@@ -245,22 +246,22 @@ python main.py core-modal-probe --config configs\long_validation_peak_0_92.json
 
 Latest summarized run:
 
-- Local report: `runs\core_modal_probe_20260616_230134\core_modal_probe_report.md`
-- Summary CSV: `runs\core_modal_probe_20260616_230134\core_modal_probe_summary.csv`
+- Local report: `runs\core_modal_probe_20260616_233711\core_modal_probe_report.md`
+- Summary CSV: `runs\core_modal_probe_20260616_233711\core_modal_probe_summary.csv`
 - Classification: `boundary_transport_required`
 - Best matching core-probe run: `core_impulse_63`
 - All variants were normalized to the `boundary_reference_63` pre-cutoff injected work, about `21.8221`.
 
 Important values:
 
-| Variant | Grid | Drive | Work | Retention | Period min_sep 1.5 | Raw Frame Period | Radial Peak | m4 Strength | Radial Sim | Frame Sim |
-| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| boundary_reference_63 | 63 | boundary | 21.822 | 0.863 | 2.491 | 1.689 | 10.00 | 0.124 | 1.000 | 1.000 |
-| boundary_reference_81 | 81 | boundary | 21.822 | 0.853 | 3.080 | 2.566 | 10.00 | 0.116 | 0.965 | 0.721 |
-| core_impulse_63 | 63 | core impulse | 21.822 | 0.449 | 22.32 | n/a | 3.75 | 0.0177 | 0.285 | 0.497 |
-| core_burst_0p92_63 | 63 | core burst | 21.822 | 0.000006 | 3.090 | 1.900 | 1.25 | 0.0228 | 0.293 | 0.409 |
-| core_impulse_81 | 81 | core impulse | 21.822 | 0.448 | 10.96 | 10.80 | 5.00 | 0.0084 | 0.294 | 0.495 |
-| core_burst_0p92_81 | 81 | core burst | 21.822 | 0.000067 | 1.692 | 1.290 | 6.25 | 0.423 | 0.328 | 0.169 |
+| Variant | Grid | Drive | Work | Retention | Diagnostic Envelope Period | Metric min_sep 1.5 | Raw Frame Period | Radial Peak | m4 Strength | Radial Sim | Frame Sim |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| boundary_reference_63 | 63 | boundary | 21.822 | 0.863 | 3.040 | 2.491 | 1.689 | 10.00 | 0.124 | 1.000 | 1.000 |
+| boundary_reference_81 | 81 | boundary | 21.822 | 0.853 | 2.850 | 3.080 | 2.566 | 10.00 | 0.116 | 0.965 | 0.721 |
+| core_impulse_63 | 63 | core impulse | 21.822 | 0.449 | n/a | 22.32 | n/a | 3.75 | 0.0177 | 0.285 | 0.497 |
+| core_burst_0p92_63 | 63 | core burst | 21.822 | 0.000006 | n/a | 3.090 | 1.900 | 1.25 | 0.0228 | 0.293 | 0.409 |
+| core_impulse_81 | 81 | core impulse | 21.822 | 0.448 | n/a | 10.96 | 10.80 | 5.00 | 0.0084 | 0.294 | 0.495 |
+| core_burst_0p92_81 | 81 | core burst | 21.822 | 0.000067 | n/a | 1.692 | 1.290 | 6.25 | 0.423 | 0.328 | 0.169 |
 
 Interpretation:
 
@@ -271,11 +272,12 @@ Interpretation:
 
 ## Current Next Step
 
-Harden breathing-period detection, then narrow the boundary-transport mechanism:
+Narrow the boundary-transport mechanism:
 
-- Add minimum-separation and/or prominence logic to `_detect_breathing_state`.
-- Re-run source-normalized diagnostics or diagnose the existing 63-grid run after detector changes.
-- Then run targeted transport controls, such as annulus drive or physically closer source/annulus variants, before any broad long sweeps.
+- Add annulus drive and inner-ring drive variants with matched injected work.
+- Add closer-boundary / near-defect source variants to test transport distance.
+- Add one-side versus symmetric source variants to test interference geometry.
+- Add rotating versus non-rotating phase variants to test whether angular injection seeds m=4.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

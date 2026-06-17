@@ -68,6 +68,8 @@ python main.py diagnose-run --run-path runs\run_YYYYMMDD_HHMMSS_xxxxxx --referen
 
 Diagnostic frame arrays are saved as numeric `.npy` files by default. Add `--save-frame-pngs` only when you also want every captured energy/displacement frame rendered as an image.
 
+The time-resolved breathing detector reports raw diagnostic-frame peak periods separately from hardened envelope-scale periods. Classification uses retained post-cutoff energy, smoothed/full-metric envelope peaks, minimum peak separation, and prominence filtering; reports flag `subpeak_overcounting_possible` when tiny local peaks would otherwise overstate the breathing rate.
+
 Run targeted sponge-boundary artifact controls for the long 0.92 candidate with:
 
 ```powershell
