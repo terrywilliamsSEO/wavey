@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Build a small 3D prototype after the 2D boundary work-per-length control passed.
+Audit the first 3D prototype failure mode before expanding 3D or running broad sweeps.
 
-Recommended next task: add a minimal 31^3 3D prototype that ports only the trusted pieces of the 2D fixed-domain engine: sponge boundary damping, a central spherical defect/cavity, a boundary rotating m=4-style source around one axis, matched work accounting, and diagnostics for spherical shell breathing. Do not start with huge grids and do not rank by high core energy alone.
+Recommended next task: add a focused 3D failure-mode audit for the 31^3 prototype. The first 3D pass did not show retained shell breathing around the spherical defect; the shell peak stayed near the outer boundary and retained shell energy was essentially zero. Diagnose radial transport from the six-face source, source/sponge overlap, and defect-shell-window metrics before changing grid size or sweeping parameters.
 
 ## Status
 
@@ -106,20 +106,23 @@ Recommended next task: add a minimal 31^3 3D prototype that ports only the trust
 - Added `--boundary-match-mode work_per_length` and `--boundary-only` to `transport-controls`.
 - Ran boundary-only work-per-length controls at 63x63 in `runs\transport_controls_20260617_115911`; classification stayed `boundary_geometry_sensitive`.
 - Ran boundary-only work-per-length controls at 81x81 in `runs\transport_controls_20260617_120129`; classification stayed `boundary_geometry_sensitive`, and `boundary_rotating_m4_81` still reproduced the reference family.
+- Added `prototype-3d` for a tiny fixed-domain 31^3 shell-breathing prototype with spherical defect, sponge boundary, six-face boundary drive, cubic phase variant, direct core/shell controls, and sponge/dt checks.
+- Ran the first 31^3 prototype in `runs\prototype_3d_20260617_152319`; result classified as `inconclusive`.
+- The 3D cubic boundary reference did not retain shell energy around the spherical defect: shell retention was about 1.28e-6, the shell peak was near radius 31.03, and the radius range was 21.65.
 
 ### In Progress
 
-- Small 3D prototype design.
+- 3D prototype failure-mode audit.
 
 ### Next
 
-- Add a minimal 3D lattice prototype command, starting at 31^3.
-- Use the 2D fixed-domain/sponge/source-normalized semantics as the reference, but keep the first 3D pass narrow and auditable.
-- Diagnose spherical shell breathing, shell-radius drift, angular/non-axisymmetric structure, and retained shell/core energy after cutoff.
+- Add defect-shell-window metrics so the report distinguishes outer-boundary shell residue from near-defect shell organization.
+- Audit radial energy arrival at the spherical defect and radial profiles before cutoff, at cutoff, early tail, and late tail.
+- Check whether the 3D boundary source overlaps too strongly with the sponge region and damps/traps energy at the boundary.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls until the small 3D prototype has either shown or failed to show shell breathing under the analogous boundary source.
+- Do not increase 3D grid size or run neighboring-frequency long controls until the 3D failure mode is understood.
 
 ## Phases
 
@@ -274,3 +277,7 @@ Possible work:
 - 2026-06-17: Ran work-per-length boundary controls at 63x63 in `runs\transport_controls_20260617_115911`; boundary left, left-right, and rotating m=4 still retained breathing after work per physical boundary length was normalized.
 - 2026-06-17: Ran work-per-length boundary controls at 81x81 in `runs\transport_controls_20260617_120129`; `boundary_rotating_m4_81` still reproduced the family with retention 0.891, metric period 2.147, radial peak 10.0, m4 strength 0.219, and radial similarity 0.890.
 - 2026-06-17: Updated the next step to a small 31^3 3D prototype focused on spherical shell breathing, not high core energy alone.
+- 2026-06-17: Added `python main.py prototype-3d --config configs\long_validation_peak_0_92.json`.
+- 2026-06-17: Ran the first 31^3 3D prototype in `runs\prototype_3d_20260617_152319`; classified as `inconclusive`.
+- 2026-06-17: The 3D boundary cubic source did not reproduce retained near-defect shell breathing: shell retention was 1.28e-6, shell peak radius was 31.03, and shell radius range was 21.65, indicating the detected shell peak was near the outer boundary.
+- 2026-06-17: Updated the next step to a 3D failure-mode audit rather than larger 3D grids or broad sweeps.

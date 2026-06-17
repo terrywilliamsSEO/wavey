@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps; the next step is a small 31^3 3D prototype.
+- Do not run broad long sweeps or larger 3D grids; the next step is a 3D failure-mode audit.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -20,7 +20,8 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - The latest core-modal probe classified direct core excitation as `boundary_transport_required`: boundary references at 63/81 retained the 0.92 breathing family with matched work, but core impulse/burst controls did not reproduce the reference post-cutoff breathing/radial/m=4 state.
 - The targeted transport-control passes at 63x63 and 81x81 both classified the candidate as `boundary_geometry_sensitive`: boundary left, left-right, and rotating m=4 variants retained breathing, while direct annulus/near-defect drives did not reproduce the reference family.
 - Boundary-only work-per-length controls at 63x63 and 81x81 kept the same classification; `boundary_rotating_m4_81` still reproduced the family after boundary flux density was normalized.
-- The current next physics step is a small 31^3 3D prototype. Look for retained spherical shell breathing, not just high core energy.
+- The first 31^3 3D prototype classified as `inconclusive`: boundary cubic forcing did not retain shell energy around the spherical defect, and the shell peak stayed near the outer boundary.
+- The current next physics step is a 3D failure-mode audit: check radial transport to the defect, source/sponge overlap, and near-defect shell-window metrics.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -61,6 +62,7 @@ python main.py source-normalized-resolution-diagnostics --config configs\long_va
 python main.py core-modal-probe --config configs\long_validation_peak_0_92.json
 python main.py transport-controls --config configs\long_validation_peak_0_92.json
 python main.py transport-controls --config configs\long_validation_peak_0_92.json --boundary-only --boundary-match-mode work_per_length --grid-size 81
+python main.py prototype-3d --config configs\long_validation_peak_0_92.json
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json

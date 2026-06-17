@@ -23,6 +23,7 @@ from simulation.core_modal_probe import CoreModalProbeOptions, run_core_modal_pr
 from simulation.fixed_domain_controls import FixedDomainGridControlOptions, run_fixed_domain_grid_control
 from simulation.grid_controls import GridControlOptions, run_grid_control
 from simulation.numerical_controls import DtControlOptions, run_dt_control
+from simulation.prototype_3d import Prototype3DOptions, run_3d_prototype
 from simulation.resolution_diagnostics import (
     ResolutionDiagnosticsOptions,
     run_resolution_diagnostics,
@@ -194,6 +195,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="How boundary geometry variants are matched to the four-side reference",
     )
     transport_parser.add_argument("--boundary-only", action="store_true", help="Run only boundary-geometry variants, skipping annulus probes")
+
+    prototype_3d_parser = subparsers.add_parser(
+        "prototype-3d",
+        help="Run a tiny fixed-domain 3D shell-breathing prototype for the 0.92 candidate",
+    )
+    prototype_3d_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    prototype_3d_parser.add_argument("--output-root", default="runs", help="Directory for 3D prototype outputs")
+    prototype_3d_parser.add_argument("--grid-size", type=int, default=31, help="3D grid size; default starts tiny at 31^3")
+    prototype_3d_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    prototype_3d_parser.add_argument("--skip-dt-control", action="store_true", help="Skip the half-dt confirmation variant")
+    prototype_3d_parser.add_argument("--skip-sponge-control", action="store_true", help="Skip the stronger-sponge confirmation variant")
 
     return parser
 
@@ -413,6 +425,21 @@ def main() -> None:
             reference_root=args.reference_root,
         )
         _print_transport_control_summary(result)
+        return
+
+    if args.command == "prototype-3d":
+        config = _load_sim_config(args.config)
+        result = run_3d_prototype(
+            config,
+            options=Prototype3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                sample_every=args.sample_every,
+                include_dt_control=not args.skip_dt_control,
+                include_sponge_control=not args.skip_sponge_control,
+            ),
+        )
+        _print_3d_prototype_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -709,6 +736,27 @@ def _print_transport_control_summary(result: dict[str, Any]) -> None:
             f"radial={_format_optional(row.get('radial_peak_after_cutoff_physical'))}, "
             f"m4={_format_optional(row.get('m4_strength_after_cutoff'))}, "
             f"sim={_format_optional(row.get('best_frame_similarity_to_boundary_reference'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_prototype_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D prototype complete")
+    print(f"prototype ID: {result['prototype_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"drive={row.get('drive_location')}/{row.get('drive_phase_mode')}, "
+            f"retention={_format_optional(row.get('post_cutoff_shell_retention'))}, "
+            f"period={_format_optional(row.get('shell_breathing_period'))}, "
+            f"radius={_format_optional(row.get('best_shell_peak_radius'))}, "
+            f"radius_range={_format_optional(row.get('post_cutoff_shell_radius_range'))}, "
+            f"radial_sim={_format_optional(row.get('radial_similarity_to_reference'))}"
         )
     print(f"summary CSV: {result['summary_csv']}")
     print(f"report: {result['report_path']}")

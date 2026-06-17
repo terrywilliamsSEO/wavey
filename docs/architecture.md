@@ -18,6 +18,7 @@ Last updated: 2026-06-17
 - `breathing-period-audit`: read-only peak-picking audit for completed diagnostic runs.
 - `core-modal-probe`: controlled source-normalized fixed-domain boundary references plus direct core excitation probes.
 - `transport-controls`: targeted matched-work boundary-geometry and annulus/near-defect source controls.
+- `prototype-3d`: tiny fixed-domain 31^3 shell-breathing prototype for the 2D boundary-flux mechanism.
 
 ## Core Modules
 
@@ -37,6 +38,7 @@ Last updated: 2026-06-17
 - `simulation/resolution_diagnostics.py`: fixed-domain resolution-sensitivity audits for source normalization, mask areas, energy budgets, radial profiles, and pairwise best-frame/mode-shape similarity.
 - `simulation/core_modal_probe.py`: controlled direct-core modal probe orchestration, separate drive-work accounting, post-cutoff-only summaries, minimum-separated breathing checks, comparison plots, and classification.
 - `simulation/transport_controls.py`: narrow source-geometry mechanism controls that compare boundary one-side/two-side/rotating variants with inner-ring, near-defect annulus, radial-peak annulus, sector, and rotating annulus drives under matched injected work.
+- `simulation/prototype_3d.py`: standalone 3D prototype lattice, spherical defect, six-face boundary source, cubic phase source, direct core/shell controls, shell/radial diagnostics, and sponge/dt checks.
 - `simulation/stability.py`: conservative dt guidance for current `dx`/`dy`.
 - `simulation/reporting.py` and `simulation/band_analysis.py`: sweep-level reporting and frequency-band analysis.
 
@@ -80,7 +82,9 @@ Controls should be preferred over broad sweeps while validating one candidate:
 - Use `core-modal-probe` to test whether direct core excitation reproduces the source-normalized fixed-domain boundary-reference tail before any broad long sweeps.
 - Use `transport-controls` to test which source geometry excites the retained family after direct core excitation fails.
 
-Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. The global breathing detector now flags raw subpeak overcounting and reports envelope-scale periods. `core-modal-probe` classified the direct-core test as `boundary_transport_required`. The 63x63 and 81x81 `transport-controls` passes classified the candidate as `boundary_geometry_sensitive`, and the boundary-only work-per-length controls kept that classification after boundary flux density was normalized. `boundary_rotating_m4_81` still reproduces the family. The next step is a small 31^3 3D prototype focused on retained spherical shell breathing, not high core energy alone.
+Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. The global breathing detector now flags raw subpeak overcounting and reports envelope-scale periods. `core-modal-probe` classified the direct-core test as `boundary_transport_required`. The 63x63 and 81x81 `transport-controls` passes classified the candidate as `boundary_geometry_sensitive`, and the boundary-only work-per-length controls kept that classification after boundary flux density was normalized. `boundary_rotating_m4_81` still reproduces the family, which justified the first small 3D prototype.
+
+Current 3D caution: the first `prototype-3d` run was `inconclusive`. The cubic boundary reference did not retain shell energy; its shell peak stayed near the outer boundary instead of organizing around the spherical defect. Do a 3D failure-mode audit before expanding 3D grids or running broad 2D sweeps.
 
 ## Generated Artifacts
 

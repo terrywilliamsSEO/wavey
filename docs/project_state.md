@@ -23,8 +23,9 @@ Current interpretation:
 - `annulus_radial_peak_63` produced a retained short-period response, but it did not match the reference period/radial structure closely enough to count as the same family.
 - `annulus_radial_peak_81` retained more energy, but still looked like a separate short-period response rather than the reference family.
 - Boundary-only work-per-length controls at 63x63 and 81x81 kept the `boundary_geometry_sensitive` classification; `boundary_rotating_m4_81` still reproduced the family after boundary flux density was normalized.
+- The first 31^3 3D prototype was `inconclusive`: matched boundary-flux cubic forcing did not retain shell energy around the spherical defect, and the shell peak stayed near the outer boundary.
 - Do not call this exotic physics.
-- Do not run broad long sweeps. The next step is a small 31^3 3D prototype focused on spherical shell breathing.
+- Do not run broad long sweeps or larger 3D grids. The next step is a 3D failure-mode audit.
 
 ## Latest Evidence
 
@@ -391,14 +392,50 @@ Interpretation:
 - `boundary_rotating_m4_81` still reproduces the retained family and remains the strongest refined-grid non-reference match under this control.
 - The 2D boundary mechanism is strong enough to justify a small 3D prototype, but not a broad 2D sweep.
 
+### 3D Prototype
+
+Command:
+
+```powershell
+python main.py prototype-3d --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\prototype_3d_20260617_152319\prototype_3d_report.md`
+- Summary CSV: `runs\prototype_3d_20260617_152319\prototype_3d_summary.csv`
+- Classification: `inconclusive`
+- Grid: `31^3`
+- Question tested: can matched boundary-flux waves organize around a spherical defect and produce retained post-cutoff shell breathing?
+
+Important values:
+
+| Variant | Drive | Phase | Work/Area | Shell Retention | Shell Period | Shell Radius | Radius Range | Core Fraction | Radial Sim |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| boundary_cubic_31 | boundary | cubic | 0.01119 | 0.00000128 | 3.36 | 31.03 | 21.65 | 0.0000011 | 1.000 |
+| boundary_uniform_31 | boundary | uniform | 0.01119 | 0.00000186 | 2.40 | 25.26 | 15.88 | 0.0000028 | 0.000 |
+| direct_core_31 | core | uniform | n/a | 0.00000358 | 3.36 | 5.05 | 0.00 | 0.744 | 0.000 |
+| direct_shell_31 | shell | uniform | n/a | 0.00000128 | 2.56 | 6.50 | 2.89 | 0.190 | 0.000 |
+| boundary_cubic_stronger_sponge_31 | boundary | cubic | 0.01119 | 0.00000091 | 2.84 | 31.03 | 21.65 | 0.0000010 | 0.000 |
+| boundary_cubic_half_dt_31 | boundary | cubic | 0.01119 | 0.00000129 | 3.32 | 31.03 | 21.65 | 0.0000010 | 0.000 |
+
+Interpretation:
+
+- The first 3D prototype did not reproduce the 2D pattern.
+- The cubic boundary reference showed tiny oscillations, but retained shell energy was essentially zero and the shell peak sat near the outer boundary, not around the spherical defect.
+- Direct core forcing concentrated energy in the core, but that is explicitly not the success condition.
+- Direct shell forcing did not create retained boundary-reference-like shell breathing.
+- Stronger sponge and half-dt variants did not rescue the boundary cubic shell response.
+- Next step should diagnose the 3D failure mode: check whether boundary waves reach the defect region, whether the source/sponge geometry traps energy near the outer boundary, and whether shell diagnostics are using the right radial window.
+
 ## Current Next Step
 
-Build a small 3D prototype:
+Audit the 3D failure mode:
 
-- Start with `31^3`, not a large grid.
-- Port only the narrow fixed-domain/sponge/boundary-source semantics needed to test the 2D mechanism in 3D.
-- Look for retained spherical shell breathing and shell-radius stability, not just high core energy.
-- Keep `boundary_rotating_m4_81` as the 2D source-geometry reference.
+- Check radial energy transport from the six-face boundary source toward the spherical defect before and after cutoff.
+- Add/report shell-window metrics near the defect separately from the global radial peak so boundary residue cannot masquerade as shell breathing.
+- Inspect whether sponge/source overlap in 3D is over-damping or trapping the driven boundary layer.
+- Keep the grid tiny until this failure mode is understood.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

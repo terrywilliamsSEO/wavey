@@ -166,6 +166,14 @@ Run boundary-only transport controls with matched work per physical boundary len
 python main.py transport-controls --config configs\long_validation_peak_0_92.json --boundary-only --boundary-match-mode work_per_length --grid-size 81
 ```
 
+Run the tiny 31^3 3D shell-breathing prototype with:
+
+```powershell
+python main.py prototype-3d --config configs\long_validation_peak_0_92.json
+```
+
+This is not a general 3D engine. It is a small fixed-domain prototype that tests whether matched boundary-flux waves can organize around a spherical defect and produce retained post-cutoff shell breathing. Success is judged by retained shell energy, shell/radial breathing, shell peak stability, source-geometry similarity, direct core/shell controls, and sponge/dt checks, not by high core energy alone.
+
 ## Run one simulation
 
 ```powershell
@@ -336,6 +344,13 @@ When `transport-controls` is used, the control folder includes:
 - `transport_control_report.md`
 - `transport_control_comparison_plots/`
 - one diagnosed run folder per source-geometry variant
+
+When `prototype-3d` is used, the prototype folder includes:
+
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- `prototype_3d_report.md`
+- one run folder per 3D variant with `metrics.csv`, `radial_profile_timeseries.csv`, shell/energy plots, midplane images, and saved energy arrays
 
 ## Metrics
 

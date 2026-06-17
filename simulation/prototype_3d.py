@@ -1,0 +1,908 @@
+"""Tiny 3D lattice prototype for shell-breathing checks."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+import csv
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+from .config import SimulationConfig, save_json
+
+
+EPSILON = 1e-12
+
+
+@dataclass(frozen=True)
+class Prototype3DOptions:
+    """Options for the first tiny 3D prototype pass."""
+
+    output_root: str = "runs"
+    grid_size: int = 31
+    include_dt_control: bool = True
+    include_sponge_control: bool = True
+    sample_every: int = 2
+    radial_bins: int = 24
+    min_shell_retention: float = 0.12
+    max_shell_radius_range: float = 8.0
+    min_radial_similarity: float = 0.55
+
+
+@dataclass
+class Prototype3DConfig:
+    """Internal 3D fixed-domain configuration."""
+
+    name: str
+    grid_size: int
+    steps: int
+    dt: float
+    domain_size: float
+    base_stiffness: float
+    coupling_strength: float
+    global_damping: float
+    nonlinear_strength: float
+    defect_radius: float
+    defect_stiffness_multiplier: float
+    defect_damping_multiplier: float
+    defect_coupling_multiplier: float
+    sponge_width: float
+    sponge_strength: float
+    drive_frequency: float
+    drive_amplitude: float
+    drive_cutoff_time: float
+    drive_location: str
+    drive_phase_mode: str
+    drive_mode: str = "burst"
+    shell_inner_radius: float | None = None
+    shell_outer_radius: float | None = None
+
+    @property
+    def dx(self) -> float:
+        return self.domain_size / float(max(self.grid_size - 1, 1))
+
+    @property
+    def cell_volume(self) -> float:
+        return self.dx**3
+
+    @property
+    def physical_duration(self) -> float:
+        return self.steps * self.dt
+
+
+class Lattice3D:
+    """Small semi-implicit 3D oscillator lattice."""
+
+    def __init__(self, config: Prototype3DConfig):
+        self.config = config
+        n = config.grid_size
+        self.u = np.zeros((n, n, n), dtype=float)
+        self.v = np.zeros_like(self.u)
+        self.coords = _coordinate_payload(config)
+        radius = self.coords["radius"]
+        self.defect_mask = radius <= config.defect_radius
+        self.core_mask = radius <= config.defect_radius + config.dx
+        self.sponge_extra = _sponge_extra(config, self.coords)
+        self.stiffness = np.full_like(self.u, config.base_stiffness)
+        self.damping = np.full_like(self.u, config.global_damping) + self.sponge_extra
+        self.coupling_multiplier = np.ones_like(self.u)
+        self.stiffness[self.defect_mask] *= config.defect_stiffness_multiplier
+        self.damping[self.defect_mask] *= config.defect_damping_multiplier
+        self.coupling_multiplier[self.defect_mask] *= config.defect_coupling_multiplier
+        self.source = Source3D(config, self.coords)
+
+    def external_force(self, time: float) -> np.ndarray:
+        return self.source.force(time)
+
+    def step(self, time: float, dt: float) -> None:
+        lap = _laplacian(self.u, self.config.dx)
+        force = self.external_force(time)
+        acc = (
+            self.config.coupling_strength * self.coupling_multiplier * lap
+            - self.stiffness * self.u
+            - self.config.nonlinear_strength * self.u**3
+            - self.damping * self.v
+            + force
+        )
+        self.v += dt * acc
+        self.u += dt * self.v
+
+    def energy_density(self) -> np.ndarray:
+        neighbor_sum = (
+            (_shift_edge(self.u, 1, 0) - self.u) ** 2
+            + (_shift_edge(self.u, -1, 0) - self.u) ** 2
+            + (_shift_edge(self.u, 1, 1) - self.u) ** 2
+            + (_shift_edge(self.u, -1, 1) - self.u) ** 2
+            + (_shift_edge(self.u, 1, 2) - self.u) ** 2
+            + (_shift_edge(self.u, -1, 2) - self.u) ** 2
+        )
+        return (
+            0.5 * self.v**2
+            + 0.5 * self.stiffness * self.u**2
+            + 0.25 * self.config.nonlinear_strength * self.u**4
+            + 0.25 * self.config.coupling_strength * neighbor_sum
+        ) * self.config.cell_volume
+
+
+class Source3D:
+    """Boundary, core, or shell forcing for the prototype."""
+
+    def __init__(self, config: Prototype3DConfig, coords: dict[str, np.ndarray]):
+        self.config = config
+        self.coords = coords
+        self.weights = self._weights()
+        self.mask = self.weights > EPSILON
+        self.phase_map = self._phase_map()
+        self.boundary_area = self._boundary_area()
+        driven_volume = float(np.sum(self.weights) * config.cell_volume)
+        self.normalization_scale = self.boundary_area / (driven_volume + EPSILON) if config.drive_location == "boundary" else 1.0
+        self.effective_volume = driven_volume
+
+    def _weights(self) -> np.ndarray:
+        config = self.config
+        radius = self.coords["radius"]
+        if config.drive_location == "boundary":
+            distance = self.coords["boundary_distance"]
+            return _cell_interval_coverage(distance, config.dx, config.dx)
+        if config.drive_location == "core":
+            return (radius <= config.defect_radius + config.dx).astype(float)
+        if config.drive_location == "shell":
+            inner = config.shell_inner_radius if config.shell_inner_radius is not None else config.defect_radius + config.dx
+            outer = config.shell_outer_radius if config.shell_outer_radius is not None else config.defect_radius + 3.0 * config.dx
+            return ((radius >= inner) & (radius <= outer)).astype(float)
+        raise ValueError(f"Unsupported 3D drive_location: {config.drive_location}")
+
+    def _phase_map(self) -> np.ndarray:
+        config = self.config
+        if config.drive_phase_mode == "uniform":
+            return np.zeros_like(self.weights)
+        if config.drive_phase_mode != "cubic":
+            raise ValueError(f"Unsupported 3D drive_phase_mode: {config.drive_phase_mode}")
+        x = self.coords["x"]
+        y = self.coords["y"]
+        z = self.coords["z"]
+        r = np.maximum(self.coords["radius"], config.dx)
+        cubic = (x**4 + y**4 + z**4) / (r**4) - 0.6
+        scale = np.max(np.abs(cubic[self.mask])) if np.any(self.mask) else 1.0
+        return 0.5 * np.pi * cubic / (scale + EPSILON)
+
+    def _boundary_area(self) -> float:
+        if self.config.drive_location != "boundary":
+            return 0.0
+        return 6.0 * self.config.domain_size**2
+
+    def envelope(self, time: float) -> float:
+        cutoff = self.config.drive_cutoff_time
+        if time > cutoff:
+            return 0.0
+        if self.config.drive_mode == "continuous":
+            return 1.0
+        phase = np.clip(time / max(cutoff, EPSILON), 0.0, 1.0)
+        return float(np.sin(np.pi * phase) ** 2)
+
+    def force(self, time: float) -> np.ndarray:
+        out = np.zeros_like(self.weights)
+        envelope = self.envelope(time)
+        if envelope <= 0.0 or self.config.drive_amplitude == 0.0 or not np.any(self.mask):
+            return out
+        angle = 2.0 * np.pi * self.config.drive_frequency * time + self.phase_map[self.mask]
+        out[self.mask] = (
+            self.config.drive_amplitude
+            * self.normalization_scale
+            * envelope
+            * np.sin(angle)
+            * self.weights[self.mask]
+        )
+        return out
+
+
+def run_3d_prototype(
+    base_config: SimulationConfig,
+    *,
+    options: Prototype3DOptions | None = None,
+) -> dict[str, Any]:
+    """Run the tiny 3D source-geometry prototype and write reports."""
+
+    options = options or Prototype3DOptions()
+    prototype_id = datetime.now().strftime("prototype_3d_%Y%m%d_%H%M%S")
+    root = Path(options.output_root) / prototype_id
+    root.mkdir(parents=True, exist_ok=False)
+
+    variants = _variant_plan(base_config, options)
+    rows: list[dict[str, Any]] = []
+    reference_work = 0.0
+    reference_area = 0.0
+    reference_row: dict[str, Any] | None = None
+    reference_profile: np.ndarray | None = None
+    reference_frame: np.ndarray | None = None
+
+    for idx, config in enumerate(variants):
+        if idx == 0:
+            summary = _run_variant(config, root, options)
+            reference_work = float(summary["positive_work_before_cutoff"])
+            reference_area = float(summary["boundary_area"])
+        else:
+            target_work = reference_work
+            if config.drive_location == "boundary" and reference_area > EPSILON:
+                target_work = (reference_work / reference_area) * max(_source_area(config), EPSILON)
+            _calibrate_amplitude(config, target_work)
+            summary = _run_variant(config, root, options)
+
+        if reference_profile is None:
+            reference_profile = np.asarray(summary["best_radial_profile"], dtype=float)
+            reference_frame = np.load(Path(summary["path"]) / "best_shell_energy_density.npy")
+            reference_row = summary
+            summary["radial_similarity_to_reference"] = 1.0
+            summary["best_frame_similarity_to_reference"] = 1.0
+        else:
+            profile = np.asarray(summary["best_radial_profile"], dtype=float)
+            frame = np.load(Path(summary["path"]) / "best_shell_energy_density.npy")
+            summary["radial_similarity_to_reference"] = _profile_similarity(reference_profile, profile)
+            summary["best_frame_similarity_to_reference"] = _frame_similarity(reference_frame, frame)
+        rows.append(summary)
+
+    classification = classify_3d_prototype(rows, options)
+    for row in rows:
+        row["classification_label"] = classification["label"]
+
+    summary_csv = root / "prototype_3d_summary.csv"
+    report_path = root / "prototype_3d_report.md"
+    _write_csv(summary_csv, rows, _summary_fields())
+    _write_report(report_path, prototype_id, base_config, rows, classification, options)
+    save_json(
+        root / "prototype_3d_summary.json",
+        {
+            "prototype_id": prototype_id,
+            "classification": classification,
+            "variants": rows,
+            "summary_csv": str(summary_csv),
+            "report_path": str(report_path),
+        },
+    )
+    return {
+        "prototype_id": prototype_id,
+        "classification": classification,
+        "variants": rows,
+        "summary_csv": str(summary_csv),
+        "report_path": str(report_path),
+        "path": str(root),
+        "reference": reference_row,
+    }
+
+
+def classify_3d_prototype(rows: list[dict[str, Any]], options: Prototype3DOptions | None = None) -> dict[str, Any]:
+    options = options or Prototype3DOptions()
+    if not rows:
+        return {"label": "inconclusive", "reason": "No 3D prototype rows were available.", "checks": {}}
+    reference = next((row for row in rows if row["variant"] == "boundary_cubic_31"), rows[0])
+    boundary_rows = [row for row in rows if row["drive_location"] == "boundary"]
+    direct_rows = [row for row in rows if row["drive_location"] != "boundary"]
+    cubic_controls = [row for row in boundary_rows if row["variant"].startswith("boundary_cubic_") and row is not reference]
+    reference_pass = _shell_success(reference, options)
+    direct_successes = [_shell_success(row, options) and _matches_reference(row, options) for row in direct_rows]
+    control_successes = [_shell_success(row, options) and _matches_reference(row, options) for row in cubic_controls]
+    checks = {
+        "reference_shell_breathing": reference_pass,
+        "direct_reproduction_count": sum(1 for passed in direct_successes if passed),
+        "boundary_control_success_count": sum(1 for passed in control_successes if passed),
+        "boundary_control_count": len(cubic_controls),
+    }
+    if reference_pass and any(direct_successes):
+        return {
+            "label": "direct_forcing_reproduces_shell",
+            "reason": "A direct core or shell forcing variant reproduced the reference-like retained shell breathing.",
+            "checks": checks,
+        }
+    if reference_pass and cubic_controls and not all(control_successes):
+        return {
+            "label": "sponge_or_dt_sensitive",
+            "reason": "The boundary reference showed shell breathing, but a sponge or dt confirmation did not match it.",
+            "checks": checks,
+        }
+    if reference_pass:
+        return {
+            "label": "boundary_flux_shell_breathing_candidate",
+            "reason": "Matched boundary-flux forcing produced retained shell breathing that direct core/shell controls did not reproduce.",
+            "checks": checks,
+        }
+    return {
+        "label": "inconclusive",
+        "reason": "The 3D boundary reference did not clearly produce retained spherical shell breathing.",
+        "checks": checks,
+    }
+
+
+def _variant_plan(base: SimulationConfig, options: Prototype3DOptions) -> list[Prototype3DConfig]:
+    base_3d = _base_3d_config("boundary_cubic_31", base, options, "boundary", "cubic")
+    variants = [
+        base_3d,
+        _base_3d_config("boundary_uniform_31", base, options, "boundary", "uniform"),
+        _base_3d_config("direct_core_31", base, options, "core", "uniform"),
+        _base_3d_config("direct_shell_31", base, options, "shell", "uniform"),
+    ]
+    if options.include_sponge_control:
+        stronger = _base_3d_config("boundary_cubic_stronger_sponge_31", base, options, "boundary", "cubic")
+        stronger.sponge_strength *= 2.0
+        variants.append(stronger)
+    if options.include_dt_control:
+        half_dt = _base_3d_config("boundary_cubic_half_dt_31", base, options, "boundary", "cubic")
+        half_dt.dt *= 0.5
+        half_dt.steps *= 2
+        variants.append(half_dt)
+    return variants
+
+
+def _base_3d_config(
+    name: str,
+    base: SimulationConfig,
+    options: Prototype3DOptions,
+    drive_location: str,
+    phase_mode: str,
+) -> Prototype3DConfig:
+    domain = float(base.domain_width if base.domain_width is not None else base.grid_size - 1)
+    defect_radius = float(base.defect.radius_physical if base.defect.radius_physical is not None else base.defect.radius)
+    dx = domain / float(max(options.grid_size - 1, 1))
+    return Prototype3DConfig(
+        name=name,
+        grid_size=options.grid_size,
+        steps=base.steps,
+        dt=base.dt,
+        domain_size=domain,
+        base_stiffness=base.base_stiffness,
+        coupling_strength=base.coupling_strength,
+        global_damping=base.global_damping,
+        nonlinear_strength=base.nonlinear_strength,
+        defect_radius=defect_radius,
+        defect_stiffness_multiplier=base.defect.stiffness_multiplier,
+        defect_damping_multiplier=base.defect.damping_multiplier,
+        defect_coupling_multiplier=base.defect.coupling_multiplier,
+        sponge_width=float(base.boundary_damping_width_physical or base.boundary_damping_width),
+        sponge_strength=base.boundary_damping_strength,
+        drive_frequency=base.driver.frequency,
+        drive_amplitude=base.driver.amplitude,
+        drive_cutoff_time=float(base.driver.drive_cutoff_time),
+        drive_location=drive_location,
+        drive_phase_mode=phase_mode,
+        shell_inner_radius=defect_radius + dx,
+        shell_outer_radius=defect_radius + 3.0 * dx,
+    )
+
+
+def _run_variant(config: Prototype3DConfig, root: Path, options: Prototype3DOptions) -> dict[str, Any]:
+    run_dir = root / config.name
+    run_dir.mkdir(parents=True, exist_ok=False)
+    lattice = Lattice3D(config)
+    bins = _radial_bins(config, options.radial_bins)
+    samples: list[dict[str, Any]] = []
+    radial_rows: list[dict[str, Any]] = []
+    cumulative_work = 0.0
+    cumulative_positive_work = 0.0
+    positive_work_before_cutoff = 0.0
+    cumulative_damping_loss = 0.0
+    best_shell_peak = -np.inf
+    best_energy: np.ndarray | None = None
+    best_profile: np.ndarray | None = None
+    final_energy: np.ndarray | None = None
+
+    for step in range(config.steps):
+        time = step * config.dt
+        force = lattice.external_force(time)
+        velocity_before = lattice.v.copy()
+        lattice.step(time, config.dt)
+        velocity_mid = 0.5 * (velocity_before + lattice.v)
+        power = float(np.sum(force * velocity_mid) * config.cell_volume)
+        damping_power = float(np.sum(lattice.damping * velocity_mid**2) * config.cell_volume)
+        cumulative_work += power * config.dt
+        cumulative_positive_work += max(0.0, power) * config.dt
+        cumulative_damping_loss += damping_power * config.dt
+        if time <= config.drive_cutoff_time:
+            positive_work_before_cutoff += max(0.0, power) * config.dt
+
+        if step % max(1, options.sample_every) != 0 and step != config.steps - 1:
+            continue
+
+        energy = lattice.energy_density()
+        final_energy = energy.copy()
+        profile = _radial_profile(energy, lattice.coords["radius"], bins)
+        shell = _shell_summary(profile, bins, config)
+        core_energy = float(np.sum(energy[lattice.core_mask]))
+        total_energy = float(np.sum(energy))
+        row = {
+            "step": step,
+            "time": time,
+            "core_energy": core_energy,
+            "shell_peak_energy": shell["shell_peak_energy"],
+            "shell_peak_radius": shell["shell_peak_radius"],
+            "total_energy": total_energy,
+            "outer_energy": max(total_energy - core_energy, 0.0),
+            "positive_work": cumulative_positive_work,
+            "damping_loss": cumulative_damping_loss,
+        }
+        samples.append(row)
+        radial_rows.append({"time": time, **{f"bin_{idx}": value for idx, value in enumerate(profile)}})
+        if time > config.drive_cutoff_time and shell["shell_peak_energy"] > best_shell_peak:
+            best_shell_peak = shell["shell_peak_energy"]
+            best_energy = energy.copy()
+            best_profile = profile.copy()
+
+    if final_energy is None or not samples:
+        raise RuntimeError("3D prototype produced no samples.")
+    if best_energy is None or best_profile is None:
+        best_energy = final_energy.copy()
+        best_profile = _radial_profile(final_energy, lattice.coords["radius"], bins)
+
+    np.save(run_dir / "best_shell_energy_density.npy", best_energy)
+    np.save(run_dir / "final_energy_density.npy", final_energy)
+    _write_metrics(run_dir / "metrics.csv", samples)
+    _write_radial_profiles(run_dir / "radial_profile_timeseries.csv", radial_rows, options.radial_bins)
+    _plot_energy(samples, config, run_dir / "energy_timeseries.png")
+    _plot_shell(samples, config, run_dir / "shell_peak_timeseries.png")
+    _plot_radial_heatmap(radial_rows, bins, run_dir / "radial_profile_heatmap.png")
+    _save_midplane(best_energy, run_dir / "best_shell_midplane.png", "Best post-cutoff shell energy midplane")
+    _save_midplane(final_energy, run_dir / "final_midplane.png", "Final energy midplane")
+
+    summary = _summarize_variant(config, samples, bins, best_profile, positive_work_before_cutoff, lattice.source)
+    summary["path"] = str(run_dir)
+    summary["best_radial_profile"] = best_profile.tolist()
+    save_json(run_dir / "summary.json", _json_summary(summary))
+    return summary
+
+
+def _summarize_variant(
+    config: Prototype3DConfig,
+    samples: list[dict[str, Any]],
+    bins: np.ndarray,
+    best_profile: np.ndarray,
+    positive_work_before_cutoff: float,
+    source: Source3D,
+) -> dict[str, Any]:
+    post = [row for row in samples if row["time"] > config.drive_cutoff_time]
+    evidence = post if post else samples
+    best = max(evidence, key=lambda row: row["shell_peak_energy"])
+    shell_values = np.asarray([row["shell_peak_energy"] for row in samples], dtype=float)
+    post_shell = np.asarray([row["shell_peak_energy"] for row in post], dtype=float)
+    tail_start = max(0, int(post_shell.size * 0.35))
+    reference = max(float(np.max(shell_values)) if shell_values.size else 0.0, EPSILON)
+    retention = float(np.mean(post_shell[tail_start:]) / reference) if post_shell.size else 0.0
+    breathing = _detect_shell_breathing(samples, config)
+    radii = np.asarray([row["shell_peak_radius"] for row in post], dtype=float)
+    radius_range = float(np.percentile(radii, 90) - np.percentile(radii, 10)) if radii.size else 0.0
+    return {
+        "variant": config.name,
+        "grid_size": config.grid_size,
+        "dx": config.dx,
+        "dt": config.dt,
+        "steps": config.steps,
+        "physical_duration": config.physical_duration,
+        "drive_location": config.drive_location,
+        "drive_phase_mode": config.drive_phase_mode,
+        "drive_amplitude": config.drive_amplitude,
+        "drive_frequency": config.drive_frequency,
+        "drive_cutoff_time": config.drive_cutoff_time,
+        "boundary_area": source.boundary_area,
+        "effective_source_volume": source.effective_volume,
+        "positive_work_before_cutoff": positive_work_before_cutoff,
+        "work_per_boundary_area": positive_work_before_cutoff / (source.boundary_area + EPSILON) if source.boundary_area else 0.0,
+        "work_per_source_volume": positive_work_before_cutoff / (source.effective_volume + EPSILON) if source.effective_volume else 0.0,
+        "best_shell_event_time": best["time"],
+        "best_shell_peak_energy": best["shell_peak_energy"],
+        "best_shell_peak_radius": best["shell_peak_radius"],
+        "post_cutoff_shell_retention": retention,
+        "post_cutoff_shell_radius_range": radius_range,
+        "post_cutoff_core_energy": best["core_energy"],
+        "post_cutoff_total_energy": best["total_energy"],
+        "core_fraction_at_best_shell": best["core_energy"] / (best["total_energy"] + EPSILON),
+        "shell_breathing_detected": breathing["detected"],
+        "shell_breathing_period": breathing["period"],
+        "shell_breathing_cycles": breathing["cycles"],
+        "shell_breathing_strength": breathing["strength"],
+        "best_radial_profile": best_profile.tolist(),
+        "radial_similarity_to_reference": None,
+        "best_frame_similarity_to_reference": None,
+        "classification_label": None,
+    }
+
+
+def _detect_shell_breathing(samples: list[dict[str, Any]], config: Prototype3DConfig) -> dict[str, Any]:
+    post = [row for row in samples if row["time"] > config.drive_cutoff_time]
+    if len(post) < 6:
+        return {"detected": False, "period": None, "cycles": 0, "strength": 0.0}
+    times = np.asarray([row["time"] for row in post], dtype=float)
+    values = np.asarray([row["shell_peak_energy"] for row in post], dtype=float)
+    dynamic = float(np.percentile(values, 90) - np.percentile(values, 10))
+    strength = dynamic / (float(np.percentile(values, 90)) + EPSILON)
+    min_sep = max(1.5, 0.6 * max(2.0, 2.25 / max(config.drive_frequency, EPSILON)))
+    peaks: list[int] = []
+    for idx in range(1, values.size - 1):
+        if values[idx] <= values[idx - 1] or values[idx] < values[idx + 1]:
+            continue
+        if values[idx] < np.percentile(values, 55):
+            continue
+        if peaks and times[idx] - times[peaks[-1]] < min_sep:
+            if values[idx] > values[peaks[-1]]:
+                peaks[-1] = idx
+            continue
+        peaks.append(idx)
+    if len(peaks) < 3:
+        return {"detected": False, "period": None, "cycles": len(peaks), "strength": strength}
+    intervals = np.diff(times[peaks])
+    period = float(np.median(intervals))
+    cv = float(np.std(intervals) / (np.mean(intervals) + EPSILON))
+    return {
+        "detected": strength >= 0.05 and cv <= 0.8,
+        "period": period,
+        "cycles": len(peaks),
+        "strength": strength,
+    }
+
+
+def _shell_success(row: dict[str, Any], options: Prototype3DOptions) -> bool:
+    return (
+        bool(row.get("shell_breathing_detected"))
+        and float(row.get("post_cutoff_shell_retention") or 0.0) >= options.min_shell_retention
+        and float(row.get("post_cutoff_shell_radius_range") or 999.0) <= options.max_shell_radius_range
+    )
+
+
+def _matches_reference(row: dict[str, Any], options: Prototype3DOptions) -> bool:
+    return (
+        float(row.get("radial_similarity_to_reference") or 0.0) >= options.min_radial_similarity
+        or float(row.get("best_frame_similarity_to_reference") or 0.0) >= 0.35
+    )
+
+
+def _calibrate_amplitude(config: Prototype3DConfig, target_work: float) -> None:
+    measured = _audit_work(config)
+    if measured <= EPSILON or target_work <= EPSILON:
+        return
+    config.drive_amplitude *= float(np.sqrt(target_work / measured))
+
+
+def _audit_work(config: Prototype3DConfig) -> float:
+    lattice = Lattice3D(config)
+    total = 0.0
+    for step in range(config.steps):
+        time = step * config.dt
+        force = lattice.external_force(time)
+        velocity_before = lattice.v.copy()
+        lattice.step(time, config.dt)
+        velocity_mid = 0.5 * (velocity_before + lattice.v)
+        power = float(np.sum(force * velocity_mid) * config.cell_volume)
+        if time <= config.drive_cutoff_time:
+            total += max(0.0, power) * config.dt
+    return total
+
+
+def _source_area(config: Prototype3DConfig) -> float:
+    return Source3D(config, _coordinate_payload(config)).boundary_area
+
+
+def _coordinate_payload(config: Prototype3DConfig) -> dict[str, np.ndarray]:
+    axis = (np.arange(config.grid_size, dtype=float) - (config.grid_size - 1) / 2.0) * config.dx
+    z, y, x = np.meshgrid(axis, axis, axis, indexing="ij")
+    radius = np.sqrt(x**2 + y**2 + z**2)
+    half = 0.5 * config.domain_size
+    boundary_distance = np.minimum.reduce([x + half, half - x, y + half, half - y, z + half, half - z])
+    return {"x": x, "y": y, "z": z, "radius": radius, "boundary_distance": boundary_distance}
+
+
+def _sponge_extra(config: Prototype3DConfig, coords: dict[str, np.ndarray]) -> np.ndarray:
+    width = max(config.sponge_width, EPSILON)
+    distance = coords["boundary_distance"]
+    ramp = np.clip((width - distance) / width, 0.0, 1.0)
+    return config.sponge_strength * ramp**2
+
+
+def _laplacian(u: np.ndarray, dx: float) -> np.ndarray:
+    return (
+        _shift_edge(u, 1, 0)
+        + _shift_edge(u, -1, 0)
+        + _shift_edge(u, 1, 1)
+        + _shift_edge(u, -1, 1)
+        + _shift_edge(u, 1, 2)
+        + _shift_edge(u, -1, 2)
+        - 6.0 * u
+    ) / (dx**2)
+
+
+def _shift_edge(arr: np.ndarray, shift: int, axis: int) -> np.ndarray:
+    shifted = np.empty_like(arr)
+    if axis == 0:
+        if shift > 0:
+            shifted[1:] = arr[:-1]
+            shifted[0] = arr[0]
+        else:
+            shifted[:-1] = arr[1:]
+            shifted[-1] = arr[-1]
+    elif axis == 1:
+        if shift > 0:
+            shifted[:, 1:] = arr[:, :-1]
+            shifted[:, 0] = arr[:, 0]
+        else:
+            shifted[:, :-1] = arr[:, 1:]
+            shifted[:, -1] = arr[:, -1]
+    else:
+        if shift > 0:
+            shifted[:, :, 1:] = arr[:, :, :-1]
+            shifted[:, :, 0] = arr[:, :, 0]
+        else:
+            shifted[:, :, :-1] = arr[:, :, 1:]
+            shifted[:, :, -1] = arr[:, :, -1]
+    return shifted
+
+
+def _cell_interval_coverage(distance: np.ndarray, spacing: float, width: float) -> np.ndarray:
+    lower = np.maximum(distance - 0.5 * spacing, 0.0)
+    upper = distance + 0.5 * spacing
+    overlap = np.maximum(0.0, np.minimum(upper, width) - lower)
+    return np.clip(overlap / max(spacing, EPSILON), 0.0, 1.0)
+
+
+def _radial_bins(config: Prototype3DConfig, count: int) -> np.ndarray:
+    return np.linspace(0.0, np.sqrt(3.0) * config.domain_size / 2.0, count + 1)
+
+
+def _radial_profile(energy: np.ndarray, radius: np.ndarray, bins: np.ndarray) -> np.ndarray:
+    indices = np.clip(np.digitize(radius.ravel(), bins) - 1, 0, len(bins) - 2)
+    sums = np.bincount(indices, weights=energy.ravel(), minlength=len(bins) - 1)
+    counts = np.bincount(indices, minlength=len(bins) - 1)
+    return sums / np.maximum(counts, 1)
+
+
+def _shell_summary(profile: np.ndarray, bins: np.ndarray, config: Prototype3DConfig) -> dict[str, float]:
+    centers = 0.5 * (bins[:-1] + bins[1:])
+    shell_mask = centers > config.defect_radius
+    if not np.any(shell_mask):
+        return {"shell_peak_radius": 0.0, "shell_peak_energy": 0.0}
+    shell_values = np.where(shell_mask, profile, -np.inf)
+    idx = int(np.argmax(shell_values))
+    return {"shell_peak_radius": float(centers[idx]), "shell_peak_energy": float(profile[idx])}
+
+
+def _profile_similarity(first: np.ndarray, second: np.ndarray) -> float:
+    if first.size != second.size:
+        size = min(first.size, second.size)
+        first = first[:size]
+        second = second[:size]
+    a = first - np.mean(first)
+    b = second - np.mean(second)
+    denom = float(np.linalg.norm(a) * np.linalg.norm(b))
+    if denom <= EPSILON:
+        return 0.0
+    return float(np.clip(np.dot(a, b) / denom, -1.0, 1.0))
+
+
+def _frame_similarity(first: np.ndarray | None, second: np.ndarray | None) -> float:
+    if first is None or second is None or first.shape != second.shape:
+        return 0.0
+    a = first.ravel() - float(np.mean(first))
+    b = second.ravel() - float(np.mean(second))
+    denom = float(np.linalg.norm(a) * np.linalg.norm(b))
+    if denom <= EPSILON:
+        return 0.0
+    return float(np.clip(np.dot(a, b) / denom, -1.0, 1.0))
+
+
+def _write_metrics(path: Path, rows: list[dict[str, Any]]) -> None:
+    fields = ["step", "time", "core_energy", "shell_peak_energy", "shell_peak_radius", "total_energy", "outer_energy", "positive_work", "damping_loss"]
+    _write_csv(path, rows, fields)
+
+
+def _write_radial_profiles(path: Path, rows: list[dict[str, Any]], bins: int) -> None:
+    fields = ["time"] + [f"bin_{idx}" for idx in range(bins)]
+    _write_csv(path, rows, fields)
+
+
+def _write_csv(path: Path, rows: list[dict[str, Any]], fields: list[str]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fields)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: _csv_value(row.get(field)) for field in fields})
+
+
+def _summary_fields() -> list[str]:
+    return [
+        "variant",
+        "classification_label",
+        "grid_size",
+        "dx",
+        "dt",
+        "steps",
+        "physical_duration",
+        "drive_location",
+        "drive_phase_mode",
+        "drive_amplitude",
+        "drive_frequency",
+        "drive_cutoff_time",
+        "boundary_area",
+        "effective_source_volume",
+        "positive_work_before_cutoff",
+        "work_per_boundary_area",
+        "work_per_source_volume",
+        "best_shell_event_time",
+        "best_shell_peak_energy",
+        "best_shell_peak_radius",
+        "post_cutoff_shell_retention",
+        "post_cutoff_shell_radius_range",
+        "post_cutoff_core_energy",
+        "post_cutoff_total_energy",
+        "core_fraction_at_best_shell",
+        "shell_breathing_detected",
+        "shell_breathing_period",
+        "shell_breathing_cycles",
+        "shell_breathing_strength",
+        "radial_similarity_to_reference",
+        "best_frame_similarity_to_reference",
+        "path",
+    ]
+
+
+def _write_report(
+    path: Path,
+    prototype_id: str,
+    base_config: SimulationConfig,
+    rows: list[dict[str, Any]],
+    classification: dict[str, Any],
+    options: Prototype3DOptions,
+) -> None:
+    lines = [
+        f"# 3D Prototype Report: {prototype_id}",
+        "",
+        "## Purpose",
+        "",
+        (
+            "Tiny fixed-domain 3D prototype for the narrow question: can matched boundary-flux waves organize around "
+            "a spherical defect and produce retained post-cutoff shell breathing?"
+        ),
+        "",
+        "## Base Case",
+        "",
+        f"- 2D source config grid: `{base_config.grid_size}`",
+        f"- 3D grid: `{options.grid_size}^3`",
+        f"- Drive frequency: `{base_config.driver.frequency}`",
+        f"- Drive cutoff time: `{base_config.driver.drive_cutoff_time}`",
+        "",
+        "## Classification",
+        "",
+        f"- Result: `{classification['label']}`",
+        f"- Reason: {classification['reason']}",
+        "",
+        "## Variant Summary",
+        "",
+        "| Variant | Drive | Phase | Work/Area | Retention | Shell Period | Cycles | Shell Radius | Radius Range | Core Fraction | Radial Sim | Frame Sim |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        lines.append(
+            "| "
+            f"{row['variant']} | "
+            f"{row['drive_location']} | "
+            f"{row['drive_phase_mode']} | "
+            f"{_format(row.get('work_per_boundary_area'))} | "
+            f"{_format(row.get('post_cutoff_shell_retention'))} | "
+            f"{_format(row.get('shell_breathing_period'))} | "
+            f"{row.get('shell_breathing_cycles')} | "
+            f"{_format(row.get('best_shell_peak_radius'))} | "
+            f"{_format(row.get('post_cutoff_shell_radius_range'))} | "
+            f"{_format(row.get('core_fraction_at_best_shell'))} | "
+            f"{_format(row.get('radial_similarity_to_reference'))} | "
+            f"{_format(row.get('best_frame_similarity_to_reference'))} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Interpretation",
+            "",
+            _classification_interpretation(classification),
+            "",
+            "## Files",
+            "",
+            "- `prototype_3d_summary.csv`",
+            "- `prototype_3d_summary.json`",
+        ]
+    )
+    for row in rows:
+        lines.append(f"- `{row['variant']}` run folder: `{row.get('path')}`")
+    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
+def _classification_interpretation(classification: dict[str, Any]) -> str:
+    label = classification["label"]
+    if label == "boundary_flux_shell_breathing_candidate":
+        return (
+            "The tiny 3D prototype passes the first narrow check: boundary-flux forcing produced retained shell breathing, "
+            "while direct core/shell controls did not reproduce the reference-like shell."
+        )
+    if label == "direct_forcing_reproduces_shell":
+        return "A direct core or shell source reproduced the retained shell, so the effect is not boundary-transport-specific in this prototype."
+    if label == "sponge_or_dt_sensitive":
+        return "The reference shell response is sensitive to sponge or dt in this first 3D prototype; tighten numerics before interpreting."
+    return "The prototype is inconclusive. Do not expand 3D or run broad 2D sweeps until the failure mode is understood."
+
+
+def _plot_energy(samples: list[dict[str, Any]], config: Prototype3DConfig, path: Path) -> None:
+    times = [row["time"] for row in samples]
+    fig, ax = plt.subplots(figsize=(8, 4), dpi=140)
+    ax.plot(times, [row["core_energy"] for row in samples], label="core")
+    ax.plot(times, [row["shell_peak_energy"] for row in samples], label="shell peak")
+    ax.plot(times, [row["total_energy"] for row in samples], label="total", alpha=0.7)
+    ax.axvline(config.drive_cutoff_time, color="#666666", linestyle="--", linewidth=1)
+    ax.set_title(f"3D energy metrics: {config.name}")
+    ax.set_xlabel("time")
+    ax.grid(True, alpha=0.25)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def _plot_shell(samples: list[dict[str, Any]], config: Prototype3DConfig, path: Path) -> None:
+    times = [row["time"] for row in samples]
+    fig, ax1 = plt.subplots(figsize=(8, 4), dpi=140)
+    ax1.plot(times, [row["shell_peak_energy"] for row in samples], color="#3366aa", label="shell peak energy")
+    ax1.axvline(config.drive_cutoff_time, color="#666666", linestyle="--", linewidth=1)
+    ax1.set_xlabel("time")
+    ax1.set_ylabel("shell peak energy")
+    ax2 = ax1.twinx()
+    ax2.plot(times, [row["shell_peak_radius"] for row in samples], color="#aa3377", alpha=0.75, label="shell peak radius")
+    ax2.set_ylabel("shell peak radius")
+    ax1.set_title(f"3D shell peak: {config.name}")
+    ax1.grid(True, alpha=0.25)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def _plot_radial_heatmap(rows: list[dict[str, Any]], bins: np.ndarray, path: Path) -> None:
+    if not rows:
+        return
+    values = np.asarray([[row.get(f"bin_{idx}", 0.0) for idx in range(len(bins) - 1)] for row in rows], dtype=float)
+    times = [row["time"] for row in rows]
+    centers = 0.5 * (bins[:-1] + bins[1:])
+    fig, ax = plt.subplots(figsize=(8, 4), dpi=140)
+    mesh = ax.pcolormesh(times, centers, values.T, shading="auto")
+    ax.set_xlabel("time")
+    ax.set_ylabel("radius")
+    ax.set_title("3D radial energy profile")
+    fig.colorbar(mesh, ax=ax, label="mean energy")
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def _save_midplane(energy: np.ndarray, path: Path, title: str) -> None:
+    mid = energy.shape[0] // 2
+    fig, ax = plt.subplots(figsize=(5, 4), dpi=140)
+    im = ax.imshow(energy[mid], origin="lower", cmap="magma")
+    ax.set_title(title)
+    fig.colorbar(im, ax=ax, fraction=0.046)
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
+def _json_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in summary.items() if key != "best_radial_profile"}
+
+
+def _csv_value(value: Any) -> Any:
+    if value is None:
+        return ""
+    if isinstance(value, float):
+        return f"{value:.12g}"
+    if isinstance(value, np.generic):
+        return _csv_value(value.item())
+    return value
+
+
+def _format(value: Any) -> str:
+    if value is None or value == "":
+        return "n/a"
+    return f"{float(value):.6g}"
