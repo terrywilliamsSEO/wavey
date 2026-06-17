@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Run a tiny 3D source/sponge separation control before expanding 3D or running broad sweeps.
+Run a tiny 31^3 sponge-strength check on the best separated 3D source geometry before expanding 3D or running broad sweeps.
 
-Recommended next task: keep the grid at 31^3 and add a boundary-source geometry variant that separates the driven layer from sponge damping, then classify the run using near-defect shell-window metrics rather than the global radial peak alone. The failure-mode audit found that the current global shell peak is outer-biased, while a small near-defect shell signal arrives late and retains within its local window.
+Recommended next task: keep the grid at 31^3 and rerun only `source_at_inner_sponge_edge` with a small sponge-strength control. The source/sponge separation control showed that driving at the inner edge of the sponge strengthens the retained near-defect shell signal without global outer-boundary dominance. Do not increase 3D grid size yet.
 
 ## Status
 
@@ -113,16 +113,21 @@ Recommended next task: keep the grid at 31^3 and add a boundary-source geometry 
 - Ran the audit on `runs\prototype_3d_20260617_152319`; result classified as `diagnostic_window_issue`.
 - The audit found the boundary source is fully inside the sponge layer, the global shell peak is outer-biased at radius 31.03, and the near-defect shell signal is small but nonzero: near-shell peak/work fraction 2.13e-8, near-tail fraction of radial energy 0.0758, and first meaningful near-shell arrival at t=37.68.
 - Stronger sponge and half-dt variants preserved the same audit pattern, so the immediate issue is not a larger-grid question.
+- Added `prototype-3d-source-sponge-control` for tiny 31^3 source-placement controls with matched injected work per physical source area.
+- Ran the source/sponge control in `runs\source_sponge_3d_20260617_161103`; result classified as `source_sponge_separation_improves_near_shell`.
+- `source_at_inner_sponge_edge` was the best retained geometry: near-shell peak/work improved from 2.13e-8 to 1.87e-7, near-shell retention stayed 0.699, outer/near tail ratio fell from 8.56 to 3.88, near radius range stayed 0, and the global peak was no longer in the outer window.
+- `source_inside_domain_gap_from_sponge` produced a large early near-shell peak/work value of 0.0223, but near-shell retention collapsed to 7.8e-6, so it is a transient response rather than the current best geometry.
 
 ### In Progress
 
-- 3D source/sponge separation control.
+- 3D sponge-strength check for the best separated source geometry.
 
 ### Next
 
-- Add a 31^3 boundary-source variant that drives at the inner edge of the sponge or excludes the driven boundary layer from sponge damping.
-- Make near-defect shell-window retention/arrival the primary 3D success metric; keep the global radial peak only as an artifact check.
-- Compare separated-source boundary cubic, separated-source uniform, direct core, and direct shell controls under matched work per physical boundary area.
+- Keep the grid at 31^3.
+- Rerun only the `source_at_inner_sponge_edge` geometry with baseline, weaker, and stronger sponge settings.
+- Preserve matched injected work per physical source area.
+- Keep near-defect shell-window peak/work, retention, radius range, arrival time, and outer/near tail ratio as the primary 3D metrics.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
@@ -287,3 +292,5 @@ Possible work:
 - 2026-06-17: Updated the next step to a 3D failure-mode audit rather than larger 3D grids or broad sweeps.
 - 2026-06-17: Added and ran `python main.py prototype-3d-audit --run-path runs\prototype_3d_20260617_152319 --config configs\long_validation_peak_0_92.json`; classified the prototype failure as `diagnostic_window_issue`.
 - 2026-06-17: The audit found the boundary source fully overlaps the sponge, the global shell peak is outer-window biased, and a small near-defect shell signal arrives late at t=37.68; updated the next step to a tiny source/sponge separation control.
+- 2026-06-17: Added and ran `python main.py prototype-3d-source-sponge-control --config configs\long_validation_peak_0_92.json`; classified the control as `source_sponge_separation_improves_near_shell`.
+- 2026-06-17: The inner-sponge-edge source improved retained near-defect shell metrics without global outer-boundary dominance, while the deeper inward source produced only a transient near-shell spike; updated the next step to a 31^3 sponge-strength check on the best separated source.

@@ -239,6 +239,9 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
         drive_phase_mode=str(row.get("drive_phase_mode") or "uniform"),
         shell_inner_radius=defect_radius + dx,
         shell_outer_radius=defect_radius + 3.0 * dx,
+        boundary_source_inner_distance=float(row.get("boundary_source_inner_distance") or 0.0),
+        boundary_source_width=float(row.get("boundary_source_width") or dx),
+        exclude_source_from_sponge_damping=_bool(row.get("exclude_source_from_sponge_damping")),
     )
 
 
@@ -273,9 +276,13 @@ def _geometry_audit(config: Prototype3DConfig) -> dict[str, Any]:
         "sponge_strength": config.sponge_strength,
         "drive_location": config.drive_location,
         "drive_phase_mode": config.drive_phase_mode,
+        "boundary_source_inner_distance": config.boundary_source_inner_distance,
+        "boundary_source_width": config.boundary_source_width or config.dx,
+        "exclude_source_from_sponge_damping": config.exclude_source_from_sponge_damping,
         "source_cell_count": int(np.count_nonzero(source_mask)),
         "source_weight_sum": source_weight_sum,
         "effective_source_volume": float(source_weight_sum * config.cell_volume),
+        "effective_source_area": lattice.source.effective_area,
         "source_sponge_overlap_fraction": source_overlap,
         "source_high_sponge_overlap_fraction": high_source_overlap,
         "source_mean_sponge_extra": weighted_sponge,
@@ -320,11 +327,14 @@ def _window_audit(
     outer_corner_energy = np.sum(totals_by_bin[:, outer_corner_mask], axis=1)
     mean_peak_idx = np.argmax(np.where(centers > config.defect_radius, profiles, -np.inf), axis=1)
     global_peak_radius = centers[mean_peak_idx]
+    near_peak_idx = np.argmax(np.where(near_mask, profiles, -np.inf), axis=1)
+    near_peak_radius = centers[near_peak_idx]
     post_mask = times > config.drive_cutoff_time
     post_indices = np.flatnonzero(post_mask)
     tail_indices = _tail_indices(post_indices, options.tail_fraction)
     work = float(summary_row.get("positive_work_before_cutoff") or 0.0)
     near_peak = float(np.max(near_energy)) if near_energy.size else 0.0
+    near_peak_time_index = int(np.argmax(near_energy)) if near_energy.size else 0
     arrival_threshold = max(near_peak * 0.10, work * options.meaningful_work_fraction)
     arrival_candidates = np.flatnonzero(near_energy >= arrival_threshold)
     meaningful_arrival = None
@@ -337,7 +347,8 @@ def _window_audit(
     peak_global_radius = float(summary_row.get("best_shell_peak_radius") or 0.0)
     summary = {
         "near_shell_peak_energy": near_peak,
-        "near_shell_peak_time": float(times[int(np.argmax(near_energy))]) if near_energy.size else None,
+        "near_shell_peak_time": float(times[near_peak_time_index]) if near_energy.size else None,
+        "near_shell_peak_radius_at_peak_time": float(near_peak_radius[near_peak_time_index]) if near_energy.size else None,
         "near_shell_peak_fraction_of_work": near_peak / (work + EPSILON),
         "near_shell_energy_at_cutoff": _nearest_value(times, near_energy, config.drive_cutoff_time),
         "near_shell_tail_mean_energy": tail_near,
@@ -354,12 +365,23 @@ def _window_audit(
         "global_peak_in_outer_window": peak_global_radius >= max(config.defect_radius, 0.5 * config.domain_size - config.sponge_width),
         "post_cutoff_global_peak_radius_median": _median_at(global_peak_radius, post_indices),
         "late_tail_global_peak_radius_median": _median_at(global_peak_radius, tail_indices),
+        "post_cutoff_near_shell_peak_radius_median": _median_at(near_peak_radius, post_indices),
+        "late_tail_near_shell_peak_radius_median": _median_at(near_peak_radius, tail_indices),
+        "late_tail_near_shell_peak_radius_range": _range_at(near_peak_radius, tail_indices),
         "total_radial_tail_mean_energy": tail_total,
         "metrics_total_tail_mean_energy": _metrics_tail_mean(metrics_rows, tail_indices),
     }
     return {
         "summary": summary,
-        "timeseries": _window_timeseries(times, near_energy, outer_energy, outer_corner_energy, total_radial_energy, global_peak_radius),
+        "timeseries": _window_timeseries(
+            times,
+            near_energy,
+            outer_energy,
+            outer_corner_energy,
+            total_radial_energy,
+            global_peak_radius,
+            near_peak_radius,
+        ),
         "snapshots": _snapshot_rows(times, profiles, totals_by_bin, centers, config, options),
     }
 
@@ -384,6 +406,14 @@ def _float(value: Any) -> float:
     return float(value)
 
 
+def _bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value in (None, ""):
+        return False
+    return str(value).strip().lower() in {"1", "true", "yes", "y"}
+
+
 def _tail_indices(post_indices: np.ndarray, tail_fraction: float) -> np.ndarray:
     if post_indices.size == 0:
         return post_indices
@@ -401,6 +431,13 @@ def _median_at(values: np.ndarray, indices: np.ndarray) -> float | None:
     if indices.size == 0:
         return None
     return float(np.median(values[indices]))
+
+
+def _range_at(values: np.ndarray, indices: np.ndarray) -> float | None:
+    if indices.size == 0:
+        return None
+    selected = values[indices]
+    return float(np.percentile(selected, 90) - np.percentile(selected, 10))
 
 
 def _nearest_value(times: np.ndarray, values: np.ndarray, target: float) -> float | None:
@@ -427,6 +464,7 @@ def _window_timeseries(
     outer_corner: np.ndarray,
     total: np.ndarray,
     peak_radius: np.ndarray,
+    near_peak_radius: np.ndarray,
 ) -> list[dict[str, Any]]:
     rows = []
     for idx, time in enumerate(times):
@@ -441,6 +479,7 @@ def _window_timeseries(
                 "outer_shell_fraction": float(outer[idx] / (total[idx] + EPSILON)),
                 "outer_corner_fraction": float(outer_corner[idx] / (total[idx] + EPSILON)),
                 "global_peak_radius": float(peak_radius[idx]),
+                "near_shell_peak_radius": float(near_peak_radius[idx]),
             }
         )
     return rows
@@ -506,8 +545,12 @@ def _basic_variant_fields(row: dict[str, Any]) -> dict[str, Any]:
         "drive_amplitude",
         "drive_frequency",
         "drive_cutoff_time",
+        "boundary_source_inner_distance",
+        "boundary_source_width",
+        "exclude_source_from_sponge_damping",
         "positive_work_before_cutoff",
         "work_per_boundary_area",
+        "work_per_source_area",
         "best_shell_event_time",
         "best_shell_peak_energy",
         "best_shell_peak_radius",
@@ -681,15 +724,20 @@ def _summary_fields() -> list[str]:
         "dt",
         "drive_location",
         "drive_phase_mode",
+        "boundary_source_inner_distance",
+        "boundary_source_width",
+        "exclude_source_from_sponge_damping",
         "source_sponge_overlap_fraction",
         "source_high_sponge_overlap_fraction",
         "source_mean_sponge_fraction_of_max",
         "positive_work_before_cutoff",
+        "work_per_source_area",
         "best_shell_peak_radius",
         "global_shell_peak_radius",
         "global_peak_in_outer_window",
         "near_shell_peak_energy",
         "near_shell_peak_time",
+        "near_shell_peak_radius_at_peak_time",
         "near_shell_peak_fraction_of_work",
         "near_shell_energy_at_cutoff",
         "near_shell_tail_mean_energy",
@@ -704,6 +752,9 @@ def _summary_fields() -> list[str]:
         "first_meaningful_near_shell_arrival_time",
         "post_cutoff_global_peak_radius_median",
         "late_tail_global_peak_radius_median",
+        "post_cutoff_near_shell_peak_radius_median",
+        "late_tail_near_shell_peak_radius_median",
+        "late_tail_near_shell_peak_radius_range",
         "post_cutoff_shell_retention",
         "shell_breathing_detected",
         "shell_breathing_period",
@@ -722,9 +773,13 @@ def _geometry_fields() -> list[str]:
         "sponge_strength",
         "drive_location",
         "drive_phase_mode",
+        "boundary_source_inner_distance",
+        "boundary_source_width",
+        "exclude_source_from_sponge_damping",
         "source_cell_count",
         "source_weight_sum",
         "effective_source_volume",
+        "effective_source_area",
         "source_sponge_overlap_fraction",
         "source_high_sponge_overlap_fraction",
         "source_mean_sponge_extra",
@@ -755,6 +810,7 @@ def _timeseries_fields() -> list[str]:
         "outer_shell_fraction",
         "outer_corner_fraction",
         "global_peak_radius",
+        "near_shell_peak_radius",
     ]
 
 

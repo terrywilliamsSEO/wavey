@@ -182,6 +182,14 @@ python main.py prototype-3d-audit --run-path runs\prototype_3d_YYYYMMDD_HHMMSS -
 
 This is read-only with respect to the simulation itself: it consumes the saved prototype profiles and writes a failure-mode audit under the existing prototype run folder.
 
+Run the tiny 31^3 source/sponge separation control with:
+
+```powershell
+python main.py prototype-3d-source-sponge-control --config configs\long_validation_peak_0_92.json
+```
+
+This keeps injected work matched per physical source area across source-placement variants and judges success using near-defect shell-window metrics, not the global shell peak alone.
+
 ## Run one simulation
 
 ```powershell
@@ -367,6 +375,16 @@ When `prototype-3d-audit` is used, the prototype folder also includes `failure_m
 - `prototype_3d_shell_window_timeseries.csv`
 - `prototype_3d_radial_snapshots.csv`
 - `prototype_3d_failure_audit_report.md`
+
+When `prototype-3d-source-sponge-control` is used, the control folder includes:
+
+- `source_sponge_control_summary.csv`
+- `source_sponge_control_summary.json`
+- `source_sponge_control_report.md`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per source-placement variant
+- `failure_mode_audit/` with the near-defect shell-window audit artifacts
 
 ## Metrics
 

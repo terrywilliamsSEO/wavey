@@ -25,9 +25,10 @@ Current interpretation:
 - Boundary-only work-per-length controls at 63x63 and 81x81 kept the `boundary_geometry_sensitive` classification; `boundary_rotating_m4_81` still reproduced the family after boundary flux density was normalized.
 - The first 31^3 3D prototype was `inconclusive` under the original global shell metric: matched boundary-flux cubic forcing did not pass retained shell-energy criteria, and the global shell peak stayed near the outer boundary.
 - The 3D failure-mode audit classified the run as `diagnostic_window_issue`: the global shell peak is outer-biased, but a small near-defect shell signal arrives late and should be tracked separately.
-- The current 3D boundary source fully overlaps the sponge layer, so the next 3D control should separate source and sponge before any larger grid.
+- The 3D source/sponge separation control classified as `source_sponge_separation_improves_near_shell`: driving at the inner sponge edge strengthens the retained near-defect shell signal and removes global outer-boundary dominance.
+- A deeper inward source creates a huge early near-shell peak but does not retain it, so the current best 3D geometry is `source_at_inner_sponge_edge`, not the deeper gap source.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or larger 3D grids. The next step is a tiny 3D source/sponge separation control.
+- Do not run broad long sweeps or larger 3D grids. The next step is a tiny 31^3 sponge-strength check on the best separated source geometry.
 
 ## Latest Evidence
 
@@ -465,12 +466,46 @@ Interpretation:
 - Boundary source cells are entirely inside the sponge layer in the current 3D prototype; this is a geometry/numerics concern before any bigger 3D run.
 - Stronger sponge and half-dt variants preserved the same audit pattern, so increasing grid size is not the next move.
 
+### 3D Source/Sponge Separation Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-source-sponge-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\source_sponge_3d_20260617_161103\source_sponge_control_report.md`
+- Summary CSV: `runs\source_sponge_3d_20260617_161103\source_sponge_control_summary.csv`
+- Classification: `source_sponge_separation_improves_near_shell`
+- Best variant: `source_at_inner_sponge_edge`
+- Work matching: injected work per physical source area held at about `0.011957`.
+
+Important values:
+
+| Variant | Source d | Source/Sponge | Near Peak/Work | Near Retention | Near Radius Range | Outer/Near Tail | Global Peak R | Global Outer | Arrival |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| source_at_outer_boundary_inside_sponge | 0 | 1.000 | 2.13e-8 | 0.875 | 0.00 | 8.56 | 31.03 | true | 37.68 |
+| source_at_inner_sponge_edge | 6 | ~0 | 1.87e-7 | 0.699 | 0.00 | 3.88 | 13.71 | false | 10.16 |
+| source_excluded_from_sponge_damping | 0 | 0.000 | 3.77e-8 | 0.835 | 1.44 | 10.84 | 19.49 | true | 34.24 |
+| source_inside_domain_gap_from_sponge | 10 | 0.000 | 2.23e-2 | 0.0000078 | 4.33 | 3.04 | 9.38 | false | 3.04 |
+
+Interpretation:
+
+- Separating the boundary source from the sponge by moving it to the inner sponge edge strengthens the retained near-defect shell signal by about `8.8x` per unit source-area work.
+- The inner-edge variant also reduces outer/near tail contamination by more than half and no longer lets the global shell peak sit in the outer window.
+- Merely excluding current outer-boundary source cells from sponge damping is not enough; it leaves global outer-boundary dominance and worsens outer/near tail ratio.
+- Moving the source deeper inside the domain creates a large early near-shell peak, but the post-cutoff near-shell tail does not retain, so it is not the current success case.
+
 ## Current Next Step
 
-Run a tiny 3D source/sponge separation control:
+Run a tiny 31^3 sponge-strength check on `source_at_inner_sponge_edge`:
 
 - Keep the grid at `31^3`.
-- Drive at the inner edge of the sponge or exclude the driven boundary layer from sponge damping.
+- Use only the inner-sponge-edge source geometry.
+- Compare baseline, weaker sponge, and stronger sponge settings.
+- Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.

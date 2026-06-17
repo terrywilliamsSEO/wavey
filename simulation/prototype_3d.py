@@ -62,6 +62,9 @@ class Prototype3DConfig:
     drive_mode: str = "burst"
     shell_inner_radius: float | None = None
     shell_outer_radius: float | None = None
+    boundary_source_inner_distance: float = 0.0
+    boundary_source_width: float | None = None
+    exclude_source_from_sponge_damping: bool = False
 
     @property
     def dx(self) -> float:
@@ -86,16 +89,19 @@ class Lattice3D:
         self.v = np.zeros_like(self.u)
         self.coords = _coordinate_payload(config)
         radius = self.coords["radius"]
+        self.source = Source3D(config, self.coords)
         self.defect_mask = radius <= config.defect_radius
         self.core_mask = radius <= config.defect_radius + config.dx
         self.sponge_extra = _sponge_extra(config, self.coords)
+        if config.exclude_source_from_sponge_damping and np.any(self.source.mask):
+            self.sponge_extra = self.sponge_extra.copy()
+            self.sponge_extra[self.source.mask] = 0.0
         self.stiffness = np.full_like(self.u, config.base_stiffness)
         self.damping = np.full_like(self.u, config.global_damping) + self.sponge_extra
         self.coupling_multiplier = np.ones_like(self.u)
         self.stiffness[self.defect_mask] *= config.defect_stiffness_multiplier
         self.damping[self.defect_mask] *= config.defect_damping_multiplier
         self.coupling_multiplier[self.defect_mask] *= config.defect_coupling_multiplier
-        self.source = Source3D(config, self.coords)
 
     def external_force(self, time: float) -> np.ndarray:
         return self.source.force(time)
@@ -140,7 +146,9 @@ class Source3D:
         self.mask = self.weights > EPSILON
         self.phase_map = self._phase_map()
         self.boundary_area = self._boundary_area()
+        self.source_width = config.boundary_source_width or config.dx
         driven_volume = float(np.sum(self.weights) * config.cell_volume)
+        self.effective_area = driven_volume / max(self.source_width, EPSILON) if config.drive_location == "boundary" else 0.0
         self.normalization_scale = self.boundary_area / (driven_volume + EPSILON) if config.drive_location == "boundary" else 1.0
         self.effective_volume = driven_volume
 
@@ -149,7 +157,9 @@ class Source3D:
         radius = self.coords["radius"]
         if config.drive_location == "boundary":
             distance = self.coords["boundary_distance"]
-            return _cell_interval_coverage(distance, config.dx, config.dx)
+            start = max(0.0, config.boundary_source_inner_distance)
+            width = config.boundary_source_width or config.dx
+            return _cell_interval_coverage_between(distance, config.dx, start, start + width)
         if config.drive_location == "core":
             return (radius <= config.defect_radius + config.dx).astype(float)
         if config.drive_location == "shell":
@@ -487,8 +497,13 @@ def _summarize_variant(
         "drive_cutoff_time": config.drive_cutoff_time,
         "boundary_area": source.boundary_area,
         "effective_source_volume": source.effective_volume,
+        "effective_source_area": source.effective_area,
+        "boundary_source_inner_distance": config.boundary_source_inner_distance,
+        "boundary_source_width": source.source_width,
+        "exclude_source_from_sponge_damping": config.exclude_source_from_sponge_damping,
         "positive_work_before_cutoff": positive_work_before_cutoff,
         "work_per_boundary_area": positive_work_before_cutoff / (source.boundary_area + EPSILON) if source.boundary_area else 0.0,
+        "work_per_source_area": positive_work_before_cutoff / (source.effective_area + EPSILON) if source.effective_area else 0.0,
         "work_per_source_volume": positive_work_before_cutoff / (source.effective_volume + EPSILON) if source.effective_volume else 0.0,
         "best_shell_event_time": best["time"],
         "best_shell_peak_energy": best["shell_peak_energy"],
@@ -638,9 +653,13 @@ def _shift_edge(arr: np.ndarray, shift: int, axis: int) -> np.ndarray:
 
 
 def _cell_interval_coverage(distance: np.ndarray, spacing: float, width: float) -> np.ndarray:
+    return _cell_interval_coverage_between(distance, spacing, 0.0, width)
+
+
+def _cell_interval_coverage_between(distance: np.ndarray, spacing: float, start: float, stop: float) -> np.ndarray:
     lower = np.maximum(distance - 0.5 * spacing, 0.0)
     upper = distance + 0.5 * spacing
-    overlap = np.maximum(0.0, np.minimum(upper, width) - lower)
+    overlap = np.maximum(0.0, np.minimum(upper, stop) - np.maximum(lower, start))
     return np.clip(overlap / max(spacing, EPSILON), 0.0, 1.0)
 
 
@@ -723,8 +742,13 @@ def _summary_fields() -> list[str]:
         "drive_cutoff_time",
         "boundary_area",
         "effective_source_volume",
+        "effective_source_area",
+        "boundary_source_inner_distance",
+        "boundary_source_width",
+        "exclude_source_from_sponge_damping",
         "positive_work_before_cutoff",
         "work_per_boundary_area",
+        "work_per_source_area",
         "work_per_source_volume",
         "best_shell_event_time",
         "best_shell_peak_energy",

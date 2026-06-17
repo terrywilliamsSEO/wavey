@@ -28,6 +28,10 @@ from simulation.prototype_3d_audit import (
     Prototype3DFailureAuditOptions,
     run_3d_failure_audit,
 )
+from simulation.prototype_3d_source_sponge import (
+    SourceSpongeControlOptions,
+    run_3d_source_sponge_control,
+)
 from simulation.resolution_diagnostics import (
     ResolutionDiagnosticsOptions,
     run_resolution_diagnostics,
@@ -225,6 +229,17 @@ def build_parser() -> argparse.ArgumentParser:
     prototype_3d_audit_parser.add_argument("--output-dir", type=Path, help="Directory for audit outputs")
     prototype_3d_audit_parser.add_argument("--radial-bins", type=int, default=24, help="Radial bin count used by the prototype run")
     prototype_3d_audit_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
+
+    source_sponge_parser = subparsers.add_parser(
+        "prototype-3d-source-sponge-control",
+        help="Run tiny 31^3 3D controls that separate boundary source placement from sponge damping",
+    )
+    source_sponge_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    source_sponge_parser.add_argument("--output-root", default="runs", help="Directory for source/sponge control outputs")
+    source_sponge_parser.add_argument("--grid-size", type=int, default=31, help="3D grid size; keep tiny at 31^3")
+    source_sponge_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    source_sponge_parser.add_argument("--gap-cells-from-sponge", type=float, default=3.0, help="Gap in dx units for the inward source variant")
+    source_sponge_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
 
     return parser
 
@@ -473,6 +488,21 @@ def main() -> None:
             ),
         )
         _print_3d_failure_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-source-sponge-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_source_sponge_control(
+            config,
+            options=SourceSpongeControlOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                sample_every=args.sample_every,
+                gap_cells_from_sponge=args.gap_cells_from_sponge,
+                near_shell_width_dx=args.near_shell_width_dx,
+            ),
+        )
+        _print_3d_source_sponge_control_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -815,6 +845,29 @@ def _print_3d_failure_audit_summary(result: dict[str, Any]) -> None:
     print(f"shell-window timeseries: {result['timeseries_csv']}")
     print(f"radial snapshots: {result['snapshots_csv']}")
     print(f"report: {result['report_path']}")
+
+
+def _print_3d_source_sponge_control_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D source/sponge control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"source_d={_format_optional(row.get('boundary_source_inner_distance'))}, "
+            f"source/sponge={_format_optional(row.get('source_sponge_overlap_fraction'))}, "
+            f"work/area={_format_optional(row.get('work_per_source_area'))}, "
+            f"near_peak/work={_format_optional(row.get('near_shell_peak_fraction_of_work'))}, "
+            f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "
+            f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
 
 
 def _diagnostic_labels(diagnostics: dict[str, Any]) -> list[str]:

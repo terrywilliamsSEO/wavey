@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or larger 3D grids; the next step is a tiny 3D source/sponge separation control with near-defect shell-window metrics.
+- Do not run broad long sweeps or larger 3D grids; the next step is a tiny 31^3 sponge-strength check on the best separated 3D source geometry.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -22,7 +22,9 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - Boundary-only work-per-length controls at 63x63 and 81x81 kept the same classification; `boundary_rotating_m4_81` still reproduced the family after boundary flux density was normalized.
 - The first 31^3 3D prototype classified as `inconclusive`: boundary cubic forcing did not pass the original global shell-retention success metric, and the global shell peak stayed near the outer boundary.
 - The 3D failure-mode audit classified the prototype as `diagnostic_window_issue`: the global shell peak was outer-biased, but a small near-defect shell signal arrived late and retained within its local window.
-- The boundary source is fully inside the sponge layer in the current 3D prototype, so the current next physics step is a tiny source/sponge separation control before increasing grid size.
+- The 3D source/sponge separation control classified as `source_sponge_separation_improves_near_shell`: driving at the inner sponge edge strengthened the retained near-defect shell window without global outer-boundary dominance.
+- `source_inside_domain_gap_from_sponge` produced a huge early near-shell peak, but its post-cutoff near-shell retention collapsed, so treat it as a transient control rather than the best geometry.
+- The current next physics step is a tiny 31^3 sponge-strength check on `source_at_inner_sponge_edge` before increasing grid size.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -65,6 +67,7 @@ python main.py transport-controls --config configs\long_validation_peak_0_92.jso
 python main.py transport-controls --config configs\long_validation_peak_0_92.json --boundary-only --boundary-match-mode work_per_length --grid-size 81
 python main.py prototype-3d --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-audit --run-path runs\prototype_3d_20260617_152319 --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-source-sponge-control --config configs\long_validation_peak_0_92.json
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json
