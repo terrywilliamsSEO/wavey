@@ -32,6 +32,10 @@ from simulation.prototype_3d_source_sponge import (
     SourceSpongeControlOptions,
     run_3d_source_sponge_control,
 )
+from simulation.prototype_3d_sponge_strength import (
+    SpongeStrengthControlOptions,
+    run_3d_sponge_strength_control,
+)
 from simulation.resolution_diagnostics import (
     ResolutionDiagnosticsOptions,
     run_resolution_diagnostics,
@@ -240,6 +244,19 @@ def build_parser() -> argparse.ArgumentParser:
     source_sponge_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
     source_sponge_parser.add_argument("--gap-cells-from-sponge", type=float, default=3.0, help="Gap in dx units for the inward source variant")
     source_sponge_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
+
+    sponge_strength_parser = subparsers.add_parser(
+        "prototype-3d-sponge-strength-control",
+        help="Run tiny 31^3 sponge-strength controls for the inner-sponge-edge 3D source",
+    )
+    sponge_strength_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    sponge_strength_parser.add_argument("--output-root", default="runs", help="Directory for sponge-strength control outputs")
+    sponge_strength_parser.add_argument("--grid-size", type=int, default=31, help="3D grid size; keep tiny at 31^3")
+    sponge_strength_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    sponge_strength_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
+    sponge_strength_parser.add_argument("--weak-sponge-multiplier", type=float, default=0.5, help="Multiplier for weak sponge damping")
+    sponge_strength_parser.add_argument("--stronger-sponge-multiplier", type=float, default=2.0, help="Multiplier for stronger sponge damping")
+    sponge_strength_parser.add_argument("--wider-sponge-multiplier", type=float, default=2.0, help="Multiplier for wider sponge boundary")
 
     return parser
 
@@ -503,6 +520,23 @@ def main() -> None:
             ),
         )
         _print_3d_source_sponge_control_summary(result)
+        return
+
+    if args.command == "prototype-3d-sponge-strength-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_sponge_strength_control(
+            config,
+            options=SpongeStrengthControlOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                sample_every=args.sample_every,
+                near_shell_width_dx=args.near_shell_width_dx,
+                weak_sponge_multiplier=args.weak_sponge_multiplier,
+                stronger_sponge_multiplier=args.stronger_sponge_multiplier,
+                wider_sponge_multiplier=args.wider_sponge_multiplier,
+            ),
+        )
+        _print_3d_sponge_strength_control_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -858,6 +892,30 @@ def _print_3d_source_sponge_control_summary(result: dict[str, Any]) -> None:
         print(
             f"  - {row['variant']}: "
             f"source_d={_format_optional(row.get('boundary_source_inner_distance'))}, "
+            f"source/sponge={_format_optional(row.get('source_sponge_overlap_fraction'))}, "
+            f"work/area={_format_optional(row.get('work_per_source_area'))}, "
+            f"near_peak/work={_format_optional(row.get('near_shell_peak_fraction_of_work'))}, "
+            f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "
+            f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_sponge_strength_control_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D sponge-strength control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"sponge_x={_format_optional(row.get('sponge_strength_multiplier'))}, "
+            f"width_x={_format_optional(row.get('sponge_width_multiplier'))}, "
             f"source/sponge={_format_optional(row.get('source_sponge_overlap_fraction'))}, "
             f"work/area={_format_optional(row.get('work_per_source_area'))}, "
             f"near_peak/work={_format_optional(row.get('near_shell_peak_fraction_of_work'))}, "

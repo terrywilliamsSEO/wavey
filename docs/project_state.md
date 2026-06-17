@@ -27,8 +27,10 @@ Current interpretation:
 - The 3D failure-mode audit classified the run as `diagnostic_window_issue`: the global shell peak is outer-biased, but a small near-defect shell signal arrives late and should be tracked separately.
 - The 3D source/sponge separation control classified as `source_sponge_separation_improves_near_shell`: driving at the inner sponge edge strengthens the retained near-defect shell signal and removes global outer-boundary dominance.
 - A deeper inward source creates a huge early near-shell peak but does not retain it, so the current best 3D geometry is `source_at_inner_sponge_edge`, not the deeper gap source.
+- The 3D sponge-strength control classified as `sponge_strength_suppresses_outer_contamination`: stronger sponge at the original width preserved the near-defect shell tail while lowering outer/near tail contamination.
+- Weak sponge increased outer residue. Wider sponge variants retained the near-shell tail, but because the source location was held fixed, the widened sponge reintroduced full source/sponge overlap and the audit flagged global outer-window dominance.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or larger 3D grids. The next step is a tiny 31^3 sponge-strength check on the best separated source geometry.
+- Do not run broad long sweeps or larger 3D grids. The next step is a tiny 31^3 source-geometry comparison from the stronger-sponge inner-edge setup.
 
 ## Latest Evidence
 
@@ -498,13 +500,47 @@ Interpretation:
 - Merely excluding current outer-boundary source cells from sponge damping is not enough; it leaves global outer-boundary dominance and worsens outer/near tail ratio.
 - Moving the source deeper inside the domain creates a large early near-shell peak, but the post-cutoff near-shell tail does not retain, so it is not the current success case.
 
+### 3D Sponge-Strength Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-sponge-strength-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\sponge_strength_3d_20260617_163440\sponge_strength_control_report.md`
+- Summary CSV: `runs\sponge_strength_3d_20260617_163440\sponge_strength_control_summary.csv`
+- Classification: `sponge_strength_suppresses_outer_contamination`
+- Best variant: `stronger_sponge_inner_edge`
+- Work matching: injected work per physical source area held at about `0.105044`.
+- Source location: fixed at physical distance `6.0` from the outer boundary for every variant.
+
+Important values:
+
+| Variant | Sponge x | Width x | Source/Sponge | Near Peak/Work | Near Retention | Near Radius Range | Outer/Near Tail | Global Peak R | Global Outer | Arrival |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| baseline_sponge_inner_edge | 1.0 | 1.0 | ~0 | 1.87e-7 | 0.699 | 0.00 | 3.88 | 13.71 | false | 10.16 |
+| weak_sponge_inner_edge | 0.5 | 1.0 | ~0 | 1.87e-7 | 0.719 | 0.00 | 4.88 | 13.71 | false | 10.16 |
+| stronger_sponge_inner_edge | 2.0 | 1.0 | ~0 | 1.86e-7 | 0.681 | 0.00 | 2.94 | 13.71 | false | 10.16 |
+| wider_sponge_inner_edge | 1.0 | 2.0 | 1.00 | 1.71e-7 | 0.685 | 0.00 | 5.11 | 13.71 | true | 10.08 |
+| stronger_wider_sponge_inner_edge | 2.0 | 2.0 | 1.00 | 1.57e-7 | 0.671 | 0.00 | 3.82 | 13.71 | true | 10.08 |
+
+Interpretation:
+
+- Stronger sponge at the original width is the cleanest result: it keeps the retained near-defect shell signal, preserves stable near radius and sensible arrival time, and lowers outer/near tail contamination from `3.88` to `2.94`.
+- Weak sponge behaves as expected: near retention remains meaningful, but outer/near residue rises to `4.88`.
+- Wider sponge is not clean under the fixed-source-location rule. It does not collapse near retention, but the widened damping region covers the driven layer (`source/sponge = 1.00`) and the audit flags the global peak as inside the expanded outer window.
+- This supports a tiny 31^3 source-geometry comparison next, using the stronger-sponge inner-edge setup. It does not justify a larger 3D grid yet.
+
 ## Current Next Step
 
-Run a tiny 31^3 sponge-strength check on `source_at_inner_sponge_edge`:
+Run a tiny 31^3 source-geometry comparison from the stronger-sponge inner-edge setup:
 
 - Keep the grid at `31^3`.
-- Use only the inner-sponge-edge source geometry.
-- Compare baseline, weaker sponge, and stronger sponge settings.
+- Use the inner-sponge-edge source location and stronger sponge at the original width as the current best cleanup.
+- Compare only a small set of 3D source geometries.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
 - Keep global radial peak as an artifact/boundary-residue check.

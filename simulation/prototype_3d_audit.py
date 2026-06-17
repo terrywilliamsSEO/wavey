@@ -213,8 +213,9 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
     dx = float(row["dx"])
     domain_size = dx * float(max(grid_size - 1, 1))
     defect_radius = float(base.defect.radius_physical if base.defect.radius_physical is not None else base.defect.radius)
-    sponge_strength = float(base.boundary_damping_strength)
-    if str(row.get("variant", "")).endswith("stronger_sponge_31"):
+    sponge_width = float(row.get("sponge_width") or base.boundary_damping_width_physical or base.boundary_damping_width)
+    sponge_strength = float(row.get("sponge_strength") or base.boundary_damping_strength)
+    if "sponge_strength" not in row and str(row.get("variant", "")).endswith("stronger_sponge_31"):
         sponge_strength *= 2.0
     return Prototype3DConfig(
         name=str(row["variant"]),
@@ -230,7 +231,7 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
         defect_stiffness_multiplier=base.defect.stiffness_multiplier,
         defect_damping_multiplier=base.defect.damping_multiplier,
         defect_coupling_multiplier=base.defect.coupling_multiplier,
-        sponge_width=float(base.boundary_damping_width_physical or base.boundary_damping_width),
+        sponge_width=sponge_width,
         sponge_strength=sponge_strength,
         drive_frequency=float(row.get("drive_frequency") or base.driver.frequency),
         drive_amplitude=float(row.get("drive_amplitude") or base.driver.amplitude),

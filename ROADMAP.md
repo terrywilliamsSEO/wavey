@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Run a tiny 31^3 sponge-strength check on the best separated 3D source geometry before expanding 3D or running broad sweeps.
+Run a tiny 31^3 source-geometry comparison from the stronger-sponge inner-edge 3D setup before expanding 3D or running broad sweeps.
 
-Recommended next task: keep the grid at 31^3 and rerun only `source_at_inner_sponge_edge` with a small sponge-strength control. The source/sponge separation control showed that driving at the inner edge of the sponge strengthens the retained near-defect shell signal without global outer-boundary dominance. Do not increase 3D grid size yet.
+Recommended next task: keep the grid at 31^3, keep the source separated from the original sponge boundary, use the stronger-sponge setting that suppressed outer/near contamination, and compare only a small set of 3D source geometries. Do not increase 3D grid size yet.
 
 ## Status
 
@@ -117,16 +117,20 @@ Recommended next task: keep the grid at 31^3 and rerun only `source_at_inner_spo
 - Ran the source/sponge control in `runs\source_sponge_3d_20260617_161103`; result classified as `source_sponge_separation_improves_near_shell`.
 - `source_at_inner_sponge_edge` was the best retained geometry: near-shell peak/work improved from 2.13e-8 to 1.87e-7, near-shell retention stayed 0.699, outer/near tail ratio fell from 8.56 to 3.88, near radius range stayed 0, and the global peak was no longer in the outer window.
 - `source_inside_domain_gap_from_sponge` produced a large early near-shell peak/work value of 0.0223, but near-shell retention collapsed to 7.8e-6, so it is a transient response rather than the current best geometry.
+- Added `prototype-3d-sponge-strength-control` for tiny 31^3 sponge-strength/width controls around the best inner-sponge-edge source geometry.
+- Ran the sponge-strength control in `runs\sponge_strength_3d_20260617_163440`; result classified as `sponge_strength_suppresses_outer_contamination`.
+- Stronger sponge at the original width preserved the near-defect shell tail while reducing outer/near tail contamination from 3.88 to 2.94; weak sponge raised outer residue to 4.88, and wider sponge reintroduced full source/sponge overlap because the source location was held fixed.
 
 ### In Progress
 
-- 3D sponge-strength check for the best separated source geometry.
+- Tiny 31^3 source-geometry comparison from the stronger-sponge inner-edge setup.
 
 ### Next
 
 - Keep the grid at 31^3.
-- Rerun only the `source_at_inner_sponge_edge` geometry with baseline, weaker, and stronger sponge settings.
+- Start from the inner-sponge-edge source geometry and stronger sponge at the original width.
 - Preserve matched injected work per physical source area.
+- Compare only a tiny set of source geometries before any larger grid.
 - Keep near-defect shell-window peak/work, retention, radius range, arrival time, and outer/near tail ratio as the primary 3D metrics.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
@@ -294,3 +298,5 @@ Possible work:
 - 2026-06-17: The audit found the boundary source fully overlaps the sponge, the global shell peak is outer-window biased, and a small near-defect shell signal arrives late at t=37.68; updated the next step to a tiny source/sponge separation control.
 - 2026-06-17: Added and ran `python main.py prototype-3d-source-sponge-control --config configs\long_validation_peak_0_92.json`; classified the control as `source_sponge_separation_improves_near_shell`.
 - 2026-06-17: The inner-sponge-edge source improved retained near-defect shell metrics without global outer-boundary dominance, while the deeper inward source produced only a transient near-shell spike; updated the next step to a 31^3 sponge-strength check on the best separated source.
+- 2026-06-17: Added and ran `python main.py prototype-3d-sponge-strength-control --config configs\long_validation_peak_0_92.json`; classified the control as `sponge_strength_suppresses_outer_contamination`.
+- 2026-06-17: Stronger sponge at the original width preserved near-shell peak/work at 1.86e-7, kept near retention at 0.681, lowered outer/near tail ratio to 2.94, and avoided global outer-window dominance; updated the next step to a tiny 31^3 source-geometry comparison from that setup.
