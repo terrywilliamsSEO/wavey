@@ -120,6 +120,14 @@ python main.py resolution-diagnostics --config configs\long_validation_peak_0_92
 
 This reruns the 41x41, 63x63, and 81x81 same-domain variants, then audits source normalization, mask/area equivalence, energy budgets, radial profiles, and pairwise mode-shape similarity before any broad long sweeps.
 
+Run source-normalized fixed-domain resolution diagnostics with:
+
+```powershell
+python main.py source-normalized-resolution-diagnostics --config configs\long_validation_peak_0_92.json
+```
+
+This uses fractional fixed-domain emitter coverage plus calibrated `constant_total_work` source normalization for the main 41x41, 63x63, and 81x81 variants, and includes legacy `per_cell` variants as reference-only comparisons.
+
 ## Run one simulation
 
 ```powershell
@@ -250,6 +258,18 @@ When `resolution-diagnostics` is used, the diagnostic folder includes:
 - `radial_profile_comparison.csv`
 - `resolution_diagnostics_report.md`
 - one diagnosed run folder per fixed-domain grid variant
+
+When `source-normalized-resolution-diagnostics` is used, the diagnostic folder includes:
+
+- `source_normalized_resolution_summary.csv`
+- `source_normalized_resolution_summary.json`
+- `source_audit_comparison.csv`
+- `injected_work_comparison.csv`
+- `mask_area_audit.csv`
+- `energy_budget_audit.csv`
+- `radial_profile_comparison.csv`
+- `source_normalized_resolution_report.md`
+- diagnosed source-normalized run folders plus legacy `per_cell` reference run folders
 
 ## Metrics
 

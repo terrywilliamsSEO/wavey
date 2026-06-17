@@ -34,6 +34,7 @@ class DriverConfig:
     rotating_phase_winding: int = 1
     emitter_width: int = 1
     emitter_width_physical: float | None = None
+    source_normalization: str = "per_cell"
 
 
 @dataclass

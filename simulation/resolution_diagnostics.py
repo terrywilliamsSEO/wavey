@@ -157,6 +157,237 @@ def run_resolution_diagnostics(
     }
 
 
+def run_source_normalized_resolution_diagnostics(
+    base_config: SimulationConfig,
+    *,
+    options: ResolutionDiagnosticsOptions | None = None,
+    reference_root: str | Path = "runs",
+    source_normalization: str = "constant_boundary_flux",
+) -> dict[str, Any]:
+    """Run source-normalized fixed-domain resolution diagnostics plus legacy references."""
+
+    options = options or ResolutionDiagnosticsOptions()
+    diagnostic_id = datetime.now().strftime("source_normalized_resolution_%Y%m%d_%H%M%S")
+    diagnostic_root = Path(options.output_root) / diagnostic_id
+    diagnostic_root.mkdir(parents=True, exist_ok=False)
+
+    normalized_variants = _source_normalized_variants(base_config, options, source_normalization)
+    legacy_variants = [
+        (
+            f"legacy_per_cell_grid_{size}",
+            _fixed_domain_config(base_config, size, source_normalization="per_cell"),
+        )
+        for size in options.grid_sizes
+    ]
+
+    normalized = _run_resolution_variant_collection(
+        normalized_variants,
+        diagnostic_root,
+        options,
+        reference_root,
+        variant_role="source_normalized",
+    )
+    legacy = _run_resolution_variant_collection(
+        legacy_variants,
+        diagnostic_root,
+        options,
+        reference_root,
+        variant_role="legacy_per_cell_reference",
+    )
+
+    classification = classify_source_normalized_resolution(
+        normalized["summary_rows"],
+        normalized["source_rows"],
+        normalized["mask_rows"],
+        normalized["pairwise"],
+        options,
+    )
+    for row in normalized["summary_rows"]:
+        row["classification_label"] = classification["label"]
+    for row in legacy["summary_rows"]:
+        row["classification_label"] = "legacy_reference_only"
+
+    all_source_rows = normalized["source_rows"] + legacy["source_rows"]
+    all_mask_rows = normalized["mask_rows"] + legacy["mask_rows"]
+    all_energy_rows = normalized["energy_budget_rows"] + legacy["energy_budget_rows"]
+    all_radial_rows = normalized["radial_rows"] + legacy["radial_rows"]
+    injected_work_rows = _injected_work_rows(normalized["source_rows"], legacy["source_rows"])
+
+    summary_path = diagnostic_root / "source_normalized_resolution_summary.csv"
+    source_path = diagnostic_root / "source_audit_comparison.csv"
+    work_path = diagnostic_root / "injected_work_comparison.csv"
+    mask_path = diagnostic_root / "mask_area_audit.csv"
+    energy_path = diagnostic_root / "energy_budget_audit.csv"
+    radial_path = diagnostic_root / "radial_profile_comparison.csv"
+    report_path = diagnostic_root / "source_normalized_resolution_report.md"
+
+    _write_csv(summary_path, normalized["summary_rows"], _summary_fields())
+    _write_csv(source_path, all_source_rows, _source_fields())
+    _write_csv(work_path, injected_work_rows)
+    _write_csv(mask_path, all_mask_rows, _mask_fields())
+    _write_csv(energy_path, all_energy_rows, _energy_budget_fields())
+    _write_csv(radial_path, all_radial_rows)
+    _write_source_normalized_report(
+        report_path,
+        diagnostic_id,
+        base_config,
+        normalized["summary_rows"],
+        legacy["summary_rows"],
+        normalized["source_rows"],
+        legacy["source_rows"],
+        normalized["mask_rows"],
+        normalized["pairwise"],
+        legacy["pairwise"],
+        classification,
+        options,
+        source_normalization,
+    )
+    save_json(
+        diagnostic_root / "source_normalized_resolution_summary.json",
+        {
+            "diagnostic_id": diagnostic_id,
+            "classification": classification,
+            "source_normalization": source_normalization,
+            "variants": normalized["summary_rows"],
+            "legacy_reference_variants": legacy["summary_rows"],
+            "summary_csv": str(summary_path),
+            "source_audit_comparison_csv": str(source_path),
+            "injected_work_comparison_csv": str(work_path),
+            "mask_area_audit_csv": str(mask_path),
+            "energy_budget_audit_csv": str(energy_path),
+            "radial_profile_comparison_csv": str(radial_path),
+            "report_path": str(report_path),
+            "pairwise_comparisons": normalized["pairwise"],
+            "legacy_pairwise_comparisons": legacy["pairwise"],
+        },
+    )
+    return {
+        "diagnostic_id": diagnostic_id,
+        "classification": classification,
+        "source_normalization": source_normalization,
+        "variants": normalized["summary_rows"],
+        "legacy_reference_variants": legacy["summary_rows"],
+        "pairwise_comparisons": normalized["pairwise"],
+        "legacy_pairwise_comparisons": legacy["pairwise"],
+        "summary_csv": str(summary_path),
+        "source_audit_comparison_csv": str(source_path),
+        "injected_work_comparison_csv": str(work_path),
+        "mask_area_audit_csv": str(mask_path),
+        "energy_budget_audit_csv": str(energy_path),
+        "radial_profile_comparison_csv": str(radial_path),
+        "report_path": str(report_path),
+        "path": str(diagnostic_root),
+    }
+
+
+def _source_normalized_variants(
+    base_config: SimulationConfig,
+    options: ResolutionDiagnosticsOptions,
+    source_normalization: str,
+) -> list[tuple[str, SimulationConfig]]:
+    base_mode = "constant_boundary_flux" if source_normalization == "constant_total_work" else source_normalization
+    variants = [
+        (
+            f"source_normalized_grid_{size}",
+            _fixed_domain_config(base_config, size, source_normalization=base_mode),
+        )
+        for size in options.grid_sizes
+    ]
+    if source_normalization != "constant_total_work":
+        return variants
+
+    work_values = []
+    for variant_name, config in variants:
+        audit = _audit_variant(f"{variant_name}_work_calibration", config)
+        work_values.append(float(audit["source_row"].get("total_injected_work_before_cutoff") or 0.0))
+    if not work_values or work_values[0] <= EPSILON:
+        for _variant_name, config in variants:
+            config.driver.source_normalization = "constant_total_work"
+        return variants
+
+    target_work = work_values[0]
+    for idx, (_variant_name, config) in enumerate(variants):
+        if idx == 0 or work_values[idx] <= EPSILON:
+            config.driver.source_normalization = "constant_total_work"
+            continue
+        config.driver.amplitude *= float(np.sqrt(target_work / work_values[idx]))
+        config.driver.source_normalization = "constant_total_work"
+    return variants
+
+
+def _run_resolution_variant_collection(
+    variants: list[tuple[str, SimulationConfig]],
+    diagnostic_root: Path,
+    options: ResolutionDiagnosticsOptions,
+    reference_root: str | Path,
+    *,
+    variant_role: str,
+) -> dict[str, Any]:
+    summary_rows: list[dict[str, Any]] = []
+    source_rows: list[dict[str, Any]] = []
+    mask_rows: list[dict[str, Any]] = []
+    energy_budget_rows: list[dict[str, Any]] = []
+    radial_rows: list[dict[str, Any]] = []
+    configs_by_variant: dict[str, SimulationConfig] = {}
+    radial_profiles: dict[str, dict[str, dict[str, np.ndarray | float]]] = {}
+
+    for variant_name, config in variants:
+        configs_by_variant[variant_name] = config
+        run_summary = run_single_experiment(config, output_root=diagnostic_root, run_id=variant_name)
+        diagnostics = diagnose_existing_run(
+            run_summary["path"],
+            options=DiagnosticOptions(
+                frame_interval=options.frame_interval,
+                window_steps=options.window_steps,
+                save_frame_pngs=False,
+            ),
+            reference_root=reference_root,
+        )
+        audit = _audit_variant(variant_name, config)
+        for row in (audit["source_row"], audit["mask_row"]):
+            row["variant_role"] = variant_role
+        source_rows.append(audit["source_row"])
+        mask_rows.append(audit["mask_row"])
+        for row in audit["energy_budget_rows"]:
+            row["variant_role"] = variant_role
+        energy_budget_rows.extend(audit["energy_budget_rows"])
+
+        best_energy = np.load(Path(run_summary["path"]) / "best_energy_density.npy")
+        radial_payload = _radial_profile_payload(variant_name, config, best_energy, audit["final_energy"])
+        for row in radial_payload["rows"]:
+            row["variant_role"] = variant_role
+        radial_profiles[variant_name] = radial_payload["profiles"]
+        radial_rows.extend(radial_payload["rows"])
+
+        energy_comparison = run_energy_comparison(run_summary["path"], config.driver.drive_cutoff_time)
+        summary = _summary_row(
+            variant_name,
+            config,
+            run_summary,
+            diagnostics,
+            energy_comparison,
+            audit,
+            radial_payload["summary"],
+        )
+        summary["variant_role"] = variant_role
+        summary_rows.append(summary)
+
+    shared_radial_rows = _shared_radial_rows(radial_profiles, variants)
+    for row in shared_radial_rows:
+        row["variant_role"] = variant_role
+    radial_rows.extend(shared_radial_rows)
+    pairwise = _pairwise_comparisons(summary_rows, configs_by_variant, radial_profiles)
+    _attach_pairwise_fields(summary_rows, pairwise)
+    return {
+        "summary_rows": summary_rows,
+        "source_rows": source_rows,
+        "mask_rows": mask_rows,
+        "energy_budget_rows": energy_budget_rows,
+        "radial_rows": radial_rows,
+        "pairwise": pairwise,
+    }
+
+
 def classify_resolution_diagnostics(
     rows: list[dict[str, Any]],
     source_rows: list[dict[str, Any]],
@@ -253,6 +484,106 @@ def classify_resolution_diagnostics(
     return {
         "label": "inconclusive",
         "reason": "The audits do not isolate source, mask, radial-binning, or true resolution sensitivity.",
+        "checks": checks,
+        "source_comparison": source_comparable,
+        "mask_comparison": mask_comparable,
+    }
+
+
+def classify_source_normalized_resolution(
+    rows: list[dict[str, Any]],
+    source_rows: list[dict[str, Any]],
+    mask_rows: list[dict[str, Any]],
+    pairwise: list[dict[str, Any]],
+    options: ResolutionDiagnosticsOptions | None = None,
+) -> dict[str, Any]:
+    """Classify source-normalized fixed-domain resolution diagnostics."""
+
+    options = options or ResolutionDiagnosticsOptions()
+    if len(rows) < 2:
+        return {"label": "inconclusive", "reason": "At least two source-normalized resolutions are required.", "checks": {}}
+
+    ordered = sorted(rows, key=lambda row: int(row.get("grid_size", 0)))
+    source_comparable = _source_work_comparable(source_rows, options)
+    mask_comparable = _mask_areas_comparable(mask_rows, options)
+    emitter_area_comparable = _relative_range(
+        [float(row.get("emitter_physical_area_from_mask") or 0.0) for row in mask_rows]
+    ) <= options.mask_area_relative_tolerance
+    work_63_anomaly_removed = _middle_value_not_anomalous(
+        [float(row.get("injected_work_per_physical_boundary_length") or 0.0) for row in source_rows]
+    )
+    period_stable = _breathing_period_stable(ordered, options)
+    m4_stable = all(int(row.get("strongest_angular_mode") or 0) == 4 for row in ordered)
+    retention_values = [float(row.get("retention_score") or 0.0) for row in ordered]
+    retention_monotonic = _monotonic_nonincreasing(retention_values)
+    retention_weakens = retention_values[-1] < 0.9 * retention_values[0]
+
+    refined_pair = _comparison_for(pairwise, ordered[-2]["variant"], ordered[-1]["variant"]) if len(ordered) >= 3 else None
+    refined_radial_corr = float((refined_pair or {}).get("best_radial_correlation") or 0.0)
+    refined_spatial_corr = float((refined_pair or {}).get("best_spatial_correlation") or 0.0)
+    refined_peaks_close = _peak_shift(ordered[-2], ordered[-1]) <= options.refined_peak_shift_max if len(ordered) >= 3 else False
+    coarse_peak_far = _peak_shift(ordered[0], ordered[1]) >= options.coarse_peak_shift_min
+
+    checks = {
+        "source_work_comparable": source_comparable["passed"],
+        "mask_areas_comparable": mask_comparable["passed"],
+        "emitter_area_comparable": emitter_area_comparable,
+        "work_63_anomaly_removed": work_63_anomaly_removed,
+        "breathing_period_stable": period_stable,
+        "m4_structure_stable": m4_stable,
+        "retention_weakens_monotonically": retention_monotonic and retention_weakens,
+        "refined_radial_profiles_converge": refined_radial_corr >= options.refined_radial_corr_min and refined_peaks_close,
+        "refined_best_frames_similar": refined_spatial_corr >= options.refined_spatial_corr_min,
+        "coarse_peak_differs_from_refined": coarse_peak_far,
+    }
+
+    if not source_comparable["passed"] or not mask_comparable["passed"] or not work_63_anomaly_removed:
+        return {
+            "label": "source_normalization_issue_persists",
+            "reason": (
+                "Source-normalized variants still do not have comparable emitter geometry or injected work."
+            ),
+            "checks": checks,
+            "source_comparison": source_comparable,
+            "mask_comparison": mask_comparable,
+        }
+    if refined_peaks_close and coarse_peak_far and refined_radial_corr >= options.refined_radial_corr_min:
+        return {
+            "label": "coarse_grid_artifact_likely",
+            "reason": (
+                "Source normalization fixed the emitter audit enough to interpret the 41-grid radial peak as the outlier."
+            ),
+            "checks": checks,
+            "source_comparison": source_comparable,
+            "mask_comparison": mask_comparable,
+        }
+    if refined_peaks_close and refined_radial_corr >= options.refined_radial_corr_min:
+        return {
+            "label": "refined_mode_converging",
+            "reason": "Source-normalized refined grids converge toward the same radial structure.",
+            "checks": checks,
+            "source_comparison": source_comparable,
+            "mask_comparison": mask_comparable,
+        }
+    if retention_monotonic and retention_weakens:
+        return {
+            "label": "true_resolution_sensitive",
+            "reason": "Source normalization is comparable, but retention still weakens and the refined mode does not converge.",
+            "checks": checks,
+            "source_comparison": source_comparable,
+            "mask_comparison": mask_comparable,
+        }
+    if source_comparable["passed"] and mask_comparable["passed"]:
+        return {
+            "label": "source_normalization_fixed",
+            "reason": "Emitter/source geometry and injected work are comparable, but resolution interpretation remains mixed.",
+            "checks": checks,
+            "source_comparison": source_comparable,
+            "mask_comparison": mask_comparable,
+        }
+    return {
+        "label": "inconclusive",
+        "reason": "Source-normalized diagnostics did not isolate a clear interpretation.",
         "checks": checks,
         "source_comparison": source_comparable,
         "mask_comparison": mask_comparable,
@@ -360,18 +691,30 @@ def _source_audit_row(
     peak_injected_power: float,
 ) -> dict[str, Any]:
     emitter_cells = int(np.sum(lattice.driver.mask))
+    coverage_sum = float(np.sum(lattice.driver.coverage_weights))
     boundary_length = _emitter_boundary_length(config)
-    emitter_mask_area = float(emitter_cells) * float(config.cell_area)
+    active_cell_area = float(emitter_cells) * float(config.cell_area)
+    effective_area = float(lattice.driver.effective_driven_area)
+    effective_length = float(lattice.driver.effective_driven_length)
+    total_drive_amplitude_sum = float(config.driver.amplitude * lattice.driver.normalization_scale * coverage_sum)
     return {
         "variant": variant,
         "grid_size": config.grid_size,
         "dx": config.dx,
         "dy": config.dy,
+        "source_normalization": config.driver.source_normalization,
         "emitter_cell_count": emitter_cells,
+        "emitter_fractional_coverage_sum": coverage_sum,
         "physical_emitter_length": boundary_length,
+        "effective_driven_area": effective_area,
+        "effective_driven_length": effective_length,
+        "emitter_active_cell_area": active_cell_area,
         "emitter_width_physical": config.effective_emitter_width,
-        "emitter_physical_area_from_mask": emitter_mask_area,
+        "emitter_physical_area_from_mask": effective_area,
         "per_cell_drive_amplitude": config.driver.amplitude,
+        "source_normalization_scale": lattice.driver.normalization_scale,
+        "total_drive_amplitude_sum": total_drive_amplitude_sum,
+        "area_weighted_drive_amplitude_sum": total_drive_amplitude_sum * config.cell_area,
         "drive_frequency": config.driver.frequency,
         "drive_cutoff_time": config.driver.drive_cutoff_time,
         "total_drive_work_over_time": total_drive_work,
@@ -380,7 +723,7 @@ def _source_audit_row(
         "total_injected_work_before_cutoff": positive_drive_work_before_cutoff,
         "peak_injected_power": peak_injected_power,
         "injected_work_per_physical_boundary_length": positive_drive_work_before_cutoff / (boundary_length + EPSILON),
-        "injected_work_per_unit_area": positive_drive_work_before_cutoff / (emitter_mask_area + EPSILON),
+        "injected_work_per_unit_area": positive_drive_work_before_cutoff / (effective_area + EPSILON),
     }
 
 
@@ -393,12 +736,14 @@ def _mask_area_row(
     masks = lattice.masks
     emitter_cells = int(np.sum(lattice.driver.mask))
     cell_area = float(config.cell_area)
+    effective_area = float(lattice.driver.effective_driven_area)
     return {
         "variant": variant,
         "grid_size": config.grid_size,
         "grid_height": config.ny,
         "dx": config.dx,
         "dy": config.dy,
+        "source_normalization": config.driver.source_normalization,
         "cell_area": cell_area,
         "domain_width": config.physical_domain_width,
         "domain_height": config.physical_domain_height,
@@ -420,8 +765,12 @@ def _mask_area_row(
         "sponge_cell_count": int(np.sum(sponge_mask)),
         "sponge_physical_area": float(np.sum(sponge_mask)) * cell_area,
         "emitter_cell_count": emitter_cells,
+        "emitter_fractional_coverage_sum": float(np.sum(lattice.driver.coverage_weights)),
         "emitter_physical_length": _emitter_boundary_length(config),
-        "emitter_physical_area_from_mask": emitter_cells * cell_area,
+        "effective_driven_area": effective_area,
+        "effective_driven_length": float(lattice.driver.effective_driven_length),
+        "emitter_active_cell_area": emitter_cells * cell_area,
+        "emitter_physical_area_from_mask": effective_area,
     }
 
 
@@ -641,13 +990,19 @@ def _summary_row(
         "steps": config.steps,
         "physical_duration": config.steps * config.dt,
         "drive_cutoff_time": config.driver.drive_cutoff_time,
+        "source_normalization": config.driver.source_normalization,
         "recommended_dt_max": stability.get("recommended_dt_max"),
         "hard_stability_dt_max": stability.get("hard_stability_dt_max"),
         "dt_to_hard_limit_ratio": stability.get("dt_to_hard_limit_ratio"),
         "stability_warnings": " | ".join(stability.get("warnings", [])) or "none",
         "emitter_cell_count": source.get("emitter_cell_count"),
+        "emitter_fractional_coverage_sum": source.get("emitter_fractional_coverage_sum"),
         "physical_emitter_length": source.get("physical_emitter_length"),
+        "effective_driven_area": source.get("effective_driven_area"),
+        "effective_driven_length": source.get("effective_driven_length"),
         "per_cell_drive_amplitude": source.get("per_cell_drive_amplitude"),
+        "source_normalization_scale": source.get("source_normalization_scale"),
+        "total_drive_amplitude_sum": source.get("total_drive_amplitude_sum"),
         "total_injected_work_before_cutoff": source.get("total_injected_work_before_cutoff"),
         "injected_work_per_physical_boundary_length": source.get("injected_work_per_physical_boundary_length"),
         "injected_work_per_unit_area": source.get("injected_work_per_unit_area"),
@@ -848,6 +1203,16 @@ def _monotonic_nonincreasing(values: list[float]) -> bool:
     return all(values[idx + 1] <= values[idx] + 1e-9 for idx in range(len(values) - 1))
 
 
+def _middle_value_not_anomalous(values: list[float]) -> bool:
+    if len(values) < 3:
+        return True
+    first, middle, last = values[0], values[1], values[2]
+    edge_mean = 0.5 * (first + last)
+    if abs(edge_mean) <= EPSILON:
+        return True
+    return abs(middle - edge_mean) / abs(edge_mean) <= 0.2
+
+
 def _peak_shift(first: dict[str, Any], second: dict[str, Any]) -> float:
     first_peak = first.get("radial_peak_radius")
     second_peak = second.get("radial_peak_radius")
@@ -910,6 +1275,276 @@ def _read_csv_rows(path: Path) -> list[dict[str, Any]]:
                     converted[key] = value
             rows.append(converted)
         return rows
+
+
+def _injected_work_rows(
+    normalized_rows: list[dict[str, Any]],
+    legacy_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows = []
+    for group, source_rows in (("source_normalized", normalized_rows), ("legacy_per_cell_reference", legacy_rows)):
+        for row in source_rows:
+            rows.append(
+                {
+                    "variant_role": group,
+                    "variant": row.get("variant"),
+                    "grid_size": row.get("grid_size"),
+                    "source_normalization": row.get("source_normalization"),
+                    "emitter_cell_count": row.get("emitter_cell_count"),
+                    "emitter_fractional_coverage_sum": row.get("emitter_fractional_coverage_sum"),
+                    "physical_emitter_length": row.get("physical_emitter_length"),
+                    "effective_driven_area": row.get("effective_driven_area"),
+                    "effective_driven_length": row.get("effective_driven_length"),
+                    "per_cell_drive_amplitude": row.get("per_cell_drive_amplitude"),
+                    "source_normalization_scale": row.get("source_normalization_scale"),
+                    "total_drive_amplitude_sum": row.get("total_drive_amplitude_sum"),
+                    "total_injected_work_before_cutoff": row.get("total_injected_work_before_cutoff"),
+                    "injected_work_per_physical_boundary_length": row.get(
+                        "injected_work_per_physical_boundary_length"
+                    ),
+                    "injected_work_per_unit_area": row.get("injected_work_per_unit_area"),
+                    "peak_injected_power": row.get("peak_injected_power"),
+                }
+            )
+    return rows
+
+
+def _write_source_normalized_report(
+    path: Path,
+    diagnostic_id: str,
+    base_config: SimulationConfig,
+    rows: list[dict[str, Any]],
+    legacy_rows: list[dict[str, Any]],
+    source_rows: list[dict[str, Any]],
+    legacy_source_rows: list[dict[str, Any]],
+    mask_rows: list[dict[str, Any]],
+    pairwise: list[dict[str, Any]],
+    legacy_pairwise: list[dict[str, Any]],
+    classification: dict[str, Any],
+    options: ResolutionDiagnosticsOptions,
+    source_normalization: str,
+) -> None:
+    ordered = sorted(rows, key=lambda row: int(row.get("grid_size") or 0))
+    legacy_ordered = sorted(legacy_rows, key=lambda row: int(row.get("grid_size") or 0))
+    answers = _source_normalized_answers(ordered, source_rows, mask_rows, pairwise, classification)
+    lines = [
+        f"# Source-Normalized Resolution Report: {diagnostic_id}",
+        "",
+        "## Purpose",
+        "",
+        (
+            "Control the fixed-domain emitter/source discretization before interpreting the 0.92 radial shift. "
+            "The normalized variants drive the main classification; legacy per-cell variants are reference only."
+        ),
+        "",
+        "## Base Case",
+        "",
+        f"- Source config grid: `{base_config.grid_size}`",
+        f"- Source normalization: `{source_normalization}`",
+        f"- Drive frequency/amplitude: `{base_config.driver.frequency}` / `{base_config.driver.amplitude}`",
+        f"- Drive cutoff time: `{base_config.driver.drive_cutoff_time}`",
+        "",
+        "## Classification",
+        "",
+        f"- Result: `{classification['label']}`",
+        f"- Reason: {classification['reason']}",
+        "",
+        "## Direct Answers",
+        "",
+    ]
+    for answer in answers:
+        lines.append(f"- {answer}")
+
+    lines.extend(
+        [
+            "",
+            "## Source-Normalized Variants",
+            "",
+            "| Variant | Grid | Area | Length | Work/Length | Ratio | Retention | Best Time | Period | Radial Peak | m | m Strength |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    source_by_variant = {row["variant"]: row for row in source_rows}
+    for row in ordered:
+        source = source_by_variant.get(row["variant"], {})
+        lines.append(
+            "| "
+            f"{row['variant']} | "
+            f"{row.get('grid_size')} | "
+            f"{_format(source.get('effective_driven_area'))} | "
+            f"{_format(source.get('effective_driven_length'))} | "
+            f"{_format(source.get('injected_work_per_physical_boundary_length'))} | "
+            f"{_format(row.get('best_energy_well_ratio'))} | "
+            f"{_format(row.get('retention_score'))} | "
+            f"{_format(row.get('best_event_time'))} | "
+            f"{_format(row.get('breathing_period'))} | "
+            f"{_format(row.get('radial_peak_radius'))} | "
+            f"{row.get('strongest_angular_mode')} | "
+            f"{_format(row.get('strongest_angular_mode_strength'))} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Pairwise Source-Normalized Mode Shape",
+            "",
+            "| Pair | Spatial Corr | Best Radial Corr | Tail Radial Corr | Angular Similarity | Radial Peak Shift |",
+            "| --- | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for row in pairwise:
+        lines.append(
+            "| "
+            f"{row['first_variant']} vs {row['second_variant']} | "
+            f"{_format(row.get('best_spatial_correlation'))} | "
+            f"{_format(row.get('best_radial_correlation'))} | "
+            f"{_format(row.get('tail_radial_correlation'))} | "
+            f"{_format(row.get('angular_mode_similarity'))} | "
+            f"{_format(row.get('best_radial_peak_shift'))} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Legacy Per-Cell Reference",
+            "",
+            "| Variant | Grid | Area | Work/Length | Ratio | Retention | Radial Peak |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    legacy_source_by_variant = {row["variant"]: row for row in legacy_source_rows}
+    for row in legacy_ordered:
+        source = legacy_source_by_variant.get(row["variant"], {})
+        lines.append(
+            "| "
+            f"{row['variant']} | "
+            f"{row.get('grid_size')} | "
+            f"{_format(source.get('effective_driven_area'))} | "
+            f"{_format(source.get('injected_work_per_physical_boundary_length'))} | "
+            f"{_format(row.get('best_energy_well_ratio'))} | "
+            f"{_format(row.get('retention_score'))} | "
+            f"{_format(row.get('radial_peak_radius'))} |"
+        )
+
+    if legacy_pairwise:
+        lines.extend(
+            [
+                "",
+                "## Legacy Pairwise Reference",
+                "",
+                "| Pair | Spatial Corr | Best Radial Corr | Tail Radial Corr | Radial Peak Shift |",
+                "| --- | ---: | ---: | ---: | ---: |",
+            ]
+        )
+        for row in legacy_pairwise:
+            lines.append(
+                "| "
+                f"{row['first_variant']} vs {row['second_variant']} | "
+                f"{_format(row.get('best_spatial_correlation'))} | "
+                f"{_format(row.get('best_radial_correlation'))} | "
+                f"{_format(row.get('tail_radial_correlation'))} | "
+                f"{_format(row.get('best_radial_peak_shift'))} |"
+            )
+
+    lines.extend(
+        [
+            "",
+            "## Checks",
+            "",
+            "| Check | Value |",
+            "| --- | --- |",
+        ]
+    )
+    for key, value in classification.get("checks", {}).items():
+        lines.append(f"| `{key}` | `{value}` |")
+
+    lines.extend(
+        [
+            "",
+            "## Interpretation",
+            "",
+            _source_normalized_interpretation(classification),
+            "",
+            "## Output Files",
+            "",
+            "- `source_normalized_resolution_summary.csv`",
+            "- `source_audit_comparison.csv`",
+            "- `injected_work_comparison.csv`",
+            "- `mask_area_audit.csv`",
+            "- `energy_budget_audit.csv`",
+            "- `radial_profile_comparison.csv`",
+        ]
+    )
+    for row in ordered:
+        lines.append(f"- `{row['variant']}` mode diagnostics: `{row.get('mode_shape_diagnostics_report')}`")
+
+    lines.extend(
+        [
+            "",
+            "## Thresholds",
+            "",
+            f"- Source work relative tolerance: `{options.source_work_relative_tolerance}`",
+            f"- Mask area relative tolerance: `{options.mask_area_relative_tolerance}`",
+            f"- Refined radial peak shift max: `{options.refined_peak_shift_max}`",
+            f"- Refined radial correlation minimum: `{options.refined_radial_corr_min}`",
+        ]
+    )
+    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
+def _source_normalized_answers(
+    rows: list[dict[str, Any]],
+    source_rows: list[dict[str, Any]],
+    mask_rows: list[dict[str, Any]],
+    pairwise: list[dict[str, Any]],
+    classification: dict[str, Any],
+) -> list[str]:
+    area_range = _relative_range([float(row.get("effective_driven_area") or 0.0) for row in source_rows])
+    length_range = _relative_range([float(row.get("effective_driven_length") or 0.0) for row in source_rows])
+    work_range = _relative_range(
+        [float(row.get("injected_work_per_physical_boundary_length") or 0.0) for row in source_rows]
+    )
+    work_63_removed = classification.get("checks", {}).get("work_63_anomaly_removed")
+    refined_pair = _comparison_for(pairwise, rows[-2]["variant"], rows[-1]["variant"]) if len(rows) >= 3 else None
+    first_shift = _peak_shift(rows[0], rows[1]) if len(rows) >= 2 else 0.0
+    refined_shift = _peak_shift(rows[-2], rows[-1]) if len(rows) >= 3 else 0.0
+    refined_peak = rows[-1].get("radial_peak_radius") if rows else None
+    baseline_peak = rows[0].get("radial_peak_radius") if rows else None
+    periods = [float(row.get("breathing_period") or 0.0) for row in rows]
+    modes = [int(row.get("strongest_angular_mode") or 0) for row in rows]
+    retention_values = [float(row.get("retention_score") or 0.0) for row in rows]
+    return [
+        f"Emitter effective area/length relative ranges are `{area_range:.3g}` / `{length_range:.3g}`.",
+        f"Injected work per physical boundary length relative range is `{work_range:.3g}`.",
+        f"The 63-grid source-work anomaly removed check is `{work_63_removed}`.",
+        (
+            f"The 63/81 radial peak shift is `{refined_shift:.3g}` with refined peak `{_format(refined_peak)}`; "
+            "they do not remain at the legacy 3.75 peak after source normalization. "
+            f"The 41/63 shift is `{first_shift:.3g}` from the 41-grid peak `{_format(baseline_peak)}`; "
+            f"63/81 best radial correlation is `{_format((refined_pair or {}).get('best_radial_correlation'))}`."
+        ),
+        f"Breathing periods by resolution are `{', '.join(f'{value:.3g}' for value in periods)}`.",
+        f"Strongest angular modes by resolution are `{', '.join(f'm{mode}' for mode in modes)}`.",
+        f"Retention values by resolution are `{', '.join(f'{value:.3g}' for value in retention_values)}`.",
+    ]
+
+
+def _source_normalized_interpretation(classification: dict[str, Any]) -> str:
+    label = classification["label"]
+    if label == "source_normalization_fixed":
+        return "The source audit is now comparable, but the resolution interpretation still needs inspection."
+    if label == "source_normalization_issue_persists":
+        return "The source is still not comparable enough; do not interpret the radial shift yet."
+    if label == "coarse_grid_artifact_likely":
+        return (
+            "With source normalization controlled, the refined grids agree with each other while the 41-grid radial peak "
+            "remains the outlier. Treat the 41-grid radial location as likely coarse-grid structure, not a resolved refined mode."
+        )
+    if label == "refined_mode_converging":
+        return "With source normalization controlled, refined grids are converging toward a shared radial structure."
+    if label == "true_resolution_sensitive":
+        return "With source normalization controlled, retention and structure still change enough to remain resolution-sensitive."
+    return "The source-normalized evidence remains mixed; do not run broad long sweeps yet."
 
 
 def _write_report(
@@ -1180,6 +1815,7 @@ def _write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str] | N
 
 def _summary_fields() -> list[str]:
     return [
+        "variant_role",
         "variant",
         "run_id",
         "path",
@@ -1191,13 +1827,19 @@ def _summary_fields() -> list[str]:
         "steps",
         "physical_duration",
         "drive_cutoff_time",
+        "source_normalization",
         "recommended_dt_max",
         "hard_stability_dt_max",
         "dt_to_hard_limit_ratio",
         "stability_warnings",
         "emitter_cell_count",
+        "emitter_fractional_coverage_sum",
         "physical_emitter_length",
+        "effective_driven_area",
+        "effective_driven_length",
         "per_cell_drive_amplitude",
+        "source_normalization_scale",
+        "total_drive_amplitude_sum",
         "total_injected_work_before_cutoff",
         "injected_work_per_physical_boundary_length",
         "injected_work_per_unit_area",
@@ -1243,15 +1885,24 @@ def _summary_fields() -> list[str]:
 
 def _source_fields() -> list[str]:
     return [
+        "variant_role",
         "variant",
         "grid_size",
         "dx",
         "dy",
+        "source_normalization",
         "emitter_cell_count",
+        "emitter_fractional_coverage_sum",
         "physical_emitter_length",
+        "effective_driven_area",
+        "effective_driven_length",
+        "emitter_active_cell_area",
         "emitter_width_physical",
         "emitter_physical_area_from_mask",
         "per_cell_drive_amplitude",
+        "source_normalization_scale",
+        "total_drive_amplitude_sum",
+        "area_weighted_drive_amplitude_sum",
         "drive_frequency",
         "drive_cutoff_time",
         "total_drive_work_over_time",
@@ -1266,11 +1917,13 @@ def _source_fields() -> list[str]:
 
 def _mask_fields() -> list[str]:
     return [
+        "variant_role",
         "variant",
         "grid_size",
         "grid_height",
         "dx",
         "dy",
+        "source_normalization",
         "cell_area",
         "domain_width",
         "domain_height",
@@ -1292,13 +1945,18 @@ def _mask_fields() -> list[str]:
         "sponge_cell_count",
         "sponge_physical_area",
         "emitter_cell_count",
+        "emitter_fractional_coverage_sum",
         "emitter_physical_length",
+        "effective_driven_area",
+        "effective_driven_length",
+        "emitter_active_cell_area",
         "emitter_physical_area_from_mask",
     ]
 
 
 def _energy_budget_fields() -> list[str]:
     return [
+        "variant_role",
         "variant",
         "grid_size",
         "step",

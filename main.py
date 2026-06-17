@@ -17,7 +17,11 @@ from simulation.config import (
 from simulation.fixed_domain_controls import FixedDomainGridControlOptions, run_fixed_domain_grid_control
 from simulation.grid_controls import GridControlOptions, run_grid_control
 from simulation.numerical_controls import DtControlOptions, run_dt_control
-from simulation.resolution_diagnostics import ResolutionDiagnosticsOptions, run_resolution_diagnostics
+from simulation.resolution_diagnostics import (
+    ResolutionDiagnosticsOptions,
+    run_resolution_diagnostics,
+    run_source_normalized_resolution_diagnostics,
+)
 from simulation.sweep import run_single_experiment, run_sweep
 from simulation.time_resolved_diagnostics import DiagnosticOptions, diagnose_existing_run
 
@@ -108,6 +112,29 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         default=(41, 63, 81),
         help="Fixed-domain grid sizes to audit; default is 41 63 81",
+    )
+
+    source_resolution_parser = subparsers.add_parser(
+        "source-normalized-resolution-diagnostics",
+        help="Run fixed-domain resolution diagnostics with physically normalized source coverage",
+    )
+    source_resolution_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the baseline candidate")
+    source_resolution_parser.add_argument("--output-root", default="runs", help="Directory for source-normalized diagnostic outputs")
+    source_resolution_parser.add_argument("--reference-root", type=Path, default=Path("runs"), help="Directory containing sweep summaries for short-peak references")
+    source_resolution_parser.add_argument("--frame-interval", type=int, default=20, help="Base step interval for diagnostic frame snapshots")
+    source_resolution_parser.add_argument("--window-steps", type=int, default=30, help="Extra frame-capture radius around cutoff, best event, and late tail")
+    source_resolution_parser.add_argument(
+        "--grid-sizes",
+        type=int,
+        nargs="+",
+        default=(41, 63, 81),
+        help="Fixed-domain grid sizes to audit; default is 41 63 81",
+    )
+    source_resolution_parser.add_argument(
+        "--source-normalization",
+        choices=("per_length", "constant_boundary_flux", "constant_total_work"),
+        default="constant_total_work",
+        help="Physical source normalization mode for the main variants",
     )
 
     return parser
@@ -260,6 +287,22 @@ def main() -> None:
             reference_root=args.reference_root,
         )
         _print_resolution_diagnostics_summary(result)
+        return
+
+    if args.command == "source-normalized-resolution-diagnostics":
+        config = _load_sim_config(args.config)
+        result = run_source_normalized_resolution_diagnostics(
+            config,
+            options=ResolutionDiagnosticsOptions(
+                output_root=args.output_root,
+                frame_interval=args.frame_interval,
+                window_steps=args.window_steps,
+                grid_sizes=tuple(args.grid_sizes),
+            ),
+            reference_root=args.reference_root,
+            source_normalization=args.source_normalization,
+        )
+        _print_source_normalized_resolution_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -466,6 +509,35 @@ def _print_resolution_diagnostics_summary(result: dict[str, Any]) -> None:
         )
     print(f"summary CSV: {result['summary_csv']}")
     print(f"source audit: {result['source_audit_csv']}")
+    print(f"mask audit: {result['mask_area_audit_csv']}")
+    print(f"energy budget audit: {result['energy_budget_audit_csv']}")
+    print(f"radial comparison: {result['radial_profile_comparison_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_source_normalized_resolution_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("Source-normalized resolution diagnostics complete")
+    print(f"diagnostic ID: {result['diagnostic_id']}")
+    print(f"source normalization: {result['source_normalization']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print("source-normalized variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"grid={row.get('grid_size')}, "
+            f"dx={_format_optional(row.get('dx'))}, "
+            f"ratio={float(row.get('best_energy_well_ratio', 0.0)):.6g}, "
+            f"retention={float(row.get('retention_score', 0.0)):.6g}, "
+            f"best_time={_format_optional(row.get('best_event_time'))}, "
+            f"period={_format_optional(row.get('breathing_period'))}, "
+            f"radial_peak={_format_optional(row.get('radial_peak_radius'))}, "
+            f"m={row.get('strongest_angular_mode')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"source audit comparison: {result['source_audit_comparison_csv']}")
+    print(f"injected work comparison: {result['injected_work_comparison_csv']}")
     print(f"mask audit: {result['mask_area_audit_csv']}")
     print(f"energy budget audit: {result['energy_budget_audit_csv']}")
     print(f"radial comparison: {result['radial_profile_comparison_csv']}")

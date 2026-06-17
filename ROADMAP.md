@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Fix or control fixed-domain boundary-emitter discretization before broader long sweeps.
+Validate the source-normalized refined-mode result before broader long sweeps.
 
-Recommended next task: make the fixed-domain emitter/source region more physically invariant across 41/63/81 grids, or add a source-normalized control that removes the emitter-area discrepancy. The new resolution diagnostics show that breathing persists and 63/81 radial profiles converge inward, but the 63-grid emitter strip covers a larger physical area and receives more pre-cutoff injected work.
+Recommended next task: inspect the source-normalized 63-grid breathing-period anomaly and confirm whether it is diagnostic sampling, a real refined-grid period shift, or a remaining numerical/source-control issue. Source geometry and injected work are now controlled, and 63/81 converge to the same refined radial peak, but the 63 diagnostic breathing period is shorter than expected.
 
 ## Status
 
@@ -79,16 +79,21 @@ Recommended next task: make the fixed-domain emitter/source region more physical
 - Ran fixed-domain 41/63/81 resolution diagnostics for the long 0.92 candidate; result classified as `mask_discretization_issue`.
 - Found that core/defect masks are comparable, injected work per boundary length is within tolerance, breathing period stays stable, and m=4 remains the strongest angular structure, but emitter mask area varies substantially at 63x63.
 - Found a secondary coarse-grid signal: the 63x63 and 81x81 radial peaks agree at 3.75 with best radial correlation 0.964, while 41x41 peaks at 10.0.
+- Added fractional fixed-domain source coverage and `source_normalization` modes: `per_cell`, `per_length`, `constant_boundary_flux`, and calibrated `constant_total_work`.
+- Added `source-normalized-resolution-diagnostics` with source-normalized 41/63/81 variants and legacy `per_cell` reference variants.
+- Ran source-normalized fixed-domain diagnostics for the long 0.92 candidate; result classified as `coarse_grid_artifact_likely`.
+- Source-normalized 63/81 converge at physical radial peak 10.0 with best radial correlation 0.965; the 41-grid source-normalized peak is 5.0.
+- Source-normalized emitter effective area and injected work are controlled across resolutions; legacy `per_cell` results remain reference-only.
 
 ### In Progress
 
-- Fixed-domain emitter/source normalization for the long 0.92 breathing tail.
+- Source-normalized refined-mode validation for the long 0.92 breathing tail.
 
 ### Next
 
-- Make emitter physical strip semantics resolution-invariant, likely by replacing the current hard `edge_distance < width` cell mask with an area/coverage weighting or source-amplitude normalization.
-- Rerun `python main.py resolution-diagnostics --config configs\long_validation_peak_0_92.json` after the emitter/source fix.
-- If emitter/source normalization removes the mask issue and 63/81 still converge inward, reclassify the refined radial structure as likely coarse-grid artifact plus refined-mode convergence.
+- Audit source-normalized breathing periods using metric-core peak timing and/or denser diagnostic frame capture, especially the 63-grid period of 1.689.
+- If the 63 period anomaly is diagnostic-only, promote the source-normalized 63/81 refined radial structure as the cleaner fixed-domain interpretation.
+- If the 63 period anomaly is physical, run one targeted source-normalized numerical control before any long-frequency sweep.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive, even though m=4 structure survives the half-step control.
 - Do not run neighboring-frequency long controls until the artifact and numerical controls are understood.
 
@@ -215,3 +220,9 @@ Possible work:
 - 2026-06-16: Ran resolution diagnostics in `runs\resolution_diagnostics_20260616_161612`; result classified as `mask_discretization_issue` because emitter physical area from the source mask varies across fixed-domain resolutions.
 - 2026-06-16: The resolution diagnostic found source work per physical boundary length remained within tolerance (relative range 0.264), core area was comparable (relative range 0.0447), breathing period stayed stable at 2.67/2.63/2.99, and strongest angular mode stayed m=4.
 - 2026-06-16: The same diagnostic found 63/81 refined radial structure converging inward: radial peak 3.75 for both, best radial correlation 0.964, compared with the 41-grid radial peak at 10.0.
+- 2026-06-16: Added fractional fixed-domain emitter coverage and source normalization modes for physically controlled source geometry.
+- 2026-06-16: Added `python main.py source-normalized-resolution-diagnostics --config configs\long_validation_peak_0_92.json`.
+- 2026-06-16: Ran source-normalized diagnostics in `runs\source_normalized_resolution_20260616_215926`; result classified as `coarse_grid_artifact_likely`.
+- 2026-06-16: In the calibrated source-normalized run, emitter effective area range was 0.0126, injected work per physical boundary length range was 2.9e-06, and the legacy 63-grid source-work anomaly was removed.
+- 2026-06-16: Source-normalized 63/81 refined grids converged at physical radial peak 10.0 with best radial correlation 0.965; the 41-grid source-normalized radial peak was 5.0.
+- 2026-06-16: Breathing survived and m=4 persisted under source normalization, but the 63-grid diagnostic breathing period was short at 1.689, so the next step is a targeted breathing-period audit rather than a broad sweep.

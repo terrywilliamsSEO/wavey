@@ -11,11 +11,12 @@ The main candidate under study is the long-run drive-frequency `0.92` case from 
 Current interpretation:
 
 - The 0.92 candidate shows persistent post-cutoff breathing localization across sponge and time-step controls.
-- The candidate is not yet fixed-domain resolution-resistant.
-- Under true fixed-domain refinement, breathing persists, but the physical radial peak shifts inward and retention weakens at 81x81.
-- The latest resolution diagnostic classified the current fixed-domain comparison as `mask_discretization_issue` because the emitter/source mask physical area is not invariant across 41/63/81.
+- Legacy fixed-domain `per_cell` source handling is not physically invariant and should be treated as reference-only.
+- Source-normalized fixed-domain controls now make emitter effective area and injected work comparable across 41/63/81.
+- Under source-normalized fixed-domain controls, 63x63 and 81x81 converge to the same refined physical radial peak at `10.0`, while 41x41 peaks at `5.0`.
+- The latest source-normalized diagnostic classified the radial result as `coarse_grid_artifact_likely`, with a breathing-period caveat at 63x63.
 - Do not call this exotic physics.
-- Do not run broad long sweeps until the fixed-domain emitter/source discretization is fixed or controlled.
+- Do not run broad long sweeps until the source-normalized 63-grid breathing-period anomaly is understood.
 
 ## Latest Evidence
 
@@ -126,7 +127,7 @@ Important values:
 | 63 | 0.645 | 0.400 | 0.783 | 41.84 | true | 2.632 | 3.75 | 0.231 | 0.674 |
 | 81 | 0.500 | 0.318 | 0.716 | 38.20 | true | 2.993 | 3.75 | 0.231 | 0.560 |
 
-Current conclusion: the 0.92 breathing localization survives as a phenomenon, but the radial structure and retention are resolution-sensitive under fixed-domain physics. Next work should diagnose source normalization, radial profile behavior, and fixed-domain injection scaling before any broad search.
+Current legacy conclusion: the 0.92 breathing localization survives as a phenomenon, but legacy `per_cell` radial structure and retention were confounded by source discretization. Use the source-normalized diagnostic below as the current fixed-domain resolution-control result.
 
 ### Resolution-Sensitivity Diagnostics
 
@@ -160,13 +161,57 @@ Pairwise best radial correlations:
 | 41 vs 81 | 0.613 | 0.830 | 0.525 | 6.25 |
 | 63 vs 81 | 0.675 | 0.964 | 0.722 | 0.00 |
 
+Legacy conclusion: the old `per_cell` source made the emitter area and injected work non-invariant, especially at 63x63. Treat this run as the diagnostic that motivated source normalization, not as the main resolution-control result.
+
+### Source-Normalized Resolution Diagnostics
+
+Command:
+
+```powershell
+python main.py source-normalized-resolution-diagnostics --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\source_normalized_resolution_20260616_215926\source_normalized_resolution_report.md`
+- Source normalization: `constant_total_work`
+- Classification: `coarse_grid_artifact_likely`
+- Primary finding: source geometry and injected work are now comparable across 41/63/81.
+- Refined result: 63x63 and 81x81 converge at physical radial peak `10.0`, not the legacy `3.75`.
+- 41x41 source-normalized peak is `5.0`, making the coarse grid the outlier under the controlled source.
+- Caveat: the 63-grid diagnostic breathing period is short at `1.689`, so breathing-period stability needs a targeted audit.
+
+Important source audit values:
+
+| Grid | Source Amp | Effective Area | Effective Length | Injected Work | Work/Length |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 41 | 0.550 | 160.0 | 160.0 | 13.6886 | 0.085554 |
+| 63 | 0.436 | 158.6 | 158.6 | 13.6886 | 0.085554 |
+| 81 | 0.449 | 158.0 | 158.0 | 13.6886 | 0.085554 |
+
+Important mode values:
+
+| Grid | Ratio | Retention | Best Time | Period | Radial Peak | m=4 Strength |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 41 | 0.485 | 0.829 | 52.00 | 2.640 | 5.00 | 0.303 |
+| 63 | 0.324 | 0.863 | 44.24 | 1.689 | 10.00 | 0.124 |
+| 81 | 0.328 | 0.853 | 43.64 | 2.566 | 10.00 | 0.116 |
+
+Pairwise source-normalized radial correlations:
+
+| Pair | Spatial Corr | Best Radial Corr | Tail Radial Corr | Radial Peak Shift |
+| --- | ---: | ---: | ---: | ---: |
+| 41 vs 63 | 0.713 | 0.920 | 0.855 | 5.00 |
+| 41 vs 81 | 0.639 | 0.944 | 0.712 | 5.00 |
+| 63 vs 81 | 0.728 | 0.965 | 0.820 | 0.00 |
+
 ## Current Next Step
 
-Fix or control fixed-domain emitter/source discretization:
+Audit source-normalized breathing-period stability:
 
-- Make emitter physical strip semantics resolution-invariant, likely with area/coverage weighting or source-amplitude normalization.
-- Rerun `python main.py resolution-diagnostics --config configs\long_validation_peak_0_92.json`.
-- If the emitter/mask issue disappears and 63/81 still converge inward, treat the original 41-grid radial peak as likely coarse-grid structure and update the claim accordingly.
+- Check whether the source-normalized 63-grid breathing period of `1.689` is caused by diagnostic sampling or a real period change.
+- Prefer a targeted audit using metric-core peak timing and/or denser diagnostic frame capture.
+- Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync
 

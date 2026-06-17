@@ -165,7 +165,12 @@ def _build_fixed_domain_variants(
     return variants
 
 
-def _fixed_domain_config(base_config: SimulationConfig, grid_size: int) -> SimulationConfig:
+def _fixed_domain_config(
+    base_config: SimulationConfig,
+    grid_size: int,
+    *,
+    source_normalization: str | None = None,
+) -> SimulationConfig:
     config = copy.deepcopy(base_config)
     domain_width = float(base_config.domain_width if base_config.domain_width is not None else base_config.grid_size - 1)
     base_height = base_config.grid_height if base_config.grid_height is not None else base_config.grid_size
@@ -200,6 +205,10 @@ def _fixed_domain_config(base_config: SimulationConfig, grid_size: int) -> Simul
     config.core_radius_physical = core_radius_physical
     config.boundary_damping_width_physical = sponge_width_physical
     config.driver.emitter_width_physical = emitter_width_physical
+    if source_normalization is not None:
+        config.driver.source_normalization = source_normalization
+    elif config.driver.source_normalization == "per_cell":
+        config.driver.source_normalization = "constant_boundary_flux"
     config.defect.radius = max(1, int(round(defect_radius_physical / min(config.dx, config.dy))))
     config.core_radius = max(1, int(round(core_radius_physical / min(config.dx, config.dy))))
     config.boundary_damping_width = max(1, int(round(sponge_width_physical / min(config.dx, config.dy))))

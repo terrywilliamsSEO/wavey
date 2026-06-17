@@ -14,12 +14,13 @@ Last updated: 2026-06-16
 - `grid-control`: larger matched-proportion grid control.
 - `fixed-domain-grid-control`: true same-domain grid-refinement control.
 - `resolution-diagnostics`: fixed-domain source, mask, energy-budget, radial-profile, and mode-shape resolution audit.
+- `source-normalized-resolution-diagnostics`: source-normalized fixed-domain resolution audit with legacy `per_cell` reference variants.
 
 ## Core Modules
 
 - `simulation/config.py`: dataclasses for simulation, sweep, defect, and driver config. Also owns fixed-domain helpers: `nx`, `ny`, `dx`, `dy`, physical radii, cell area, and shape.
 - `simulation/lattice.py`: 2D oscillator lattice, masks, sponge damping, coupling force, semi-implicit Euler step, and energy density.
-- `simulation/drivers.py`: boundary emitter masks and phase maps.
+- `simulation/drivers.py`: boundary emitter coverage weights, source normalization, masks, and phase maps.
 - `simulation/metrics.py`: per-step metrics and post-hoc spectral/retention estimates.
 - `simulation/anomaly_detection.py`: run-level summary and event labels.
 - `simulation/mode_diagnostics.py`: radial profiles, shape correlations, spatial distribution metrics.
@@ -45,6 +46,8 @@ When enabled:
 - Core radius can be specified as `core_radius_physical`.
 - Sponge width can be specified as `boundary_damping_width_physical`.
 - Emitter strip width can be specified as `driver.emitter_width_physical`.
+- Fixed-domain emitters support fractional source coverage weights for physically comparable source geometry.
+- `driver.source_normalization` supports `per_cell`, `per_length`, `constant_boundary_flux`, and `constant_total_work`.
 - Lattice coupling force scales by `1/dx^2` and `1/dy^2`.
 - Energy density integrates onsite/kinetic/nonlinear/coupling contributions with cell area.
 - Masks, sponge damping, phase maps, radial profiles, annulus masks, and angular masks use physical distances.
@@ -63,8 +66,9 @@ Controls should be preferred over broad sweeps while validating one candidate:
 - Use `grid-control` only for historical matched-proportion domain scaling.
 - Use `fixed-domain-grid-control` for true resolution checks.
 - Use `resolution-diagnostics` when a fixed-domain resolution check changes radial structure, retention, timing, or source/mask comparability.
+- Use `source-normalized-resolution-diagnostics` after source/mask comparability fails; its main variants use calibrated source-normalized coverage and its legacy `per_cell` variants are reference-only.
 
-Current fixed-domain caution: `resolution-diagnostics` found the 0.92 candidate's emitter/source mask area is not physically invariant across 41/63/81 grids. Fix or control emitter/source discretization before broad long sweeps.
+Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`, but the 63-grid breathing-period estimate is short. Audit that targeted issue before broad long sweeps.
 
 ## Generated Artifacts
 
