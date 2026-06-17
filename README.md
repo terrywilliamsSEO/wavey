@@ -154,6 +154,12 @@ python main.py transport-controls --config configs\long_validation_peak_0_92.jso
 
 This runs a source-normalized 63x63 boundary reference plus matched-work boundary-geometry and annulus/near-defect source variants. It tests one-side versus symmetric boundary drive, rotating boundary phase, inner-ring/interface drive, near-defect annulus drive, radial-peak annulus drive, one-sided annulus sector drive, and rotating annulus phase before any broad long sweeps.
 
+Run the same transport-control plan at a refined fixed-domain grid with:
+
+```powershell
+python main.py transport-controls --config configs\long_validation_peak_0_92.json --grid-size 81
+```
+
 ## Run one simulation
 
 ```powershell

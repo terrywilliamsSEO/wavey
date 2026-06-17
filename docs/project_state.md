@@ -19,9 +19,11 @@ Current interpretation:
 - The refreshed source-normalized 63x63 diagnostic now reports an envelope-scale period of `3.040` while flagging the old raw `1.689` diagnostic-frame period as subpeak overcounting.
 - A controlled direct core-modal probe classified the 0.92 candidate as `boundary_transport_required`: source-normalized boundary references retained the 0.92 breathing family, but work-normalized core impulse/burst controls did not reproduce the same post-cutoff breathing, radial peak, and m=4 structure.
 - The first targeted source-geometry transport control classified the candidate as `boundary_geometry_sensitive`: boundary left, boundary left-right, and boundary rotating m=4 variants retained breathing under matched work, while direct inner-ring/near-defect annulus variants did not reproduce the reference family.
+- The 81x81 transport confirmation also classified as `boundary_geometry_sensitive`; `boundary_rotating_m4_81` became the best non-reference match.
 - `annulus_radial_peak_63` produced a retained short-period response, but it did not match the reference period/radial structure closely enough to count as the same family.
+- `annulus_radial_peak_81` retained more energy, but still looked like a separate short-period response rather than the reference family.
 - Do not call this exotic physics.
-- Do not run broad long sweeps until boundary-geometry sensitivity is confirmed or ruled out under fixed-domain source-normalized controls.
+- Do not run broad long sweeps until boundary flux-density sensitivity is controlled under fixed-domain source-normalized controls.
 
 ## Latest Evidence
 
@@ -308,14 +310,53 @@ Interpretation:
 - Boundary geometry matters. The best non-reference match was the left-right boundary source, with high radial similarity and better frame similarity than the other boundary variants.
 - Direct inner/interface annulus and near-defect annulus sources produced m=4 content but almost no retained post-cutoff energy, so they do not reproduce the reference family.
 - The radial-peak annulus source retained some energy, but its period and radial peak do not match the reference family; treat it as a possible separate forcing response, not a pass.
-- Next control should confirm the boundary-geometry result at 81x81 before changing frequency coverage.
+- This result was confirmed at 81x81 below.
+
+### 81x81 Transport Confirmation
+
+Command:
+
+```powershell
+python main.py transport-controls --config configs\long_validation_peak_0_92.json --grid-size 81
+```
+
+Latest summarized run:
+
+- Local report: `runs\transport_controls_20260617_094822\transport_control_report.md`
+- Summary CSV: `runs\transport_controls_20260617_094822\transport_control_summary.csv`
+- Classification: `boundary_geometry_sensitive`
+- Matched work target: `20.5277` before cutoff for every variant.
+- Best non-reference match: `boundary_rotating_m4_81`
+
+Important values:
+
+| Variant | Drive | Work | Retention | Envelope Period | Metric min_sep 1.5 | Raw Period | Radial Peak | m4 Strength | Radial Sim | Frame Sim |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| boundary_reference_81 | boundary four-side | 20.528 | 0.853 | 2.850 | 3.080 | 2.566 | 10.00 | 0.116 | 1.000 | 1.000 |
+| boundary_left_81 | boundary one-side | 20.528 | 0.795 | 1.800 | 2.528 | 3.112 | 10.00 | 0.104 | 0.952 | 0.365 |
+| boundary_left_right_81 | boundary two-side | 20.528 | 0.786 | 2.260 | 2.184 | 2.593 | 10.00 | 0.094 | 0.958 | 0.465 |
+| boundary_rotating_m4_81 | boundary rotating m4 | 20.527 | 0.891 | 2.627 | 2.147 | 1.775 | 10.00 | 0.219 | 0.890 | 0.329 |
+| inner_ring_interface_81 | annulus burst | 20.528 | 0.000528 | 1.640 | 1.704 | 0.580 | 6.25 | 0.328 | 0.265 | 0.101 |
+| annulus_near_defect_81 | annulus burst | 20.528 | 0.0456 | n/a | 1.824 | 1.324 | 8.75 | 0.255 | 0.495 | 0.107 |
+| annulus_radial_peak_81 | annulus burst | 20.528 | 0.506 | 1.707 | 1.712 | 1.771 | 6.25 | 0.0497 | 0.731 | 0.251 |
+| annulus_sector_one_side_81 | annulus sector | 20.528 | 0.101 | 1.680 | 1.707 | 0.756 | 6.25 | 0.165 | 0.343 | 0.069 |
+| annulus_rotating_m4_81 | annulus rotating m4 | 20.530 | 0.0492 | n/a | 1.756 | 1.698 | 8.75 | 0.274 | 0.501 | 0.107 |
+
+Interpretation:
+
+- The boundary-geometry classification survived fixed-domain refinement from 63x63 to 81x81.
+- `boundary_rotating_m4_81` became the best non-reference match and had higher retention than the four-side uniform reference, but lower frame similarity. Treat this as boundary-geometry sensitivity, not proof of coherent rotation.
+- One-side and two-side boundary variants still retained breathing and the refined radial peak at 10.0.
+- Direct annulus variants still do not reproduce the reference family. `annulus_radial_peak_81` is a stronger retained short-period response, but it has period near 1.71, radial peak 6.25, weak m4, and low frame similarity.
+- New confound: one-side and two-side boundary variants match total injected work, so work per physical boundary length is higher than in four-side variants. The next control should normalize boundary flux density.
 
 ## Current Next Step
 
-Confirm boundary-geometry sensitivity:
+Control boundary flux density:
 
-- Run or add an 81x81 confirmation for `boundary_left_right` and `boundary_rotating_m4` with matched injected work.
-- Compare one-side, left-right, four-side uniform, and four-side rotating m=4 under the same hardened detector.
+- Add or run a boundary-only control that compares one-side, left-right, four-side uniform, and four-side rotating m=4 at matched work per physical boundary length, not only matched total work.
+- Run the boundary-only flux-normalized check at 63x63 and 81x81.
+- Check whether `boundary_rotating_m4` remains the strongest refined-grid non-reference match when flux density is normalized.
 - Recheck `annulus_radial_peak` only as a possible separate retained short-period response, not as the current reference-family mechanism.
 - Do not run broad neighboring-frequency long sweeps yet.
 

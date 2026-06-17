@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Confirm boundary-geometry sensitivity for the source-normalized fixed-domain 0.92 candidate before broader long sweeps.
+Control boundary flux density for the source-normalized fixed-domain 0.92 boundary-geometry variants before broader long sweeps.
 
-Recommended next task: run or add an 81x81 confirmation pass for the boundary-geometry variants from `transport-controls`, especially `boundary_left_right` and `boundary_rotating_m4`, using matched injected work. The first 63x63 transport-control pass classified the result as `boundary_geometry_sensitive`: direct annulus/near-defect drives did not reproduce the reference family, while boundary one-side, two-side, and rotating m=4 variants retained breathing.
+Recommended next task: separate true boundary/interference geometry from per-boundary-length flux concentration. The 63x63 and 81x81 transport-control passes both classified as `boundary_geometry_sensitive`, but the one-side and two-side matched-total-work variants concentrate the same injected work over shorter physical boundary length. Add or run a boundary-only control that compares one-side, left-right, four-side uniform, and four-side rotating m=4 under both matched total work and matched work per physical boundary length.
 
 ## Status
 
@@ -100,19 +100,23 @@ Recommended next task: run or add an 81x81 confirmation pass for the boundary-ge
 - Added `transport-controls` for matched-work boundary-geometry and annulus/near-defect source controls.
 - Ran `transport-controls` in `runs\transport_controls_20260617_093201`; result classified as `boundary_geometry_sensitive`.
 - Boundary left, boundary left-right, and rotating m=4 boundary variants retained breathing under matched work; direct annulus/near-defect variants did not reproduce the reference family, although `annulus_radial_peak_63` produced a separate retained short-period response.
+- Ran 81x81 confirmation transport controls in `runs\transport_controls_20260617_094822`; classification stayed `boundary_geometry_sensitive`.
+- At 81x81, boundary left, boundary left-right, and boundary rotating m=4 variants retained breathing with radial peak 10.0; `boundary_rotating_m4_81` was the best non-reference match.
+- At 81x81, direct annulus radial-peak and sector variants retained short-period responses, but their periods and radial/frame similarities did not match the reference family.
 
 ### In Progress
 
-- Boundary-geometry confirmation controls.
+- Boundary flux-density / side-count controls.
 
 ### Next
 
-- Confirm `boundary_left_right` and `boundary_rotating_m4` at 81x81 with matched injected work.
-- Separate symmetry from phase: compare one-side, left-right, four-side uniform, and four-side rotating m=4 boundary variants using the same hardened detector.
+- Add or run a boundary-only source-geometry control with matched work per physical boundary length, not only matched total work.
+- Compare one-side, left-right, four-side uniform, and four-side rotating m=4 at 63x63 and 81x81 under the same hardened detector.
+- Check whether `boundary_rotating_m4` remains the strongest refined-grid non-reference match when flux density is normalized.
 - Recheck whether the `annulus_radial_peak` response is a separate short-period retained family or just a non-reference forcing artifact.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls until boundary-geometry sensitivity is confirmed or ruled out.
+- Do not run neighboring-frequency long controls until boundary flux-density sensitivity is controlled.
 
 ## Phases
 
@@ -259,3 +263,7 @@ Possible work:
 - 2026-06-17: Ran transport controls in `runs\transport_controls_20260617_093201`; classified as `boundary_geometry_sensitive`.
 - 2026-06-17: Boundary left, boundary left-right, and boundary rotating m=4 variants retained breathing with matched work; direct inner-ring/near-defect/sector/rotating annulus drives did not reproduce the reference family, and `annulus_radial_peak_63` looked like a non-reference short-period retained response.
 - 2026-06-17: Updated the next step to confirm boundary-geometry sensitivity at 81x81 before any broad neighboring-frequency controls.
+- 2026-06-17: Ran `python main.py transport-controls --config configs\long_validation_peak_0_92.json --grid-size 81` in `runs\transport_controls_20260617_094822`; classification stayed `boundary_geometry_sensitive`.
+- 2026-06-17: The 81x81 best non-reference match was `boundary_rotating_m4_81` with retention 0.891, metric period 2.147, radial peak 10.0, m4 strength 0.219, and radial similarity 0.890.
+- 2026-06-17: The 81x81 annulus radial-peak response retained energy (retention 0.506) but had short period 1.712, radial peak 6.25, m4 strength 0.0497, and low frame similarity 0.251, so it remains a likely separate response rather than the reference family.
+- 2026-06-17: Updated the next step to boundary flux-density / side-count controls, because matched total work concentrates more work per boundary length in one-side and two-side boundary variants.

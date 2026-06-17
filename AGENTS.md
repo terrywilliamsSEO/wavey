@@ -12,14 +12,14 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps until boundary-geometry sensitivity is confirmed or ruled out under fixed-domain source-normalized controls.
+- Do not run broad long sweeps until boundary flux-density sensitivity is controlled under fixed-domain source-normalized controls.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
 - Source-normalized breathing survives and m=4 persists. The global detector now reports envelope-scale periods and flags raw subpeak overcounting; the refreshed 63x63 source-normalized period is 3.040 with `subpeak_overcounting_possible` for the old raw 1.689 diagnostic-frame period.
 - The latest core-modal probe classified direct core excitation as `boundary_transport_required`: boundary references at 63/81 retained the 0.92 breathing family with matched work, but core impulse/burst controls did not reproduce the reference post-cutoff breathing/radial/m=4 state.
-- The first targeted transport-control pass classified the candidate as `boundary_geometry_sensitive`: boundary left, left-right, and rotating m=4 variants retained breathing under matched work, while direct annulus/near-defect drives did not reproduce the reference family.
-- The current next physics step is an 81x81 confirmation of the boundary-geometry controls, especially left-right and rotating m=4 boundary variants, not broad neighboring-frequency long sweeps.
+- The targeted transport-control passes at 63x63 and 81x81 both classified the candidate as `boundary_geometry_sensitive`: boundary left, left-right, and rotating m=4 variants retained breathing under matched total work, while direct annulus/near-defect drives did not reproduce the reference family.
+- The current next physics step is a boundary flux-density / side-count control, because matched total work concentrates more work per physical boundary length in one-side and two-side variants.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
