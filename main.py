@@ -7,6 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from simulation.artifact_controls import ArtifactControlOptions, run_artifact_controls
+from simulation.breathing_period_audit import (
+    BreathingPeriodAuditOptions,
+    discover_run_paths,
+    run_breathing_period_audit,
+)
 from simulation.config import (
     SimulationConfig,
     SweepConfig,
@@ -136,6 +141,15 @@ def build_parser() -> argparse.ArgumentParser:
         default="constant_total_work",
         help="Physical source normalization mode for the main variants",
     )
+
+    breathing_audit_parser = subparsers.add_parser(
+        "breathing-period-audit",
+        help="Audit completed runs for breathing-period peak-picking sensitivity",
+    )
+    breathing_audit_parser.add_argument("--control-root", type=Path, help="Control folder containing run subdirectories")
+    breathing_audit_parser.add_argument("--run-path", type=Path, action="append", help="Completed run directory to audit; repeatable")
+    breathing_audit_parser.add_argument("--output-dir", type=Path, help="Directory for audit outputs")
+    breathing_audit_parser.add_argument("--percentile", type=float, default=55.0, help="Core-energy percentile threshold for peak filtering")
 
     return parser
 
@@ -303,6 +317,23 @@ def main() -> None:
             source_normalization=args.source_normalization,
         )
         _print_source_normalized_resolution_summary(result)
+        return
+
+    if args.command == "breathing-period-audit":
+        if args.control_root is None and not args.run_path:
+            parser.error("breathing-period-audit requires --control-root or --run-path")
+        run_paths = list(args.run_path or [])
+        if args.control_root is not None:
+            run_paths.extend(discover_run_paths(args.control_root))
+        output_dir = args.output_dir
+        if output_dir is None:
+            output_dir = (args.control_root or Path(run_paths[0]).parent) / "breathing_period_audit"
+        result = run_breathing_period_audit(
+            run_paths,
+            output_dir=output_dir,
+            options=BreathingPeriodAuditOptions(percentile=args.percentile),
+        )
+        _print_breathing_period_audit_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -541,6 +572,16 @@ def _print_source_normalized_resolution_summary(result: dict[str, Any]) -> None:
     print(f"mask audit: {result['mask_area_audit_csv']}")
     print(f"energy budget audit: {result['energy_budget_audit_csv']}")
     print(f"radial comparison: {result['radial_profile_comparison_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_breathing_period_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("Breathing-period audit complete")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"peak times CSV: {result['peak_times_csv']}")
     print(f"report: {result['report_path']}")
 
 

@@ -15,6 +15,7 @@ Last updated: 2026-06-16
 - `fixed-domain-grid-control`: true same-domain grid-refinement control.
 - `resolution-diagnostics`: fixed-domain source, mask, energy-budget, radial-profile, and mode-shape resolution audit.
 - `source-normalized-resolution-diagnostics`: source-normalized fixed-domain resolution audit with legacy `per_cell` reference variants.
+- `breathing-period-audit`: read-only peak-picking audit for completed diagnostic runs.
 
 ## Core Modules
 
@@ -25,6 +26,7 @@ Last updated: 2026-06-16
 - `simulation/anomaly_detection.py`: run-level summary and event labels.
 - `simulation/mode_diagnostics.py`: radial profiles, shape correlations, spatial distribution metrics.
 - `simulation/time_resolved_diagnostics.py`: diagnostic frame capture, radial/angular diagnostics, reports, and plots.
+- `simulation/breathing_period_audit.py`: compares current diagnostic breathing periods with full-resolution metric peak periods and minimum-separated peak periods.
 - `simulation/control_metrics.py`: absolute energy, decay rate, and post-cutoff core-peak metrics shared by controls.
 - `simulation/artifact_controls.py`: sponge-boundary artifact controls.
 - `simulation/numerical_controls.py`: smaller-dt controls.
@@ -67,8 +69,9 @@ Controls should be preferred over broad sweeps while validating one candidate:
 - Use `fixed-domain-grid-control` for true resolution checks.
 - Use `resolution-diagnostics` when a fixed-domain resolution check changes radial structure, retention, timing, or source/mask comparability.
 - Use `source-normalized-resolution-diagnostics` after source/mask comparability fails; its main variants use calibrated source-normalized coverage and its legacy `per_cell` variants are reference-only.
+- Use `breathing-period-audit` when a diagnostic breathing period appears too short or inconsistent with neighboring controls.
 
-Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`, but the 63-grid breathing-period estimate is short. Audit that targeted issue before broad long sweeps.
+Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. `breathing-period-audit` traced the 63-grid short period to subpeak overcounting, so harden `_detect_breathing_state` before broad long sweeps.
 
 ## Generated Artifacts
 

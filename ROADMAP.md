@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Validate the source-normalized refined-mode result before broader long sweeps.
+Harden breathing-period detection before broader long sweeps.
 
-Recommended next task: inspect the source-normalized 63-grid breathing-period anomaly and confirm whether it is diagnostic sampling, a real refined-grid period shift, or a remaining numerical/source-control issue. Source geometry and injected work are now controlled, and 63/81 converge to the same refined radial peak, but the 63 diagnostic breathing period is shorter than expected.
+Recommended next task: update the time-resolved breathing detector so it does not count small local subpeaks on a broad post-cutoff core-energy plateau as separate breathing cycles. The source-normalized 63-grid short period was traced to peak overcounting, not to a clean doubled-frequency breathing envelope.
 
 ## Status
 
@@ -84,16 +84,19 @@ Recommended next task: inspect the source-normalized 63-grid breathing-period an
 - Ran source-normalized fixed-domain diagnostics for the long 0.92 candidate; result classified as `coarse_grid_artifact_likely`.
 - Source-normalized 63/81 converge at physical radial peak 10.0 with best radial correlation 0.965; the 41-grid source-normalized peak is 5.0.
 - Source-normalized emitter effective area and injected work are controlled across resolutions; legacy `per_cell` results remain reference-only.
+- Added `breathing-period-audit` for completed diagnostic runs.
+- Ran the audit on `runs\source_normalized_resolution_20260616_215926`; result classified as `peak_detector_overcounts_subpeaks`.
+- The 63-grid diagnostic period of 1.689 comes from counting small local maxima; full-resolution metric peaks with 1.5-2.0 minimum separation estimate 2.49-2.91 instead.
 
 ### In Progress
 
-- Source-normalized refined-mode validation for the long 0.92 breathing tail.
+- Breathing-period detector hardening.
 
 ### Next
 
-- Audit source-normalized breathing periods using metric-core peak timing and/or denser diagnostic frame capture, especially the 63-grid period of 1.689.
-- If the 63 period anomaly is diagnostic-only, promote the source-normalized 63/81 refined radial structure as the cleaner fixed-domain interpretation.
-- If the 63 period anomaly is physical, run one targeted source-normalized numerical control before any long-frequency sweep.
+- Add minimum-separation and/or prominence logic to `_detect_breathing_state`.
+- Re-run source-normalized diagnostics or at least `diagnose-run` on the 63-grid source-normalized run to confirm the reported period moves to the envelope-scale value.
+- Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with the detector caveat noted.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive, even though m=4 structure survives the half-step control.
 - Do not run neighboring-frequency long controls until the artifact and numerical controls are understood.
 
@@ -226,3 +229,6 @@ Possible work:
 - 2026-06-16: In the calibrated source-normalized run, emitter effective area range was 0.0126, injected work per physical boundary length range was 2.9e-06, and the legacy 63-grid source-work anomaly was removed.
 - 2026-06-16: Source-normalized 63/81 refined grids converged at physical radial peak 10.0 with best radial correlation 0.965; the 41-grid source-normalized radial peak was 5.0.
 - 2026-06-16: Breathing survived and m=4 persisted under source normalization, but the 63-grid diagnostic breathing period was short at 1.689, so the next step is a targeted breathing-period audit rather than a broad sweep.
+- 2026-06-16: Added `python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_215926`.
+- 2026-06-16: The breathing audit classified the 63-grid short period as `peak_detector_overcounts_subpeaks`: the existing diagnostic-frame detector counted ten peaks with period 1.689, while full-resolution metric peaks with minimum separation 1.5 estimated 2.491 and minimum separation 2.0 estimated 2.907.
+- 2026-06-16: Updated the next step to harden `_detect_breathing_state` before any broad long sweeps.

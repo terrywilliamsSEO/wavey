@@ -14,9 +14,10 @@ Current interpretation:
 - Legacy fixed-domain `per_cell` source handling is not physically invariant and should be treated as reference-only.
 - Source-normalized fixed-domain controls now make emitter effective area and injected work comparable across 41/63/81.
 - Under source-normalized fixed-domain controls, 63x63 and 81x81 converge to the same refined physical radial peak at `10.0`, while 41x41 peaks at `5.0`.
-- The latest source-normalized diagnostic classified the radial result as `coarse_grid_artifact_likely`, with a breathing-period caveat at 63x63.
+- The latest source-normalized diagnostic classified the radial result as `coarse_grid_artifact_likely`.
+- The 63x63 short breathing period was audited and traced to peak-detector overcounting of small subpeaks on a broad core-energy plateau.
 - Do not call this exotic physics.
-- Do not run broad long sweeps until the source-normalized 63-grid breathing-period anomaly is understood.
+- Do not run broad long sweeps until the breathing detector is hardened against subpeak overcounting.
 
 ## Latest Evidence
 
@@ -205,12 +206,40 @@ Pairwise source-normalized radial correlations:
 | 41 vs 81 | 0.639 | 0.944 | 0.712 | 5.00 |
 | 63 vs 81 | 0.728 | 0.965 | 0.820 | 0.00 |
 
+### Breathing-Period Audit
+
+Command:
+
+```powershell
+python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_215926
+```
+
+Latest summarized run:
+
+- Local report: `runs\source_normalized_resolution_20260616_215926\breathing_period_audit\breathing_period_audit_report.md`
+- Classification: `peak_detector_overcounts_subpeaks`
+- Answer to the 63-grid question: the period `1.689` comes from counting small local maxima on a broad post-cutoff core-energy plateau.
+- Full-resolution metric peaks with minimum separation recover envelope-scale periods:
+  - `min_sep=1.5`: period `2.491`
+  - `min_sep=2.0`: period `2.907`
+  - `min_sep=2.5`: period `3.736`
+
+Important values:
+
+| Grid | Current Diagnostic Period | Metric Same Detector | Metric min_sep 1.5 | Metric min_sep 2.0 |
+| ---: | ---: | ---: | ---: | ---: |
+| 41 | 2.640 | 3.290 | 3.290 | 3.290 |
+| 63 | 1.689 | 1.557 | 2.491 | 2.907 |
+| 81 | 2.566 | 1.370 | 3.080 | 3.080 |
+
+Current conclusion: the source-normalized 63-grid run does not clearly have a true doubled-frequency breathing envelope. The current detector overcounts subpeaks; future breathing detection should require peak separation and/or prominence.
+
 ## Current Next Step
 
-Audit source-normalized breathing-period stability:
+Harden breathing-period detection:
 
-- Check whether the source-normalized 63-grid breathing period of `1.689` is caused by diagnostic sampling or a real period change.
-- Prefer a targeted audit using metric-core peak timing and/or denser diagnostic frame capture.
+- Add minimum-separation and/or prominence logic to `_detect_breathing_state`.
+- Re-run source-normalized diagnostics or diagnose the existing 63-grid run after detector changes.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

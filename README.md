@@ -128,6 +128,14 @@ python main.py source-normalized-resolution-diagnostics --config configs\long_va
 
 This uses fractional fixed-domain emitter coverage plus calibrated `constant_total_work` source normalization for the main 41x41, 63x63, and 81x81 variants, and includes legacy `per_cell` variants as reference-only comparisons.
 
+Audit breathing-period peak picking for completed diagnostic runs with:
+
+```powershell
+python main.py breathing-period-audit --control-root runs\source_normalized_resolution_YYYYMMDD_HHMMSS
+```
+
+This reads existing `metrics.csv` and `mode_shape_diagnostics/frame_mode_diagnostics.csv` files, compares the current diagnostic-frame period against full-resolution metric peaks, and reports whether short periods are caused by local subpeak overcounting.
+
 ## Run one simulation
 
 ```powershell
@@ -270,6 +278,12 @@ When `source-normalized-resolution-diagnostics` is used, the diagnostic folder i
 - `radial_profile_comparison.csv`
 - `source_normalized_resolution_report.md`
 - diagnosed source-normalized run folders plus legacy `per_cell` reference run folders
+
+When `breathing-period-audit` is used, the output folder includes:
+
+- `breathing_period_audit_summary.csv`
+- `breathing_period_peak_times.csv`
+- `breathing_period_audit_report.md`
 
 ## Metrics
 
