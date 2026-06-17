@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .config import SimulationConfig
-from .drivers import BoundaryDriver
+from .drivers import BoundaryDriver, CoreDriver
 
 
 @dataclass
@@ -38,6 +38,7 @@ class Lattice2D:
         self._apply_defect(config)
         self._apply_boundary_damping(config)
         self.driver = BoundaryDriver(self.shape, config.driver, config)
+        self.core_driver = CoreDriver(self.shape, config, self.masks)
 
     @staticmethod
     def _build_masks(config: SimulationConfig) -> LatticeMasks:
@@ -133,7 +134,20 @@ class Lattice2D:
         restoring = -self.stiffness * self.u
         nonlinear = -self.nonlinear * (self.u ** 3)
         damping = -self.damping * self.v
-        return restoring + nonlinear + damping + self.coupling_force() + self.driver.force(time)
+        return restoring + nonlinear + damping + self.coupling_force() + self.external_force(time)
+
+    def boundary_force(self, time: float) -> np.ndarray:
+        if self.config.drive_location != "boundary":
+            return np.zeros(self.shape, dtype=float)
+        return self.driver.force(time)
+
+    def core_force(self, time: float) -> np.ndarray:
+        if self.config.drive_location == "boundary":
+            return np.zeros(self.shape, dtype=float)
+        return self.core_driver.force(time)
+
+    def external_force(self, time: float) -> np.ndarray:
+        return self.boundary_force(time) + self.core_force(time)
 
     def step(self, time: float, dt: float) -> None:
         # Semi-implicit Euler is stable for the small dt values used by the default sweeps.

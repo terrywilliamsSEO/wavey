@@ -16,8 +16,9 @@ Current interpretation:
 - Under source-normalized fixed-domain controls, 63x63 and 81x81 converge to the same refined physical radial peak at `10.0`, while 41x41 peaks at `5.0`.
 - The latest source-normalized diagnostic classified the radial result as `coarse_grid_artifact_likely`.
 - The 63x63 short breathing period was audited and traced to peak-detector overcounting of small subpeaks on a broad core-energy plateau.
+- A controlled direct core-modal probe classified the 0.92 candidate as `boundary_transport_required`: source-normalized boundary references retained the 0.92 breathing family, but work-normalized core impulse/burst controls did not reproduce the same post-cutoff breathing, radial peak, and m=4 structure.
 - Do not call this exotic physics.
-- Do not run broad long sweeps until the breathing detector is hardened against subpeak overcounting.
+- Do not run broad long sweeps until the breathing detector is hardened against subpeak overcounting and the boundary-transport mechanism is narrowed with targeted controls.
 
 ## Latest Evidence
 
@@ -234,12 +235,47 @@ Important values:
 
 Current conclusion: the source-normalized 63-grid run does not clearly have a true doubled-frequency breathing envelope. The current detector overcounts subpeaks; future breathing detection should require peak separation and/or prominence.
 
+### Core-Modal Probe
+
+Command:
+
+```powershell
+python main.py core-modal-probe --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\core_modal_probe_20260616_230134\core_modal_probe_report.md`
+- Summary CSV: `runs\core_modal_probe_20260616_230134\core_modal_probe_summary.csv`
+- Classification: `boundary_transport_required`
+- Best matching core-probe run: `core_impulse_63`
+- All variants were normalized to the `boundary_reference_63` pre-cutoff injected work, about `21.8221`.
+
+Important values:
+
+| Variant | Grid | Drive | Work | Retention | Period min_sep 1.5 | Raw Frame Period | Radial Peak | m4 Strength | Radial Sim | Frame Sim |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| boundary_reference_63 | 63 | boundary | 21.822 | 0.863 | 2.491 | 1.689 | 10.00 | 0.124 | 1.000 | 1.000 |
+| boundary_reference_81 | 81 | boundary | 21.822 | 0.853 | 3.080 | 2.566 | 10.00 | 0.116 | 0.965 | 0.721 |
+| core_impulse_63 | 63 | core impulse | 21.822 | 0.449 | 22.32 | n/a | 3.75 | 0.0177 | 0.285 | 0.497 |
+| core_burst_0p92_63 | 63 | core burst | 21.822 | 0.000006 | 3.090 | 1.900 | 1.25 | 0.0228 | 0.293 | 0.409 |
+| core_impulse_81 | 81 | core impulse | 21.822 | 0.448 | 10.96 | 10.80 | 5.00 | 0.0084 | 0.294 | 0.495 |
+| core_burst_0p92_81 | 81 | core burst | 21.822 | 0.000067 | 1.692 | 1.290 | 6.25 | 0.423 | 0.328 | 0.169 |
+
+Interpretation:
+
+- Boundary references reproduce the source-normalized 63/81 breathing family with matched injected work.
+- Direct core impulse leaves a retained slow natural ringing tail, but it does not match the reference period, radial structure, or m=4 strength.
+- Direct core bursts at 0.92 show tiny post-cutoff peak timing measurements but essentially no retained energy, so they are not counted as retained breathing.
+- The immediate conclusion is cautious: under these work-normalized direct-core settings, the 0.92 retained breathing state appears to require boundary-driven transport.
+
 ## Current Next Step
 
-Harden breathing-period detection:
+Harden breathing-period detection, then narrow the boundary-transport mechanism:
 
 - Add minimum-separation and/or prominence logic to `_detect_breathing_state`.
 - Re-run source-normalized diagnostics or diagnose the existing 63-grid run after detector changes.
+- Then run targeted transport controls, such as annulus drive or physically closer source/annulus variants, before any broad long sweeps.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

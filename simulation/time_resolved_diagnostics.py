@@ -53,9 +53,9 @@ def diagnose_existing_run(
     diagnostics_dir = run_dir / "mode_shape_diagnostics"
     diagnostics_dir.mkdir(parents=True, exist_ok=True)
 
-    target_steps = _diagnostic_steps(config, samples, options)
+    target_steps = _diagnostic_steps(config, samples, options, summary)
     frames = _capture_diagnostic_frames(config, run_dir, diagnostics_dir, target_steps, options)
-    frame_rows, radial_rows, radial_bins = _analyze_frames(config, frames, samples)
+    frame_rows, radial_rows, radial_bins = _analyze_frames(config, frames, samples, summary)
     _write_csv(diagnostics_dir / "frame_mode_diagnostics.csv", frame_rows)
     _write_csv(diagnostics_dir / "radial_profile_timeseries.csv", radial_rows)
     _write_frame_timestamps(diagnostics_dir / "frame_timestamps.csv", frames)
@@ -137,6 +137,7 @@ def _diagnostic_steps(
     config: SimulationConfig,
     samples: list[dict[str, float]],
     options: DiagnosticOptions,
+    summary: dict[str, Any] | None = None,
 ) -> list[int]:
     interval = max(1, int(options.frame_interval))
     window = max(1, int(options.window_steps))
@@ -144,7 +145,11 @@ def _diagnostic_steps(
     steps = {0, config.steps - 1}
     steps.update(range(0, config.steps, interval))
 
-    best_sample = max(samples, key=lambda row: row.get("energy_well_ratio", 0.0))
+    best_time = _summary_best_time(summary)
+    if best_time is None:
+        best_sample = max(samples, key=lambda row: row.get("energy_well_ratio", 0.0))
+    else:
+        best_sample = min(samples, key=lambda row: abs(row.get("time", 0.0) - best_time))
     best_step = int(best_sample["step"])
     cutoff_time = config.driver.drive_cutoff_time
     cutoff_step = _nearest_sample_step(samples, cutoff_time if cutoff_time is not None else 0.0)
@@ -255,8 +260,11 @@ def _analyze_frames(
     config: SimulationConfig,
     frames: list[dict[str, Any]],
     samples: list[dict[str, float]],
+    summary: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[float]]:
-    best_time = float(max(samples, key=lambda row: row.get("energy_well_ratio", 0.0)).get("time", 0.0))
+    best_time = _summary_best_time(summary)
+    if best_time is None:
+        best_time = float(max(samples, key=lambda row: row.get("energy_well_ratio", 0.0)).get("time", 0.0))
     cutoff_time = config.driver.drive_cutoff_time if config.driver.drive_cutoff_time is not None else 0.0
     end_time = float(samples[-1].get("time", 0.0))
     early_tail_time = cutoff_time + max(config.dt, (end_time - cutoff_time) * 0.1)
@@ -315,6 +323,20 @@ def _analyze_frames(
 
 def _nearest_frame(frames: list[dict[str, Any]], time: float) -> dict[str, Any]:
     return min(frames, key=lambda frame: abs(float(frame["time"]) - time))
+
+
+def _summary_best_time(summary: dict[str, Any] | None) -> float | None:
+    if not summary:
+        return None
+    for key in ("post_cutoff_best_event_time", "time_of_best_event"):
+        value = summary.get(key)
+        if value is None:
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return None
 
 
 def _special_frame_label(

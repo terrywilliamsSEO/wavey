@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Harden breathing-period detection before broader long sweeps.
+Harden breathing-period detection globally, then run targeted boundary-transport controls before broader long sweeps.
 
-Recommended next task: update the time-resolved breathing detector so it does not count small local subpeaks on a broad post-cutoff core-energy plateau as separate breathing cycles. The source-normalized 63-grid short period was traced to peak overcounting, not to a clean doubled-frequency breathing envelope.
+Recommended next task: update `_detect_breathing_state` so it uses minimum-separated and/or prominence-filtered peaks, then rerun source-normalized diagnostics or `diagnose-run` on the existing 63-grid source-normalized run. The new core-modal probe already uses the safer full-metric minimum-separated logic and classified direct core excitation as `boundary_transport_required`, but the time-resolved diagnostic reports still carry the older subpeak-overcounting caveat.
 
 ## Status
 
@@ -87,18 +87,26 @@ Recommended next task: update the time-resolved breathing detector so it does no
 - Added `breathing-period-audit` for completed diagnostic runs.
 - Ran the audit on `runs\source_normalized_resolution_20260616_215926`; result classified as `peak_detector_overcounts_subpeaks`.
 - The 63-grid diagnostic period of 1.689 comes from counting small local maxima; full-resolution metric peaks with 1.5-2.0 minimum separation estimate 2.49-2.91 instead.
+- Added direct core drive support with `drive_location` values `boundary`, `core_node`, `core_region`, and `annulus`.
+- Added core-drive options for radius, frequency, amplitude, phase, mode, cutoff time, work normalization target, and work-reference mode.
+- Added separate boundary/core injected-work accounting and post-cutoff-only best-event summaries for core-modal probes.
+- Added `core-modal-probe` for source-normalized fixed-domain 63/81 boundary references plus work-normalized core impulse and burst controls.
+- Ran `core-modal-probe` for the long 0.92 candidate in `runs\core_modal_probe_20260616_230134`; result classified as `boundary_transport_required`.
+- The boundary references retained breathing with controlled injected work, but direct core impulse/burst did not reproduce the boundary-reference post-cutoff breathing, radial peak, and m=4 structure.
 
 ### In Progress
 
-- Breathing-period detector hardening.
+- Breathing-period detector hardening in `time_resolved_diagnostics`.
+- Targeted boundary-transport mechanism controls, after the detector caveat is fixed.
 
 ### Next
 
-- Add minimum-separation and/or prominence logic to `_detect_breathing_state`.
+- Add minimum-separation and/or prominence logic to `_detect_breathing_state`, matching the safer logic used by `breathing-period-audit` and `core-modal-probe`.
 - Re-run source-normalized diagnostics or at least `diagnose-run` on the 63-grid source-normalized run to confirm the reported period moves to the envelope-scale value.
+- Then run narrow transport-mechanism controls, such as annulus drive or physically closer boundary/annulus source variants, to test why boundary-driven transport reaches the retained 0.92 state while direct core drive does not.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with the detector caveat noted.
-- Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive, even though m=4 structure survives the half-step control.
-- Do not run neighboring-frequency long controls until the artifact and numerical controls are understood.
+- Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
+- Do not run neighboring-frequency long controls until the detector and transport-mechanism controls are understood.
 
 ## Phases
 
@@ -232,3 +240,7 @@ Possible work:
 - 2026-06-16: Added `python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_215926`.
 - 2026-06-16: The breathing audit classified the 63-grid short period as `peak_detector_overcounts_subpeaks`: the existing diagnostic-frame detector counted ten peaks with period 1.689, while full-resolution metric peaks with minimum separation 1.5 estimated 2.491 and minimum separation 2.0 estimated 2.907.
 - 2026-06-16: Updated the next step to harden `_detect_breathing_state` before any broad long sweeps.
+- 2026-06-16: Added direct core/annulus drive support, separate boundary/core work accounting, post-cutoff-only core-modal summaries, and `python main.py core-modal-probe --config configs\long_validation_peak_0_92.json`.
+- 2026-06-16: Ran core-modal probe in `runs\core_modal_probe_20260616_230134`; boundary references at 63/81 retained breathing with equal injected work, but direct core impulse/burst controls did not reproduce the reference post-cutoff breathing/radial/m=4 state.
+- 2026-06-16: Classified the core-modal result as `boundary_transport_required`; best matching core probe was `core_impulse_63`, but it had slow natural ringing period 22.32, radial similarity 0.285, and m=4 strength 0.0177.
+- 2026-06-16: Updated the next step to harden the global breathing detector first, then run narrow boundary-transport mechanism controls rather than broad neighboring-frequency long sweeps.

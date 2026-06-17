@@ -16,12 +16,13 @@ Last updated: 2026-06-16
 - `resolution-diagnostics`: fixed-domain source, mask, energy-budget, radial-profile, and mode-shape resolution audit.
 - `source-normalized-resolution-diagnostics`: source-normalized fixed-domain resolution audit with legacy `per_cell` reference variants.
 - `breathing-period-audit`: read-only peak-picking audit for completed diagnostic runs.
+- `core-modal-probe`: controlled source-normalized fixed-domain boundary references plus direct core excitation probes.
 
 ## Core Modules
 
-- `simulation/config.py`: dataclasses for simulation, sweep, defect, and driver config. Also owns fixed-domain helpers: `nx`, `ny`, `dx`, `dy`, physical radii, cell area, and shape.
-- `simulation/lattice.py`: 2D oscillator lattice, masks, sponge damping, coupling force, semi-implicit Euler step, and energy density.
-- `simulation/drivers.py`: boundary emitter coverage weights, source normalization, masks, and phase maps.
+- `simulation/config.py`: dataclasses for simulation, sweep, defect, driver config, and direct core-drive options. Also owns fixed-domain helpers: `nx`, `ny`, `dx`, `dy`, physical radii, cell area, and shape.
+- `simulation/lattice.py`: 2D oscillator lattice, masks, sponge damping, coupling force, semi-implicit Euler step, energy density, and separate boundary/core external force paths.
+- `simulation/drivers.py`: boundary emitter coverage weights, source normalization, masks, phase maps, and direct core/annulus drive masks.
 - `simulation/metrics.py`: per-step metrics and post-hoc spectral/retention estimates.
 - `simulation/anomaly_detection.py`: run-level summary and event labels.
 - `simulation/mode_diagnostics.py`: radial profiles, shape correlations, spatial distribution metrics.
@@ -33,6 +34,7 @@ Last updated: 2026-06-16
 - `simulation/grid_controls.py`: matched-proportion larger-grid controls.
 - `simulation/fixed_domain_controls.py`: same-domain grid-refinement controls with best-frame resampling.
 - `simulation/resolution_diagnostics.py`: fixed-domain resolution-sensitivity audits for source normalization, mask areas, energy budgets, radial profiles, and pairwise best-frame/mode-shape similarity.
+- `simulation/core_modal_probe.py`: controlled direct-core modal probe orchestration, separate drive-work accounting, post-cutoff-only summaries, minimum-separated breathing checks, comparison plots, and classification.
 - `simulation/stability.py`: conservative dt guidance for current `dx`/`dy`.
 - `simulation/reporting.py` and `simulation/band_analysis.py`: sweep-level reporting and frequency-band analysis.
 
@@ -50,6 +52,8 @@ When enabled:
 - Emitter strip width can be specified as `driver.emitter_width_physical`.
 - Fixed-domain emitters support fractional source coverage weights for physically comparable source geometry.
 - `driver.source_normalization` supports `per_cell`, `per_length`, `constant_boundary_flux`, and `constant_total_work`.
+- `drive_location` supports `boundary`, `core_node`, `core_region`, and `annulus`.
+- Direct core drives support `burst`, `impulse`, `chirp`, and `continuous` modes with separate work accounting from boundary drives.
 - Lattice coupling force scales by `1/dx^2` and `1/dy^2`.
 - Energy density integrates onsite/kinetic/nonlinear/coupling contributions with cell area.
 - Masks, sponge damping, phase maps, radial profiles, annulus masks, and angular masks use physical distances.
@@ -70,8 +74,9 @@ Controls should be preferred over broad sweeps while validating one candidate:
 - Use `resolution-diagnostics` when a fixed-domain resolution check changes radial structure, retention, timing, or source/mask comparability.
 - Use `source-normalized-resolution-diagnostics` after source/mask comparability fails; its main variants use calibrated source-normalized coverage and its legacy `per_cell` variants are reference-only.
 - Use `breathing-period-audit` when a diagnostic breathing period appears too short or inconsistent with neighboring controls.
+- Use `core-modal-probe` to test whether direct core excitation reproduces the source-normalized fixed-domain boundary-reference tail before any broad long sweeps.
 
-Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. `breathing-period-audit` traced the 63-grid short period to subpeak overcounting, so harden `_detect_breathing_state` before broad long sweeps.
+Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. `breathing-period-audit` traced the 63-grid short period to subpeak overcounting. `core-modal-probe` classified the direct-core test as `boundary_transport_required`, so harden `_detect_breathing_state` and then use targeted transport controls before broad long sweeps.
 
 ## Generated Artifacts
 

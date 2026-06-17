@@ -19,6 +19,7 @@ from simulation.config import (
     simulation_config_from_dict,
     sweep_config_from_dict,
 )
+from simulation.core_modal_probe import CoreModalProbeOptions, run_core_modal_probe
 from simulation.fixed_domain_controls import FixedDomainGridControlOptions, run_fixed_domain_grid_control
 from simulation.grid_controls import GridControlOptions, run_grid_control
 from simulation.numerical_controls import DtControlOptions, run_dt_control
@@ -150,6 +151,23 @@ def build_parser() -> argparse.ArgumentParser:
     breathing_audit_parser.add_argument("--run-path", type=Path, action="append", help="Completed run directory to audit; repeatable")
     breathing_audit_parser.add_argument("--output-dir", type=Path, help="Directory for audit outputs")
     breathing_audit_parser.add_argument("--percentile", type=float, default=55.0, help="Core-energy percentile threshold for peak filtering")
+
+    core_probe_parser = subparsers.add_parser(
+        "core-modal-probe",
+        help="Run controlled direct-core modal probes for the source-normalized fixed-domain 0.92 candidate",
+    )
+    core_probe_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the baseline candidate")
+    core_probe_parser.add_argument("--output-root", default="runs", help="Directory for core-modal probe outputs")
+    core_probe_parser.add_argument("--reference-root", type=Path, default=Path("runs"), help="Directory containing sweep summaries for short-peak references")
+    core_probe_parser.add_argument("--frame-interval", type=int, default=20, help="Base step interval for diagnostic frame snapshots")
+    core_probe_parser.add_argument("--window-steps", type=int, default=30, help="Extra frame-capture radius around cutoff, best event, and late tail")
+    core_probe_parser.add_argument(
+        "--source-normalization",
+        choices=("per_length", "constant_boundary_flux", "constant_total_work"),
+        default="constant_total_work",
+        help="Physical boundary-source normalization mode for reference runs",
+    )
+    core_probe_parser.add_argument("--min-peak-separation", type=float, default=1.5, help="Minimum time separation for full-metric breathing peaks")
 
     return parser
 
@@ -334,6 +352,22 @@ def main() -> None:
             options=BreathingPeriodAuditOptions(percentile=args.percentile),
         )
         _print_breathing_period_audit_summary(result)
+        return
+
+    if args.command == "core-modal-probe":
+        config = _load_sim_config(args.config)
+        result = run_core_modal_probe(
+            config,
+            options=CoreModalProbeOptions(
+                output_root=args.output_root,
+                frame_interval=args.frame_interval,
+                window_steps=args.window_steps,
+                source_normalization=args.source_normalization,
+                min_peak_separation=args.min_peak_separation,
+            ),
+            reference_root=args.reference_root,
+        )
+        _print_core_modal_probe_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -582,6 +616,31 @@ def _print_breathing_period_audit_summary(result: dict[str, Any]) -> None:
     print(f"reason: {classification['reason']}")
     print(f"summary CSV: {result['summary_csv']}")
     print(f"peak times CSV: {result['peak_times_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_core_modal_probe_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    best_core = result.get("best_matching_core_probe") or {}
+    print("Core-modal probe complete")
+    print(f"probe ID: {result['probe_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best matching core-probe run: {best_core.get('variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"drive={row.get('drive_location')}"
+            f"{('/' + row.get('core_drive_mode')) if row.get('core_drive_mode') else ''}, "
+            f"work={_format_optional(row.get('injected_work_before_cutoff'))}, "
+            f"retention={_format_optional(row.get('post_cutoff_retention'))}, "
+            f"period={_format_optional(row.get('breathing_period_after_cutoff'))}, "
+            f"radial={_format_optional(row.get('radial_peak_after_cutoff_physical'))}, "
+            f"m4={_format_optional(row.get('m4_strength_after_cutoff'))}, "
+            f"sim={_format_optional(row.get('best_frame_similarity_to_boundary_reference'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
     print(f"report: {result['report_path']}")
 
 

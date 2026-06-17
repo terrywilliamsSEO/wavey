@@ -59,6 +59,16 @@ class SimulationConfig:
     core_radius: int | None = None
     core_radius_physical: float | None = None
     sample_every: int = 1
+    drive_location: str = "boundary"
+    core_drive_radius_physical: float | None = None
+    core_drive_frequency: float | None = None
+    core_drive_amplitude: float = 0.0
+    core_drive_phase: float = 0.0
+    core_drive_mode: str = "burst"
+    core_drive_cutoff_time: float | None = None
+    normalize_core_drive_work: bool = False
+    target_core_drive_work: float | None = None
+    core_drive_work_reference: str = "boundary_reference"
     defect: DefectConfig = field(default_factory=DefectConfig)
     driver: DriverConfig = field(default_factory=DriverConfig)
     seed: int = 7
@@ -130,6 +140,20 @@ class SimulationConfig:
         if self.fixed_domain and self.driver.emitter_width_physical is not None:
             return float(self.driver.emitter_width_physical)
         return float(max(1, self.driver.emitter_width))
+
+    @property
+    def effective_core_drive_radius(self) -> float:
+        if self.fixed_domain and self.core_drive_radius_physical is not None:
+            return float(self.core_drive_radius_physical)
+        return float(self.core_drive_radius_physical or self.effective_core_radius_value)
+
+    @property
+    def effective_core_drive_frequency(self) -> float:
+        return float(self.core_drive_frequency if self.core_drive_frequency is not None else self.driver.frequency)
+
+    @property
+    def effective_core_drive_cutoff_time(self) -> float | None:
+        return self.core_drive_cutoff_time if self.core_drive_cutoff_time is not None else self.driver.drive_cutoff_time
 
 
 @dataclass

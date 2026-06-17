@@ -9,6 +9,8 @@ from .config import DriverConfig, SimulationConfig
 
 VALID_SIDES = {"left", "right", "top", "bottom"}
 VALID_SOURCE_NORMALIZATIONS = {"per_cell", "per_length", "constant_total_work", "constant_boundary_flux"}
+VALID_DRIVE_LOCATIONS = {"boundary", "core_node", "core_region", "annulus"}
+VALID_CORE_DRIVE_MODES = {"burst", "impulse", "chirp", "continuous"}
 EPSILON = 1e-12
 
 
@@ -225,6 +227,106 @@ class BoundaryDriver:
         return out
 
 
+class CoreDriver:
+    """Adds direct forcing to core or annular physical regions."""
+
+    def __init__(self, shape: tuple[int, int], sim_config: SimulationConfig, masks: object):
+        self.shape = shape
+        self.config = sim_config
+        if sim_config.drive_location not in VALID_DRIVE_LOCATIONS:
+            raise ValueError(
+                f"Unsupported drive_location: {sim_config.drive_location}. "
+                f"Expected one of {sorted(VALID_DRIVE_LOCATIONS)}"
+            )
+        if sim_config.core_drive_mode not in VALID_CORE_DRIVE_MODES:
+            raise ValueError(
+                f"Unsupported core_drive_mode: {sim_config.core_drive_mode}. "
+                f"Expected one of {sorted(VALID_CORE_DRIVE_MODES)}"
+            )
+        self.coverage_weights = self._build_coverage_weights(shape, sim_config, masks)
+        self.mask = self.coverage_weights > EPSILON
+        self.effective_driven_area = float(np.sum(self.coverage_weights) * sim_config.cell_area)
+        self.fractional_coverage_sum = float(np.sum(self.coverage_weights))
+        self.normalization_scale = 1.0
+
+    @staticmethod
+    def _build_coverage_weights(
+        shape: tuple[int, int],
+        config: SimulationConfig,
+        masks: object,
+    ) -> np.ndarray:
+        if config.drive_location == "boundary":
+            return np.zeros(shape, dtype=float)
+
+        if config.drive_location == "core_node":
+            weights = np.zeros(shape, dtype=float)
+            weights[shape[0] // 2, shape[1] // 2] = 1.0
+            return weights
+
+        if config.drive_location == "annulus":
+            if config.fixed_domain:
+                inner = config.effective_defect_radius + 1.0
+                outer = config.effective_defect_radius + max(3.0, config.effective_defect_radius * 0.8)
+                return _fractional_radial_band_weights(shape, config, inner, outer)
+            return np.asarray(getattr(masks, "ring"), dtype=float)
+
+        if config.drive_location == "core_region":
+            if config.fixed_domain:
+                return _fractional_radial_region_weights(shape, config, config.effective_core_drive_radius)
+            return np.asarray(getattr(masks, "radius") <= config.effective_core_drive_radius, dtype=float)
+
+        raise AssertionError(f"Unhandled drive_location: {config.drive_location}")
+
+    def envelope(self, time: float) -> float:
+        mode = self.config.core_drive_mode
+        cutoff = self.config.effective_core_drive_cutoff_time
+        if mode == "impulse":
+            return 1.0 if time < max(self.config.dt, EPSILON) else 0.0
+        if cutoff is not None and time > cutoff:
+            return 0.0
+        if mode == "continuous":
+            return 1.0
+        if mode in {"burst", "chirp"}:
+            duration = cutoff if cutoff is not None and cutoff > 0.0 else 1.0 / max(
+                self.config.effective_core_drive_frequency, EPSILON
+            )
+            phase = np.clip(time / duration, 0.0, 1.0)
+            return float(np.sin(np.pi * phase) ** 2)
+        raise ValueError(f"Unsupported core_drive_mode: {mode}")
+
+    def waveform(self, time: float) -> float:
+        mode = self.config.core_drive_mode
+        phase = float(self.config.core_drive_phase)
+        if mode == "impulse":
+            return float(np.cos(phase))
+        frequency = max(self.config.effective_core_drive_frequency, EPSILON)
+        if mode == "chirp":
+            cutoff = self.config.effective_core_drive_cutoff_time
+            duration = cutoff if cutoff is not None and cutoff > 0.0 else max(time, self.config.dt)
+            target_frequency = max(frequency * 2.0, frequency)
+            sweep_rate = (target_frequency - frequency) / duration
+            angle = 2.0 * np.pi * (frequency * time + 0.5 * sweep_rate * time * time) + phase
+        else:
+            angle = 2.0 * np.pi * frequency * time + phase
+        return float(np.sin(angle))
+
+    def force(self, time: float) -> np.ndarray:
+        out = np.zeros(self.shape, dtype=float)
+        if self.config.drive_location == "boundary" or self.config.core_drive_amplitude == 0.0:
+            return out
+        envelope = self.envelope(time)
+        if envelope == 0.0 or not np.any(self.mask):
+            return out
+        out[self.mask] = (
+            self.config.core_drive_amplitude
+            * self.normalization_scale
+            * envelope
+            * self.waveform(time)
+            * self.coverage_weights[self.mask]
+        )
+        return out
+
+
 def _cell_interval_coverage(distance: np.ndarray, spacing: float, width: float) -> np.ndarray:
     if spacing <= EPSILON or width <= EPSILON:
         return np.zeros_like(distance, dtype=float)
@@ -236,3 +338,40 @@ def _cell_interval_coverage(distance: np.ndarray, spacing: float, width: float) 
 
 def _coverage_union(existing: np.ndarray, new: np.ndarray) -> np.ndarray:
     return 1.0 - (1.0 - existing) * (1.0 - new)
+
+
+def _fractional_radial_region_weights(
+    shape: tuple[int, int],
+    config: SimulationConfig,
+    radius: float,
+    *,
+    samples_per_axis: int = 5,
+) -> np.ndarray:
+    return _fractional_radial_band_weights(shape, config, 0.0, radius, samples_per_axis=samples_per_axis)
+
+
+def _fractional_radial_band_weights(
+    shape: tuple[int, int],
+    config: SimulationConfig,
+    inner_radius: float,
+    outer_radius: float,
+    *,
+    samples_per_axis: int = 5,
+) -> np.ndarray:
+    weights = np.zeros(shape, dtype=float)
+    if outer_radius <= inner_radius or outer_radius <= 0.0:
+        return weights
+
+    offsets = (np.arange(samples_per_axis, dtype=float) + 0.5) / samples_per_axis - 0.5
+    rows, cols = np.indices(shape, dtype=float)
+    center_row = (shape[0] - 1) / 2.0
+    center_col = (shape[1] - 1) / 2.0
+    hit_count = np.zeros(shape, dtype=float)
+    for row_offset in offsets:
+        for col_offset in offsets:
+            y = (rows + row_offset - center_row) * config.dy
+            x = (cols + col_offset - center_col) * config.dx
+            radius = np.sqrt(y**2 + x**2)
+            hit_count += ((radius >= inner_radius) & (radius <= outer_radius)).astype(float)
+    weights = hit_count / float(samples_per_axis * samples_per_axis)
+    return np.clip(weights, 0.0, 1.0)

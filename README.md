@@ -136,6 +136,14 @@ python main.py breathing-period-audit --control-root runs\source_normalized_reso
 
 This reads existing `metrics.csv` and `mode_shape_diagnostics/frame_mode_diagnostics.csv` files, compares the current diagnostic-frame period against full-resolution metric peaks, and reports whether short periods are caused by local subpeak overcounting.
 
+Run the controlled core-modal probe with:
+
+```powershell
+python main.py core-modal-probe --config configs\long_validation_peak_0_92.json
+```
+
+This reruns the source-normalized fixed-domain 63x63 and 81x81 boundary references, then runs work-normalized direct core impulse and core burst probes. It logs boundary-drive work and core-drive work separately, uses post-cutoff-only best events, applies minimum-separated full-metric breathing checks, and writes a combined classification report.
+
 ## Run one simulation
 
 ```powershell
@@ -284,6 +292,20 @@ When `breathing-period-audit` is used, the output folder includes:
 - `breathing_period_audit_summary.csv`
 - `breathing_period_peak_times.csv`
 - `breathing_period_audit_report.md`
+
+When `core-modal-probe` is used, the probe folder includes:
+
+- `core_modal_probe_summary.csv`
+- `core_modal_probe_summary.json`
+- `core_modal_probe_report.md`
+- `core_modal_probe_comparison_plots/`
+- one diagnosed run folder per boundary/core probe variant
+
+Each core-modal run folder also includes:
+
+- `injected_work_plot.png`
+- `post_cutoff_decay_plot.png`
+- the normal run plots and `mode_shape_diagnostics/` artifacts
 
 ## Metrics
 
