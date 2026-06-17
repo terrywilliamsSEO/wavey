@@ -198,6 +198,14 @@ python main.py prototype-3d-sponge-strength-control --config configs\long_valida
 
 This keeps the source at the original inner-sponge-edge location, matches injected work per physical source area, and varies only weak, baseline, stronger, wider, and stronger+wider sponge settings.
 
+Run the tiny 31^3 source-geometry control from the stronger-sponge inner-edge setup with:
+
+```powershell
+python main.py prototype-3d-source-geometry-control --config configs\long_validation_peak_0_92.json
+```
+
+This tests six-face uniform, one-face, two-opposite-face, four-side-face, six-face cubic phase, phased-opposite-face, and random-phase boundary sources, plus direct core/shell comparators, all at matched injected work.
+
 ## Run one simulation
 
 ```powershell
@@ -402,6 +410,16 @@ When `prototype-3d-sponge-strength-control` is used, the control folder includes
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per sponge-strength/width variant
+- `failure_mode_audit/` with the near-defect shell-window audit artifacts
+
+When `prototype-3d-source-geometry-control` is used, the control folder includes:
+
+- `source_geometry_control_summary.csv`
+- `source_geometry_control_summary.json`
+- `source_geometry_control_report.md`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per source-geometry variant
 - `failure_mode_audit/` with the near-defect shell-window audit artifacts
 
 ## Metrics

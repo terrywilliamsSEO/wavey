@@ -217,6 +217,14 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
     sponge_strength = float(row.get("sponge_strength") or base.boundary_damping_strength)
     if "sponge_strength" not in row and str(row.get("variant", "")).endswith("stronger_sponge_31"):
         sponge_strength *= 2.0
+    boundary_faces = _json_or_value(row.get("boundary_faces")) or ("x_min", "x_max", "y_min", "y_max", "z_min", "z_max")
+    if isinstance(boundary_faces, str):
+        boundary_faces = tuple(part.strip() for part in boundary_faces.split(",") if part.strip())
+    else:
+        boundary_faces = tuple(boundary_faces)
+    face_offsets = _json_or_value(row.get("boundary_face_phase_offsets"))
+    if not isinstance(face_offsets, dict):
+        face_offsets = None
     return Prototype3DConfig(
         name=str(row["variant"]),
         grid_size=grid_size,
@@ -243,6 +251,8 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
         boundary_source_inner_distance=float(row.get("boundary_source_inner_distance") or 0.0),
         boundary_source_width=float(row.get("boundary_source_width") or dx),
         exclude_source_from_sponge_damping=_bool(row.get("exclude_source_from_sponge_damping")),
+        boundary_faces=boundary_faces,
+        boundary_face_phase_offsets=face_offsets,
     )
 
 
@@ -277,6 +287,9 @@ def _geometry_audit(config: Prototype3DConfig) -> dict[str, Any]:
         "sponge_strength": config.sponge_strength,
         "drive_location": config.drive_location,
         "drive_phase_mode": config.drive_phase_mode,
+        "boundary_faces": list(config.boundary_faces),
+        "boundary_face_count": len(config.boundary_faces),
+        "boundary_face_phase_offsets": config.boundary_face_phase_offsets or {},
         "boundary_source_inner_distance": config.boundary_source_inner_distance,
         "boundary_source_width": config.boundary_source_width or config.dx,
         "exclude_source_from_sponge_damping": config.exclude_source_from_sponge_damping,
@@ -725,6 +738,9 @@ def _summary_fields() -> list[str]:
         "dt",
         "drive_location",
         "drive_phase_mode",
+        "boundary_faces",
+        "boundary_face_count",
+        "boundary_face_phase_offsets",
         "boundary_source_inner_distance",
         "boundary_source_width",
         "exclude_source_from_sponge_damping",
@@ -774,6 +790,9 @@ def _geometry_fields() -> list[str]:
         "sponge_strength",
         "drive_location",
         "drive_phase_mode",
+        "boundary_faces",
+        "boundary_face_count",
+        "boundary_face_phase_offsets",
         "boundary_source_inner_distance",
         "boundary_source_width",
         "exclude_source_from_sponge_damping",
@@ -838,7 +857,23 @@ def _csv_value(value: Any) -> Any:
         return f"{value:.12g}"
     if isinstance(value, np.generic):
         return _csv_value(value.item())
+    if isinstance(value, (list, tuple, dict)):
+        return json.dumps(value, sort_keys=True)
     return value
+
+
+def _json_or_value(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped:
+        return None
+    if stripped[0] not in "[{":
+        return value
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        return value
 
 
 def _format(value: Any) -> str:

@@ -22,6 +22,7 @@ Last updated: 2026-06-17
 - `prototype-3d-audit`: read-only failure-mode audit for completed tiny 3D prototype runs.
 - `prototype-3d-source-sponge-control`: tiny 31^3 source/sponge separation control for the 3D boundary source.
 - `prototype-3d-sponge-strength-control`: tiny 31^3 sponge-strength/width control for the inner-sponge-edge 3D boundary source.
+- `prototype-3d-source-geometry-control`: tiny 31^3 source-geometry comparison from the stronger-sponge inner-edge 3D setup.
 
 ## Core Modules
 
@@ -45,6 +46,7 @@ Last updated: 2026-06-17
 - `simulation/prototype_3d_audit.py`: read-only 3D failure-mode audit that reconstructs source/sponge geometry, separates near-defect shell-window energy from outer radial residue, exports radial snapshots, and classifies completed prototype runs. It reads explicit saved sponge width/strength fields when controls vary them.
 - `simulation/prototype_3d_source_sponge.py`: tiny 3D source/sponge separation control that moves the boundary source to the inner sponge edge, removes source-cell sponge damping, or places the source deeper inside the domain while matching work per physical source area.
 - `simulation/prototype_3d_sponge_strength.py`: tiny 3D sponge-strength control that keeps the best inner-sponge-edge source location fixed while varying weak, baseline, stronger, wider, and stronger+wider sponge settings under matched work per physical source area.
+- `simulation/prototype_3d_source_geometry.py`: tiny 3D source-geometry control that compares selected boundary-face sets and phase maps under matched work per physical source area, with direct core/shell controls matched by total work.
 - `simulation/stability.py`: conservative dt guidance for current `dx`/`dy`.
 - `simulation/reporting.py` and `simulation/band_analysis.py`: sweep-level reporting and frequency-band analysis.
 
@@ -89,10 +91,11 @@ Controls should be preferred over broad sweeps while validating one candidate:
 - Use `transport-controls` to test which source geometry excites the retained family after direct core excitation fails.
 - Use `prototype-3d-source-sponge-control` only after the tiny 3D audit shows source/sponge overlap or global radial-peak contamination.
 - Use `prototype-3d-sponge-strength-control` after the source/sponge separation control identifies a retained near-defect source geometry; keep the source location fixed and do not increase grid size.
+- Use `prototype-3d-source-geometry-control` after stronger sponge preserves the near-defect shell tail; compare boundary geometry before increasing 3D grid size.
 
 Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. The global breathing detector now flags raw subpeak overcounting and reports envelope-scale periods. `core-modal-probe` classified the direct-core test as `boundary_transport_required`. The 63x63 and 81x81 `transport-controls` passes classified the candidate as `boundary_geometry_sensitive`, and the boundary-only work-per-length controls kept that classification after boundary flux density was normalized. `boundary_rotating_m4_81` still reproduces the family, which justified the first small 3D prototype.
 
-Current 3D caution: the first `prototype-3d` run was `inconclusive` under the original global shell metric. `prototype-3d-audit` classified the run as `diagnostic_window_issue`: the global shell peak is outer-biased, while a small near-defect shell signal arrives late and should be tracked separately. `prototype-3d-source-sponge-control` showed that the inner-sponge-edge source strengthens the retained near-defect shell signal without global outer-boundary dominance. `prototype-3d-sponge-strength-control` then showed that stronger sponge at the original width lowers outer/near tail contamination while preserving the near-shell tail; wider sponge keeps retention but reintroduces full source/sponge overlap because the source location is fixed. The next 3D task should be a tiny 31^3 source-geometry comparison from the stronger-sponge inner-edge setup, not a larger grid or broad sweep.
+Current 3D caution: the first `prototype-3d` run was `inconclusive` under the original global shell metric. `prototype-3d-audit` classified the run as `diagnostic_window_issue`: the global shell peak is outer-biased, while a small near-defect shell signal arrives late and should be tracked separately. `prototype-3d-source-sponge-control` showed that the inner-sponge-edge source strengthens the retained near-defect shell signal without global outer-boundary dominance. `prototype-3d-sponge-strength-control` then showed that stronger sponge at the original width lowers outer/near tail contamination while preserving the near-shell tail. `prototype-3d-source-geometry-control` classified the source-geometry set as `boundary_source_geometry_preserves_near_shell`: six-face cubic remained the cleanest retained near-shell case, while uniform/reduced-face/random boundary variants were global-outer-window flagged and direct core/shell forcing was not retained. The next 3D task should stay at 31^3 and narrow around the preserved six-face cubic boundary geometry, not increase grid size.
 
 ## Generated Artifacts
 

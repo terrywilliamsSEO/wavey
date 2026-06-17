@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 import csv
+import json
 
 import matplotlib
 
@@ -65,6 +66,8 @@ class Prototype3DConfig:
     boundary_source_inner_distance: float = 0.0
     boundary_source_width: float | None = None
     exclude_source_from_sponge_damping: bool = False
+    boundary_faces: tuple[str, ...] = ("x_min", "x_max", "y_min", "y_max", "z_min", "z_max")
+    boundary_face_phase_offsets: dict[str, float] | None = None
 
     @property
     def dx(self) -> float:
@@ -142,6 +145,7 @@ class Source3D:
     def __init__(self, config: Prototype3DConfig, coords: dict[str, np.ndarray]):
         self.config = config
         self.coords = coords
+        self.face_coverages = self._face_coverages()
         self.weights = self._weights()
         self.mask = self.weights > EPSILON
         self.phase_map = self._phase_map()
@@ -156,10 +160,9 @@ class Source3D:
         config = self.config
         radius = self.coords["radius"]
         if config.drive_location == "boundary":
-            distance = self.coords["boundary_distance"]
-            start = max(0.0, config.boundary_source_inner_distance)
-            width = config.boundary_source_width or config.dx
-            return _cell_interval_coverage_between(distance, config.dx, start, start + width)
+            if not self.face_coverages:
+                return np.zeros_like(radius)
+            return np.maximum.reduce(list(self.face_coverages.values()))
         if config.drive_location == "core":
             return (radius <= config.defect_radius + config.dx).astype(float)
         if config.drive_location == "shell":
@@ -168,10 +171,27 @@ class Source3D:
             return ((radius >= inner) & (radius <= outer)).astype(float)
         raise ValueError(f"Unsupported 3D drive_location: {config.drive_location}")
 
+    def _face_coverages(self) -> dict[str, np.ndarray]:
+        config = self.config
+        if config.drive_location != "boundary":
+            return {}
+        start = max(0.0, config.boundary_source_inner_distance)
+        width = config.boundary_source_width or config.dx
+        coverages: dict[str, np.ndarray] = {}
+        for face in _normalize_boundary_faces(config.boundary_faces):
+            distance = self.coords["face_distances"][face]
+            coverage = _cell_interval_coverage_between(distance, config.dx, start, start + width)
+            if start > 0.0:
+                coverage = np.where(self.coords["boundary_distance"] >= start, coverage, 0.0)
+            coverages[face] = coverage
+        return coverages
+
     def _phase_map(self) -> np.ndarray:
         config = self.config
         if config.drive_phase_mode == "uniform":
             return np.zeros_like(self.weights)
+        if config.drive_phase_mode == "face_offsets":
+            return self._face_offset_phase_map(config.boundary_face_phase_offsets or {})
         if config.drive_phase_mode != "cubic":
             raise ValueError(f"Unsupported 3D drive_phase_mode: {config.drive_phase_mode}")
         x = self.coords["x"]
@@ -182,10 +202,23 @@ class Source3D:
         scale = np.max(np.abs(cubic[self.mask])) if np.any(self.mask) else 1.0
         return 0.5 * np.pi * cubic / (scale + EPSILON)
 
+    def _face_offset_phase_map(self, offsets: dict[str, float]) -> np.ndarray:
+        if not self.face_coverages:
+            return np.zeros_like(self.weights)
+        real = np.zeros_like(self.weights)
+        imag = np.zeros_like(self.weights)
+        for face, coverage in self.face_coverages.items():
+            phase = float(offsets.get(face, 0.0))
+            real += coverage * np.cos(phase)
+            imag += coverage * np.sin(phase)
+        phase_map = np.zeros_like(self.weights)
+        phase_map[self.mask] = np.arctan2(imag[self.mask], real[self.mask])
+        return phase_map
+
     def _boundary_area(self) -> float:
         if self.config.drive_location != "boundary":
             return 0.0
-        return 6.0 * self.config.domain_size**2
+        return float(len(_normalize_boundary_faces(self.config.boundary_faces))) * self.config.domain_size**2
 
     def envelope(self, time: float) -> float:
         cutoff = self.config.drive_cutoff_time
@@ -496,6 +529,9 @@ def _summarize_variant(
         "drive_frequency": config.drive_frequency,
         "drive_cutoff_time": config.drive_cutoff_time,
         "boundary_area": source.boundary_area,
+        "boundary_faces": list(_normalize_boundary_faces(config.boundary_faces)),
+        "boundary_face_count": len(_normalize_boundary_faces(config.boundary_faces)),
+        "boundary_face_phase_offsets": config.boundary_face_phase_offsets or {},
         "effective_source_volume": source.effective_volume,
         "effective_source_area": source.effective_area,
         "boundary_source_inner_distance": config.boundary_source_inner_distance,
@@ -603,8 +639,42 @@ def _coordinate_payload(config: Prototype3DConfig) -> dict[str, np.ndarray]:
     z, y, x = np.meshgrid(axis, axis, axis, indexing="ij")
     radius = np.sqrt(x**2 + y**2 + z**2)
     half = 0.5 * config.domain_size
-    boundary_distance = np.minimum.reduce([x + half, half - x, y + half, half - y, z + half, half - z])
-    return {"x": x, "y": y, "z": z, "radius": radius, "boundary_distance": boundary_distance}
+    face_distances = {
+        "x_min": x + half,
+        "x_max": half - x,
+        "y_min": y + half,
+        "y_max": half - y,
+        "z_min": z + half,
+        "z_max": half - z,
+    }
+    boundary_distance = np.minimum.reduce(list(face_distances.values()))
+    return {"x": x, "y": y, "z": z, "radius": radius, "boundary_distance": boundary_distance, "face_distances": face_distances}
+
+
+def _normalize_boundary_faces(faces: tuple[str, ...] | list[str] | str | None) -> tuple[str, ...]:
+    if faces is None:
+        return ("x_min", "x_max", "y_min", "y_max", "z_min", "z_max")
+    if isinstance(faces, str):
+        raw = [part.strip() for part in faces.split(",") if part.strip()]
+    else:
+        raw = [str(face).strip() for face in faces if str(face).strip()]
+    aliases = {
+        "left": "x_min",
+        "right": "x_max",
+        "front": "y_min",
+        "back": "y_max",
+        "bottom": "z_min",
+        "top": "z_max",
+    }
+    valid = {"x_min", "x_max", "y_min", "y_max", "z_min", "z_max"}
+    normalized: list[str] = []
+    for face in raw:
+        canonical = aliases.get(face, face)
+        if canonical not in valid:
+            raise ValueError(f"Unsupported 3D boundary face: {face}")
+        if canonical not in normalized:
+            normalized.append(canonical)
+    return tuple(normalized)
 
 
 def _sponge_extra(config: Prototype3DConfig, coords: dict[str, np.ndarray]) -> np.ndarray:
@@ -741,6 +811,9 @@ def _summary_fields() -> list[str]:
         "drive_frequency",
         "drive_cutoff_time",
         "boundary_area",
+        "boundary_faces",
+        "boundary_face_count",
+        "boundary_face_phase_offsets",
         "effective_source_volume",
         "effective_source_area",
         "boundary_source_inner_distance",
@@ -923,6 +996,8 @@ def _csv_value(value: Any) -> Any:
         return f"{value:.12g}"
     if isinstance(value, np.generic):
         return _csv_value(value.item())
+    if isinstance(value, (list, tuple, dict)):
+        return json.dumps(value, sort_keys=True)
     return value
 
 
