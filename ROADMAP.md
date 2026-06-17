@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Add targeted annulus / near-defect transport controls before broader long sweeps.
+Confirm boundary-geometry sensitivity for the source-normalized fixed-domain 0.92 candidate before broader long sweeps.
 
-Recommended next task: add a narrow transport-control command or extend `core-modal-probe` with annulus / inner-ring / near-boundary source variants using matched injected work. The hardened global breathing detector now reports raw diagnostic-frame peak periods separately from envelope-scale periods, flags `subpeak_overcounting_possible`, and requires retained post-cutoff energy before applying the `breathing_localized_state` label.
+Recommended next task: run or add an 81x81 confirmation pass for the boundary-geometry variants from `transport-controls`, especially `boundary_left_right` and `boundary_rotating_m4`, using matched injected work. The first 63x63 transport-control pass classified the result as `boundary_geometry_sensitive`: direct annulus/near-defect drives did not reproduce the reference family, while boundary one-side, two-side, and rotating m=4 variants retained breathing.
 
 ## Status
 
@@ -96,20 +96,23 @@ Recommended next task: add a narrow transport-control command or extend `core-mo
 - Hardened `_detect_breathing_state` globally with full-metric envelope-scale peak detection, minimum peak separation, low-amplitude prominence filtering, smoothing, post-cutoff retention gating, raw/envelope period reporting, and `subpeak_overcounting_possible`.
 - Reran source-normalized fixed-domain diagnostics in `runs\source_normalized_resolution_20260616_233009`; classification stayed `coarse_grid_artifact_likely`, and 41/63/81 envelope-scale periods reported as 2.547 / 3.040 / 2.850.
 - Refreshed `core-modal-probe` in `runs\core_modal_probe_20260616_233711`; classification stayed `boundary_transport_required`, with combined reports now separating diagnostic envelope period, metric min-separated period, and raw diagnostic-frame period.
+- Added configurable direct-drive annulus geometry with physical inner/outer radii, optional angular sectors, and uniform or rotating spatial phase maps.
+- Added `transport-controls` for matched-work boundary-geometry and annulus/near-defect source controls.
+- Ran `transport-controls` in `runs\transport_controls_20260617_093201`; result classified as `boundary_geometry_sensitive`.
+- Boundary left, boundary left-right, and rotating m=4 boundary variants retained breathing under matched work; direct annulus/near-defect variants did not reproduce the reference family, although `annulus_radial_peak_63` produced a separate retained short-period response.
 
 ### In Progress
 
-- Targeted boundary-transport mechanism controls.
+- Boundary-geometry confirmation controls.
 
 ### Next
 
-- Add annulus drive and inner-ring drive variants with matched injected work.
-- Add closer-boundary / near-defect source variants to test transport distance.
-- Add one-side versus symmetric source variants to test interference geometry.
-- Add rotating versus non-rotating phase variants to test whether angular injection seeds m=4.
+- Confirm `boundary_left_right` and `boundary_rotating_m4` at 81x81 with matched injected work.
+- Separate symmetry from phase: compare one-side, left-right, four-side uniform, and four-side rotating m=4 boundary variants using the same hardened detector.
+- Recheck whether the `annulus_radial_peak` response is a separate short-period retained family or just a non-reference forcing artifact.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls until the transport-mechanism controls are understood.
+- Do not run neighboring-frequency long controls until boundary-geometry sensitivity is confirmed or ruled out.
 
 ## Phases
 
@@ -251,3 +254,8 @@ Possible work:
 - 2026-06-17: Reran source-normalized fixed-domain diagnostics in `runs\source_normalized_resolution_20260616_233009`; classification stayed `coarse_grid_artifact_likely`, while the 63-grid period now reports an envelope-scale 3.040 with `subpeak_overcounting_possible` instead of overclaiming the raw 1.689 subpeak period.
 - 2026-06-17: Refreshed core-modal probe in `runs\core_modal_probe_20260616_233711`; classification stayed `boundary_transport_required`, and the combined report now separates diagnostic envelope period from metric min-separated and raw diagnostic-frame periods.
 - 2026-06-17: Updated the next step to targeted annulus / near-defect transport controls before any broad long sweeps.
+- 2026-06-17: Added physical annulus direct-drive controls, angular sector forcing, and rotating direct-drive phase maps.
+- 2026-06-17: Added `python main.py transport-controls --config configs\long_validation_peak_0_92.json`.
+- 2026-06-17: Ran transport controls in `runs\transport_controls_20260617_093201`; classified as `boundary_geometry_sensitive`.
+- 2026-06-17: Boundary left, boundary left-right, and boundary rotating m=4 variants retained breathing with matched work; direct inner-ring/near-defect/sector/rotating annulus drives did not reproduce the reference family, and `annulus_radial_peak_63` looked like a non-reference short-period retained response.
+- 2026-06-17: Updated the next step to confirm boundary-geometry sensitivity at 81x81 before any broad neighboring-frequency controls.

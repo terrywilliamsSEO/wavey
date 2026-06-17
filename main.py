@@ -30,6 +30,7 @@ from simulation.resolution_diagnostics import (
 )
 from simulation.sweep import run_single_experiment, run_sweep
 from simulation.time_resolved_diagnostics import DiagnosticOptions, diagnose_existing_run
+from simulation.transport_controls import TransportControlOptions, run_transport_controls
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -168,6 +169,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Physical boundary-source normalization mode for reference runs",
     )
     core_probe_parser.add_argument("--min-peak-separation", type=float, default=1.5, help="Minimum time separation for full-metric breathing peaks")
+
+    transport_parser = subparsers.add_parser(
+        "transport-controls",
+        help="Run targeted source-geometry transport controls for the fixed-domain 0.92 candidate",
+    )
+    transport_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the baseline candidate")
+    transport_parser.add_argument("--output-root", default="runs", help="Directory for transport-control outputs")
+    transport_parser.add_argument("--reference-root", type=Path, default=Path("runs"), help="Directory containing sweep summaries for short-peak references")
+    transport_parser.add_argument("--frame-interval", type=int, default=20, help="Base step interval for diagnostic frame snapshots")
+    transport_parser.add_argument("--window-steps", type=int, default=30, help="Extra frame-capture radius around cutoff, best event, and late tail")
+    transport_parser.add_argument(
+        "--source-normalization",
+        choices=("per_length", "constant_boundary_flux", "constant_total_work"),
+        default="constant_total_work",
+        help="Physical boundary-source normalization mode for the four-side reference",
+    )
+    transport_parser.add_argument("--grid-size", type=int, default=63, help="Fixed-domain grid size for this narrow transport control")
+    transport_parser.add_argument("--min-peak-separation", type=float, default=1.5, help="Minimum time separation for full-metric breathing peaks")
 
     return parser
 
@@ -368,6 +387,23 @@ def main() -> None:
             reference_root=args.reference_root,
         )
         _print_core_modal_probe_summary(result)
+        return
+
+    if args.command == "transport-controls":
+        config = _load_sim_config(args.config)
+        result = run_transport_controls(
+            config,
+            options=TransportControlOptions(
+                output_root=args.output_root,
+                frame_interval=args.frame_interval,
+                window_steps=args.window_steps,
+                source_normalization=args.source_normalization,
+                reference_grid_size=args.grid_size,
+                min_peak_separation=args.min_peak_separation,
+            ),
+            reference_root=args.reference_root,
+        )
+        _print_transport_control_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -627,6 +663,31 @@ def _print_core_modal_probe_summary(result: dict[str, Any]) -> None:
     print(f"classification: {classification['label']}")
     print(f"reason: {classification['reason']}")
     print(f"best matching core-probe run: {best_core.get('variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"drive={row.get('drive_location')}"
+            f"{('/' + row.get('core_drive_mode')) if row.get('core_drive_mode') else ''}, "
+            f"work={_format_optional(row.get('injected_work_before_cutoff'))}, "
+            f"retention={_format_optional(row.get('post_cutoff_retention'))}, "
+            f"period={_format_optional(row.get('breathing_period_after_cutoff'))}, "
+            f"radial={_format_optional(row.get('radial_peak_after_cutoff_physical'))}, "
+            f"m4={_format_optional(row.get('m4_strength_after_cutoff'))}, "
+            f"sim={_format_optional(row.get('best_frame_similarity_to_boundary_reference'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_transport_control_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    best = result.get("best_transport_match") or {}
+    print("Transport controls complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best non-reference match: {best.get('variant', 'n/a')}")
     print("variants:")
     for row in result["variants"]:
         print(

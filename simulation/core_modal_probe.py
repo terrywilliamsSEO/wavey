@@ -583,6 +583,8 @@ def _summary_row(
 def _attach_reference_similarities(rows: list[dict[str, Any]], configs_by_variant: dict[str, SimulationConfig]) -> None:
     reference = next((row for row in rows if row["variant"] == "boundary_reference_63"), None)
     if reference is None:
+        reference = next((row for row in rows if str(row.get("variant", "")).startswith("boundary_reference_")), None)
+    if reference is None:
         return
     reference_config = configs_by_variant[reference["variant"]]
     reference_energy = np.load(Path(reference["path"]) / "best_energy_density.npy")

@@ -146,6 +146,14 @@ python main.py core-modal-probe --config configs\long_validation_peak_0_92.json
 
 This reruns the source-normalized fixed-domain 63x63 and 81x81 boundary references, then runs work-normalized direct core impulse and core burst probes. It logs boundary-drive work and core-drive work separately, uses post-cutoff-only best events, applies minimum-separated full-metric breathing checks, and writes a combined classification report.
 
+Run targeted source-geometry transport controls with:
+
+```powershell
+python main.py transport-controls --config configs\long_validation_peak_0_92.json
+```
+
+This runs a source-normalized 63x63 boundary reference plus matched-work boundary-geometry and annulus/near-defect source variants. It tests one-side versus symmetric boundary drive, rotating boundary phase, inner-ring/interface drive, near-defect annulus drive, radial-peak annulus drive, one-sided annulus sector drive, and rotating annulus phase before any broad long sweeps.
+
 ## Run one simulation
 
 ```powershell
@@ -308,6 +316,14 @@ Each core-modal run folder also includes:
 - `injected_work_plot.png`
 - `post_cutoff_decay_plot.png`
 - the normal run plots and `mode_shape_diagnostics/` artifacts
+
+When `transport-controls` is used, the control folder includes:
+
+- `transport_control_summary.csv`
+- `transport_control_summary.json`
+- `transport_control_report.md`
+- `transport_control_comparison_plots/`
+- one diagnosed run folder per source-geometry variant
 
 ## Metrics
 

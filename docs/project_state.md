@@ -18,8 +18,10 @@ Current interpretation:
 - The global time-resolved breathing detector is now hardened: reports include raw diagnostic-frame period, hardened envelope-scale period, minimum separation, prominence threshold, smoothing window, retained-energy gating, and `subpeak_overcounting_possible`.
 - The refreshed source-normalized 63x63 diagnostic now reports an envelope-scale period of `3.040` while flagging the old raw `1.689` diagnostic-frame period as subpeak overcounting.
 - A controlled direct core-modal probe classified the 0.92 candidate as `boundary_transport_required`: source-normalized boundary references retained the 0.92 breathing family, but work-normalized core impulse/burst controls did not reproduce the same post-cutoff breathing, radial peak, and m=4 structure.
+- The first targeted source-geometry transport control classified the candidate as `boundary_geometry_sensitive`: boundary left, boundary left-right, and boundary rotating m=4 variants retained breathing under matched work, while direct inner-ring/near-defect annulus variants did not reproduce the reference family.
+- `annulus_radial_peak_63` produced a retained short-period response, but it did not match the reference period/radial structure closely enough to count as the same family.
 - Do not call this exotic physics.
-- Do not run broad long sweeps until the boundary-transport mechanism is narrowed with targeted controls.
+- Do not run broad long sweeps until boundary-geometry sensitivity is confirmed or ruled out under fixed-domain source-normalized controls.
 
 ## Latest Evidence
 
@@ -270,14 +272,51 @@ Interpretation:
 - Direct core bursts at 0.92 show tiny post-cutoff peak timing measurements but essentially no retained energy, so they are not counted as retained breathing.
 - The immediate conclusion is cautious: under these work-normalized direct-core settings, the 0.92 retained breathing state appears to require boundary-driven transport.
 
+### Transport Controls
+
+Command:
+
+```powershell
+python main.py transport-controls --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\transport_controls_20260617_093201\transport_control_report.md`
+- Summary CSV: `runs\transport_controls_20260617_093201\transport_control_summary.csv`
+- Classification: `boundary_geometry_sensitive`
+- Matched work target: `21.8221` before cutoff for every variant.
+- Best non-reference match: `boundary_left_right_63`
+
+Important values:
+
+| Variant | Drive | Work | Retention | Envelope Period | Metric min_sep 1.5 | Raw Period | Radial Peak | m4 Strength | Radial Sim | Frame Sim |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| boundary_reference_63 | boundary four-side | 21.822 | 0.863 | 3.040 | 2.491 | 1.689 | 10.00 | 0.124 | 1.000 | 1.000 |
+| boundary_left_63 | boundary one-side | 21.823 | 0.816 | 2.860 | 3.024 | 1.990 | 11.25 | 0.186 | 0.982 | 0.368 |
+| boundary_left_right_63 | boundary two-side | 21.822 | 0.795 | 1.960 | 2.976 | 2.072 | 5.00 | 0.234 | 0.978 | 0.644 |
+| boundary_rotating_m4_63 | boundary rotating m4 | 21.823 | 0.866 | 3.400 | 2.513 | 1.860 | 10.00 | 0.226 | 0.945 | 0.355 |
+| inner_ring_interface_63 | annulus burst | 21.822 | 0.0000015 | 2.200 | 2.730 | 1.293 | 5.00 | 0.195 | 0.525 | 0.370 |
+| annulus_near_defect_63 | annulus burst | 21.822 | 0.000125 | 2.160 | 3.136 | 1.032 | 8.75 | 0.440 | 0.756 | 0.326 |
+| annulus_radial_peak_63 | annulus burst | 21.822 | 0.264 | n/a | 1.831 | 1.457 | 7.50 | 0.194 | 0.810 | 0.465 |
+| annulus_sector_one_side_63 | annulus sector | 21.822 | 0.000172 | n/a | 2.165 | 1.150 | 7.50 | 0.169 | 0.618 | 0.205 |
+| annulus_rotating_m4_63 | annulus rotating m4 | 21.824 | 0.000214 | 4.720 | 2.360 | 2.000 | 8.75 | 0.397 | 0.821 | 0.340 |
+
+Interpretation:
+
+- Four-side boundary drive is not uniquely required: one-side, two-side, and rotating m=4 boundary variants all retained breathing under matched injected work.
+- Boundary geometry matters. The best non-reference match was the left-right boundary source, with high radial similarity and better frame similarity than the other boundary variants.
+- Direct inner/interface annulus and near-defect annulus sources produced m=4 content but almost no retained post-cutoff energy, so they do not reproduce the reference family.
+- The radial-peak annulus source retained some energy, but its period and radial peak do not match the reference family; treat it as a possible separate forcing response, not a pass.
+- Next control should confirm the boundary-geometry result at 81x81 before changing frequency coverage.
+
 ## Current Next Step
 
-Narrow the boundary-transport mechanism:
+Confirm boundary-geometry sensitivity:
 
-- Add annulus drive and inner-ring drive variants with matched injected work.
-- Add closer-boundary / near-defect source variants to test transport distance.
-- Add one-side versus symmetric source variants to test interference geometry.
-- Add rotating versus non-rotating phase variants to test whether angular injection seeds m=4.
+- Run or add an 81x81 confirmation for `boundary_left_right` and `boundary_rotating_m4` with matched injected work.
+- Compare one-side, left-right, four-side uniform, and four-side rotating m=4 under the same hardened detector.
+- Recheck `annulus_radial_peak` only as a possible separate retained short-period response, not as the current reference-family mechanism.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

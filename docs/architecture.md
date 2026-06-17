@@ -1,6 +1,6 @@
 # Architecture Notes
 
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 ## Entry Point
 
@@ -17,6 +17,7 @@ Last updated: 2026-06-16
 - `source-normalized-resolution-diagnostics`: source-normalized fixed-domain resolution audit with legacy `per_cell` reference variants.
 - `breathing-period-audit`: read-only peak-picking audit for completed diagnostic runs.
 - `core-modal-probe`: controlled source-normalized fixed-domain boundary references plus direct core excitation probes.
+- `transport-controls`: targeted matched-work boundary-geometry and annulus/near-defect source controls.
 
 ## Core Modules
 
@@ -35,6 +36,7 @@ Last updated: 2026-06-16
 - `simulation/fixed_domain_controls.py`: same-domain grid-refinement controls with best-frame resampling.
 - `simulation/resolution_diagnostics.py`: fixed-domain resolution-sensitivity audits for source normalization, mask areas, energy budgets, radial profiles, and pairwise best-frame/mode-shape similarity.
 - `simulation/core_modal_probe.py`: controlled direct-core modal probe orchestration, separate drive-work accounting, post-cutoff-only summaries, minimum-separated breathing checks, comparison plots, and classification.
+- `simulation/transport_controls.py`: narrow source-geometry mechanism controls that compare boundary one-side/two-side/rotating variants with inner-ring, near-defect annulus, radial-peak annulus, sector, and rotating annulus drives under matched injected work.
 - `simulation/stability.py`: conservative dt guidance for current `dx`/`dy`.
 - `simulation/reporting.py` and `simulation/band_analysis.py`: sweep-level reporting and frequency-band analysis.
 
@@ -54,6 +56,7 @@ When enabled:
 - `driver.source_normalization` supports `per_cell`, `per_length`, `constant_boundary_flux`, and `constant_total_work`.
 - `drive_location` supports `boundary`, `core_node`, `core_region`, and `annulus`.
 - Direct core drives support `burst`, `impulse`, `chirp`, and `continuous` modes with separate work accounting from boundary drives.
+- Direct annulus/core-region drives support physical inner/outer annulus radii, optional angular sectors, and uniform or rotating spatial phase maps.
 - Lattice coupling force scales by `1/dx^2` and `1/dy^2`.
 - Energy density integrates onsite/kinetic/nonlinear/coupling contributions with cell area.
 - Masks, sponge damping, phase maps, radial profiles, annulus masks, and angular masks use physical distances.
@@ -75,8 +78,9 @@ Controls should be preferred over broad sweeps while validating one candidate:
 - Use `source-normalized-resolution-diagnostics` after source/mask comparability fails; its main variants use calibrated source-normalized coverage and its legacy `per_cell` variants are reference-only.
 - Use `breathing-period-audit` when a diagnostic breathing period appears too short or inconsistent with neighboring controls.
 - Use `core-modal-probe` to test whether direct core excitation reproduces the source-normalized fixed-domain boundary-reference tail before any broad long sweeps.
+- Use `transport-controls` to test which source geometry excites the retained family after direct core excitation fails.
 
-Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. The global breathing detector now flags raw subpeak overcounting and reports envelope-scale periods. `core-modal-probe` classified the direct-core test as `boundary_transport_required`, so use targeted annulus / near-defect transport controls before broad long sweeps.
+Current fixed-domain caution: `source-normalized-resolution-diagnostics` fixed emitter geometry/work comparability for the 0.92 candidate and classified the radial result as `coarse_grid_artifact_likely`. The global breathing detector now flags raw subpeak overcounting and reports envelope-scale periods. `core-modal-probe` classified the direct-core test as `boundary_transport_required`. The first `transport-controls` pass classified the candidate as `boundary_geometry_sensitive`: direct annulus/near-defect drives did not reproduce the reference family, while boundary left, left-right, and rotating m=4 variants retained breathing under matched work. Confirm boundary-geometry sensitivity at 81x81 before broad long sweeps.
 
 ## Generated Artifacts
 

@@ -11,6 +11,7 @@ VALID_SIDES = {"left", "right", "top", "bottom"}
 VALID_SOURCE_NORMALIZATIONS = {"per_cell", "per_length", "constant_total_work", "constant_boundary_flux"}
 VALID_DRIVE_LOCATIONS = {"boundary", "core_node", "core_region", "annulus"}
 VALID_CORE_DRIVE_MODES = {"burst", "impulse", "chirp", "continuous"}
+VALID_CORE_PHASE_MODES = {"uniform", "rotating"}
 EPSILON = 1e-12
 
 
@@ -243,11 +244,17 @@ class CoreDriver:
                 f"Unsupported core_drive_mode: {sim_config.core_drive_mode}. "
                 f"Expected one of {sorted(VALID_CORE_DRIVE_MODES)}"
             )
+        if sim_config.core_drive_phase_mode not in VALID_CORE_PHASE_MODES:
+            raise ValueError(
+                f"Unsupported core_drive_phase_mode: {sim_config.core_drive_phase_mode}. "
+                f"Expected one of {sorted(VALID_CORE_PHASE_MODES)}"
+            )
         self.coverage_weights = self._build_coverage_weights(shape, sim_config, masks)
         self.mask = self.coverage_weights > EPSILON
         self.effective_driven_area = float(np.sum(self.coverage_weights) * sim_config.cell_area)
         self.fractional_coverage_sum = float(np.sum(self.coverage_weights))
         self.normalization_scale = 1.0
+        self.phase_map = self._build_phase_map(shape, sim_config)
 
     @staticmethod
     def _build_coverage_weights(
@@ -265,17 +272,44 @@ class CoreDriver:
 
         if config.drive_location == "annulus":
             if config.fixed_domain:
-                inner = config.effective_defect_radius + 1.0
-                outer = config.effective_defect_radius + max(3.0, config.effective_defect_radius * 0.8)
-                return _fractional_radial_band_weights(shape, config, inner, outer)
+                inner = (
+                    float(config.core_drive_inner_radius_physical)
+                    if config.core_drive_inner_radius_physical is not None
+                    else config.effective_defect_radius + 1.0
+                )
+                outer = (
+                    float(config.core_drive_outer_radius_physical)
+                    if config.core_drive_outer_radius_physical is not None
+                    else config.effective_defect_radius + max(3.0, config.effective_defect_radius * 0.8)
+                )
+                weights = _fractional_radial_band_weights(shape, config, inner, outer)
+                return _apply_angular_sector(weights, shape, config)
             return np.asarray(getattr(masks, "ring"), dtype=float)
 
         if config.drive_location == "core_region":
             if config.fixed_domain:
-                return _fractional_radial_region_weights(shape, config, config.effective_core_drive_radius)
-            return np.asarray(getattr(masks, "radius") <= config.effective_core_drive_radius, dtype=float)
+                weights = _fractional_radial_region_weights(shape, config, config.effective_core_drive_radius)
+                return _apply_angular_sector(weights, shape, config)
+            weights = np.asarray(getattr(masks, "radius") <= config.effective_core_drive_radius, dtype=float)
+            return _apply_angular_sector(weights, shape, config)
 
         raise AssertionError(f"Unhandled drive_location: {config.drive_location}")
+
+    @staticmethod
+    def _build_phase_map(shape: tuple[int, int], config: SimulationConfig) -> np.ndarray:
+        if config.core_drive_phase_mode == "uniform":
+            return np.full(shape, config.core_drive_phase, dtype=float)
+        if config.core_drive_phase_mode != "rotating":
+            raise ValueError(f"Unsupported core_drive_phase_mode: {config.core_drive_phase_mode}")
+
+        rows, cols = np.indices(shape, dtype=float)
+        center_row = (shape[0] - 1) / 2.0
+        center_col = (shape[1] - 1) / 2.0
+        if config.fixed_domain:
+            theta = np.arctan2((rows - center_row) * config.dy, (cols - center_col) * config.dx)
+        else:
+            theta = np.arctan2(rows - center_row, cols - center_col)
+        return config.core_drive_phase + float(config.core_drive_rotating_phase_winding) * theta
 
     def envelope(self, time: float) -> float:
         mode = self.config.core_drive_mode
@@ -294,21 +328,18 @@ class CoreDriver:
             return float(np.sin(np.pi * phase) ** 2)
         raise ValueError(f"Unsupported core_drive_mode: {mode}")
 
-    def waveform(self, time: float) -> float:
+    def _base_angle(self, time: float) -> float:
         mode = self.config.core_drive_mode
-        phase = float(self.config.core_drive_phase)
         if mode == "impulse":
-            return float(np.cos(phase))
+            return 0.0
         frequency = max(self.config.effective_core_drive_frequency, EPSILON)
         if mode == "chirp":
             cutoff = self.config.effective_core_drive_cutoff_time
             duration = cutoff if cutoff is not None and cutoff > 0.0 else max(time, self.config.dt)
             target_frequency = max(frequency * 2.0, frequency)
             sweep_rate = (target_frequency - frequency) / duration
-            angle = 2.0 * np.pi * (frequency * time + 0.5 * sweep_rate * time * time) + phase
-        else:
-            angle = 2.0 * np.pi * frequency * time + phase
-        return float(np.sin(angle))
+            return float(2.0 * np.pi * (frequency * time + 0.5 * sweep_rate * time * time))
+        return float(2.0 * np.pi * frequency * time)
 
     def force(self, time: float) -> np.ndarray:
         out = np.zeros(self.shape, dtype=float)
@@ -317,11 +348,16 @@ class CoreDriver:
         envelope = self.envelope(time)
         if envelope == 0.0 or not np.any(self.mask):
             return out
+        phase = self._base_angle(time) + self.phase_map[self.mask]
+        if self.config.core_drive_mode == "impulse":
+            waveform = np.cos(phase)
+        else:
+            waveform = np.sin(phase)
         out[self.mask] = (
             self.config.core_drive_amplitude
             * self.normalization_scale
             * envelope
-            * self.waveform(time)
+            * waveform
             * self.coverage_weights[self.mask]
         )
         return out
@@ -375,3 +411,25 @@ def _fractional_radial_band_weights(
             hit_count += ((radius >= inner_radius) & (radius <= outer_radius)).astype(float)
     weights = hit_count / float(samples_per_axis * samples_per_axis)
     return np.clip(weights, 0.0, 1.0)
+
+
+def _apply_angular_sector(weights: np.ndarray, shape: tuple[int, int], config: SimulationConfig) -> np.ndarray:
+    width = config.core_drive_angle_width
+    if width is None:
+        return weights
+    width = float(width)
+    if width <= 0.0:
+        return np.zeros_like(weights, dtype=float)
+    if width >= 2.0 * np.pi:
+        return weights
+
+    center = float(config.core_drive_angle_center or 0.0)
+    rows, cols = np.indices(shape, dtype=float)
+    center_row = (shape[0] - 1) / 2.0
+    center_col = (shape[1] - 1) / 2.0
+    if config.fixed_domain:
+        theta = np.arctan2((rows - center_row) * config.dy, (cols - center_col) * config.dx)
+    else:
+        theta = np.arctan2(rows - center_row, cols - center_col)
+    delta = np.angle(np.exp(1j * (theta - center)))
+    return np.where(np.abs(delta) <= 0.5 * width, weights, 0.0)

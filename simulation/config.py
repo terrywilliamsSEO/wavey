@@ -64,8 +64,14 @@ class SimulationConfig:
     core_drive_frequency: float | None = None
     core_drive_amplitude: float = 0.0
     core_drive_phase: float = 0.0
+    core_drive_phase_mode: str = "uniform"
+    core_drive_rotating_phase_winding: int = 1
     core_drive_mode: str = "burst"
     core_drive_cutoff_time: float | None = None
+    core_drive_inner_radius_physical: float | None = None
+    core_drive_outer_radius_physical: float | None = None
+    core_drive_angle_center: float | None = None
+    core_drive_angle_width: float | None = None
     normalize_core_drive_work: bool = False
     target_core_drive_work: float | None = None
     core_drive_work_reference: str = "boundary_reference"
