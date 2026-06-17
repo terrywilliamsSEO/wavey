@@ -23,9 +23,11 @@ Current interpretation:
 - `annulus_radial_peak_63` produced a retained short-period response, but it did not match the reference period/radial structure closely enough to count as the same family.
 - `annulus_radial_peak_81` retained more energy, but still looked like a separate short-period response rather than the reference family.
 - Boundary-only work-per-length controls at 63x63 and 81x81 kept the `boundary_geometry_sensitive` classification; `boundary_rotating_m4_81` still reproduced the family after boundary flux density was normalized.
-- The first 31^3 3D prototype was `inconclusive`: matched boundary-flux cubic forcing did not retain shell energy around the spherical defect, and the shell peak stayed near the outer boundary.
+- The first 31^3 3D prototype was `inconclusive` under the original global shell metric: matched boundary-flux cubic forcing did not pass retained shell-energy criteria, and the global shell peak stayed near the outer boundary.
+- The 3D failure-mode audit classified the run as `diagnostic_window_issue`: the global shell peak is outer-biased, but a small near-defect shell signal arrives late and should be tracked separately.
+- The current 3D boundary source fully overlaps the sponge layer, so the next 3D control should separate source and sponge before any larger grid.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or larger 3D grids. The next step is a 3D failure-mode audit.
+- Do not run broad long sweeps or larger 3D grids. The next step is a tiny 3D source/sponge separation control.
 
 ## Latest Evidence
 
@@ -422,19 +424,55 @@ Important values:
 Interpretation:
 
 - The first 3D prototype did not reproduce the 2D pattern.
-- The cubic boundary reference showed tiny oscillations, but retained shell energy was essentially zero and the shell peak sat near the outer boundary, not around the spherical defect.
+- The cubic boundary reference showed tiny oscillations, but retained shell energy under the original global-shell metric was essentially zero and the global shell peak sat near the outer boundary, not around the spherical defect.
 - Direct core forcing concentrated energy in the core, but that is explicitly not the success condition.
 - Direct shell forcing did not create retained boundary-reference-like shell breathing.
 - Stronger sponge and half-dt variants did not rescue the boundary cubic shell response.
-- Next step should diagnose the 3D failure mode: check whether boundary waves reach the defect region, whether the source/sponge geometry traps energy near the outer boundary, and whether shell diagnostics are using the right radial window.
+- Future 3D reports should distinguish global radial-peak behavior from near-defect shell-window behavior.
+
+### 3D Failure-Mode Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-audit --run-path runs\prototype_3d_20260617_152319 --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\prototype_3d_20260617_152319\failure_mode_audit\prototype_3d_failure_audit_report.md`
+- Summary CSV: `runs\prototype_3d_20260617_152319\failure_mode_audit\prototype_3d_failure_audit_summary.csv`
+- Classification: `diagnostic_window_issue`
+- Purpose: read the saved 31^3 prototype artifacts and separate near-defect shell transport from outer-boundary radial residue.
+
+Important boundary-reference values:
+
+| Metric | Value |
+| --- | ---: |
+| source/sponge overlap | 1.000 |
+| high-sponge source overlap | 1.000 |
+| global shell peak radius | 31.03 |
+| near-defect shell peak/work fraction | 2.13e-8 |
+| near-defect shell tail fraction of radial energy | 0.0758 |
+| near-defect shell tail retention | 0.875 |
+| outer-to-near tail energy ratio | 8.56 |
+| first meaningful near-shell arrival time | 37.68 |
+
+Interpretation:
+
+- The original 3D shell metric was too global: it selected outer radial residue as the shell peak.
+- A small near-defect shell signal does arrive late and retains within the near-shell window, but it is much weaker than the outer radial-window energy.
+- Boundary source cells are entirely inside the sponge layer in the current 3D prototype; this is a geometry/numerics concern before any bigger 3D run.
+- Stronger sponge and half-dt variants preserved the same audit pattern, so increasing grid size is not the next move.
 
 ## Current Next Step
 
-Audit the 3D failure mode:
+Run a tiny 3D source/sponge separation control:
 
-- Check radial energy transport from the six-face boundary source toward the spherical defect before and after cutoff.
-- Add/report shell-window metrics near the defect separately from the global radial peak so boundary residue cannot masquerade as shell breathing.
-- Inspect whether sponge/source overlap in 3D is over-damping or trapping the driven boundary layer.
+- Keep the grid at `31^3`.
+- Drive at the inner edge of the sponge or exclude the driven boundary layer from sponge damping.
+- Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
+- Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.
 - Do not run broad neighboring-frequency long sweeps yet.
 

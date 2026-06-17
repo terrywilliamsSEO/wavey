@@ -24,6 +24,10 @@ from simulation.fixed_domain_controls import FixedDomainGridControlOptions, run_
 from simulation.grid_controls import GridControlOptions, run_grid_control
 from simulation.numerical_controls import DtControlOptions, run_dt_control
 from simulation.prototype_3d import Prototype3DOptions, run_3d_prototype
+from simulation.prototype_3d_audit import (
+    Prototype3DFailureAuditOptions,
+    run_3d_failure_audit,
+)
 from simulation.resolution_diagnostics import (
     ResolutionDiagnosticsOptions,
     run_resolution_diagnostics,
@@ -206,6 +210,21 @@ def build_parser() -> argparse.ArgumentParser:
     prototype_3d_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
     prototype_3d_parser.add_argument("--skip-dt-control", action="store_true", help="Skip the half-dt confirmation variant")
     prototype_3d_parser.add_argument("--skip-sponge-control", action="store_true", help="Skip the stronger-sponge confirmation variant")
+
+    prototype_3d_audit_parser = subparsers.add_parser(
+        "prototype-3d-audit",
+        help="Audit a completed tiny 3D prototype for source/sponge and near-defect shell failure modes",
+    )
+    prototype_3d_audit_parser.add_argument("--run-path", type=Path, required=True, help="Completed prototype-3d output folder")
+    prototype_3d_audit_parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("configs/long_validation_peak_0_92.json"),
+        help="2D baseline config used to derive 3D geometry; defaults to the long 0.92 candidate",
+    )
+    prototype_3d_audit_parser.add_argument("--output-dir", type=Path, help="Directory for audit outputs")
+    prototype_3d_audit_parser.add_argument("--radial-bins", type=int, default=24, help="Radial bin count used by the prototype run")
+    prototype_3d_audit_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
 
     return parser
 
@@ -440,6 +459,20 @@ def main() -> None:
             ),
         )
         _print_3d_prototype_summary(result)
+        return
+
+    if args.command == "prototype-3d-audit":
+        config = _load_sim_config(args.config)
+        result = run_3d_failure_audit(
+            args.run_path,
+            config,
+            options=Prototype3DFailureAuditOptions(
+                output_dir=args.output_dir,
+                radial_bins=args.radial_bins,
+                near_shell_width_dx=args.near_shell_width_dx,
+            ),
+        )
+        _print_3d_failure_audit_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -759,6 +792,28 @@ def _print_3d_prototype_summary(result: dict[str, Any]) -> None:
             f"radial_sim={_format_optional(row.get('radial_similarity_to_reference'))}"
         )
     print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_failure_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    reference = next((row for row in result["variants"] if row["variant"] == "boundary_cubic_31"), result["variants"][0])
+    print("3D failure-mode audit complete")
+    print(f"prototype root: {result['prototype_root']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(
+        "reference: "
+        f"source/sponge={_format_optional(reference.get('source_sponge_overlap_fraction'))}, "
+        f"global_radius={_format_optional(reference.get('global_shell_peak_radius'))}, "
+        f"near_peak/work={_format_optional(reference.get('near_shell_peak_fraction_of_work'))}, "
+        f"near_tail_fraction={_format_optional(reference.get('near_shell_tail_fraction_of_total'))}, "
+        f"outer/near_tail={_format_optional(reference.get('outer_to_near_tail_energy_ratio'))}"
+    )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"geometry audit: {result['geometry_csv']}")
+    print(f"shell-window timeseries: {result['timeseries_csv']}")
+    print(f"radial snapshots: {result['snapshots_csv']}")
     print(f"report: {result['report_path']}")
 
 

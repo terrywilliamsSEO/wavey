@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Audit the first 3D prototype failure mode before expanding 3D or running broad sweeps.
+Run a tiny 3D source/sponge separation control before expanding 3D or running broad sweeps.
 
-Recommended next task: add a focused 3D failure-mode audit for the 31^3 prototype. The first 3D pass did not show retained shell breathing around the spherical defect; the shell peak stayed near the outer boundary and retained shell energy was essentially zero. Diagnose radial transport from the six-face source, source/sponge overlap, and defect-shell-window metrics before changing grid size or sweeping parameters.
+Recommended next task: keep the grid at 31^3 and add a boundary-source geometry variant that separates the driven layer from sponge damping, then classify the run using near-defect shell-window metrics rather than the global radial peak alone. The failure-mode audit found that the current global shell peak is outer-biased, while a small near-defect shell signal arrives late and retains within its local window.
 
 ## Status
 
@@ -109,16 +109,20 @@ Recommended next task: add a focused 3D failure-mode audit for the 31^3 prototyp
 - Added `prototype-3d` for a tiny fixed-domain 31^3 shell-breathing prototype with spherical defect, sponge boundary, six-face boundary drive, cubic phase variant, direct core/shell controls, and sponge/dt checks.
 - Ran the first 31^3 prototype in `runs\prototype_3d_20260617_152319`; result classified as `inconclusive`.
 - The 3D cubic boundary reference did not retain shell energy around the spherical defect: shell retention was about 1.28e-6, the shell peak was near radius 31.03, and the radius range was 21.65.
+- Added `prototype-3d-audit` for a read-only 3D failure-mode audit of completed prototype runs.
+- Ran the audit on `runs\prototype_3d_20260617_152319`; result classified as `diagnostic_window_issue`.
+- The audit found the boundary source is fully inside the sponge layer, the global shell peak is outer-biased at radius 31.03, and the near-defect shell signal is small but nonzero: near-shell peak/work fraction 2.13e-8, near-tail fraction of radial energy 0.0758, and first meaningful near-shell arrival at t=37.68.
+- Stronger sponge and half-dt variants preserved the same audit pattern, so the immediate issue is not a larger-grid question.
 
 ### In Progress
 
-- 3D prototype failure-mode audit.
+- 3D source/sponge separation control.
 
 ### Next
 
-- Add defect-shell-window metrics so the report distinguishes outer-boundary shell residue from near-defect shell organization.
-- Audit radial energy arrival at the spherical defect and radial profiles before cutoff, at cutoff, early tail, and late tail.
-- Check whether the 3D boundary source overlaps too strongly with the sponge region and damps/traps energy at the boundary.
+- Add a 31^3 boundary-source variant that drives at the inner edge of the sponge or excludes the driven boundary layer from sponge damping.
+- Make near-defect shell-window retention/arrival the primary 3D success metric; keep the global radial peak only as an artifact check.
+- Compare separated-source boundary cubic, separated-source uniform, direct core, and direct shell controls under matched work per physical boundary area.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
@@ -281,3 +285,5 @@ Possible work:
 - 2026-06-17: Ran the first 31^3 3D prototype in `runs\prototype_3d_20260617_152319`; classified as `inconclusive`.
 - 2026-06-17: The 3D boundary cubic source did not reproduce retained near-defect shell breathing: shell retention was 1.28e-6, shell peak radius was 31.03, and shell radius range was 21.65, indicating the detected shell peak was near the outer boundary.
 - 2026-06-17: Updated the next step to a 3D failure-mode audit rather than larger 3D grids or broad sweeps.
+- 2026-06-17: Added and ran `python main.py prototype-3d-audit --run-path runs\prototype_3d_20260617_152319 --config configs\long_validation_peak_0_92.json`; classified the prototype failure as `diagnostic_window_issue`.
+- 2026-06-17: The audit found the boundary source fully overlaps the sponge, the global shell peak is outer-window biased, and a small near-defect shell signal arrives late at t=37.68; updated the next step to a tiny source/sponge separation control.

@@ -174,6 +174,14 @@ python main.py prototype-3d --config configs\long_validation_peak_0_92.json
 
 This is not a general 3D engine. It is a small fixed-domain prototype that tests whether matched boundary-flux waves can organize around a spherical defect and produce retained post-cutoff shell breathing. Success is judged by retained shell energy, shell/radial breathing, shell peak stability, source-geometry similarity, direct core/shell controls, and sponge/dt checks, not by high core energy alone.
 
+Audit a completed 3D prototype for near-defect shell transport, global radial-peak bias, and source/sponge overlap with:
+
+```powershell
+python main.py prototype-3d-audit --run-path runs\prototype_3d_YYYYMMDD_HHMMSS --config configs\long_validation_peak_0_92.json
+```
+
+This is read-only with respect to the simulation itself: it consumes the saved prototype profiles and writes a failure-mode audit under the existing prototype run folder.
+
 ## Run one simulation
 
 ```powershell
@@ -351,6 +359,14 @@ When `prototype-3d` is used, the prototype folder includes:
 - `prototype_3d_summary.json`
 - `prototype_3d_report.md`
 - one run folder per 3D variant with `metrics.csv`, `radial_profile_timeseries.csv`, shell/energy plots, midplane images, and saved energy arrays
+
+When `prototype-3d-audit` is used, the prototype folder also includes `failure_mode_audit/` with:
+
+- `prototype_3d_failure_audit_summary.csv`
+- `prototype_3d_geometry_audit.csv`
+- `prototype_3d_shell_window_timeseries.csv`
+- `prototype_3d_radial_snapshots.csv`
+- `prototype_3d_failure_audit_report.md`
 
 ## Metrics
 
