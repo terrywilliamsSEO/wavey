@@ -238,6 +238,14 @@ python main.py prototype-3d-threshold-control --config configs\long_validation_p
 
 This is also not a 3D sweep. It starts from the calibrated 41^3 sign-flipped cubic stronger-sponge source, tests only a small set of amplitude multipliers and global phase offsets, and keeps direct core/shell controls as transient reference checks.
 
+Run the tiny calibrated 41^3 defect-dependence check with:
+
+```powershell
+python main.py prototype-3d-defect-control --config configs\long_validation_peak_0_92.json
+```
+
+This checks whether the retained near-shell tail requires the spherical defect. It keeps the calibrated sign-flipped cubic stronger-sponge source fixed, matches work per physical source area, compares neutral and partially neutralized defect variants, and reports a fixed physical near-shell window anchored to the original defect radius.
+
 ## Run one simulation
 
 ```powershell
@@ -493,6 +501,16 @@ When `prototype-3d-threshold-control` is used, the control folder includes:
 - `prototype_3d_summary.json`
 - one run folder per threshold-control variant
 - `failure_mode_audit/` with the near-defect shell-window audit artifacts
+
+When `prototype-3d-defect-control` is used, the control folder includes:
+
+- `defect_control_3d_summary.csv`
+- `defect_control_3d_summary.json`
+- `defect_control_3d_report.md`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per defect-control variant
+- `failure_mode_audit/` with the variant-relative shell-window audit artifacts
 
 ## Metrics
 

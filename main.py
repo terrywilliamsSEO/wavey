@@ -36,6 +36,10 @@ from simulation.prototype_3d_cubic_focus import (
     CubicFocusControlOptions,
     run_3d_cubic_focus_control,
 )
+from simulation.prototype_3d_defect_control import (
+    DefectControl3DOptions,
+    run_3d_defect_control,
+)
 from simulation.prototype_3d_grid_confirmation import (
     GridConfirmation3DOptions,
     run_3d_grid_confirmation_control,
@@ -357,6 +361,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     threshold_parser.add_argument("--skip-direct-core", action="store_true", help="Skip the direct-core reference control")
     threshold_parser.add_argument("--skip-direct-shell", action="store_true", help="Skip the direct-shell reference control")
+
+    defect_parser = subparsers.add_parser(
+        "prototype-3d-defect-control",
+        help="Run a tiny 41^3 defect-dependence control for the clean 3D sign-flip source",
+    )
+    defect_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    defect_parser.add_argument("--output-root", default="runs", help="Directory for 3D defect-control outputs")
+    defect_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this control is intended for 41^3")
+    defect_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    defect_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    defect_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
+    defect_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    defect_parser.add_argument("--smaller-radius-multiplier", type=float, default=0.75, help="Multiplier for the smaller-defect-radius variant")
+    defect_parser.add_argument("--larger-radius-multiplier", type=float, default=1.25, help="Multiplier for the larger-defect-radius variant")
 
     return parser
 
@@ -729,6 +747,24 @@ def main() -> None:
             ),
         )
         _print_3d_threshold_control_summary(result)
+        return
+
+    if args.command == "prototype-3d-defect-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_defect_control(
+            config,
+            options=DefectControl3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                sample_every=args.sample_every,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                smaller_radius_multiplier=args.smaller_radius_multiplier,
+                larger_radius_multiplier=args.larger_radius_multiplier,
+            ),
+        )
+        _print_3d_defect_control_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1245,6 +1281,34 @@ def _print_3d_threshold_control_summary(result: dict[str, Any]) -> None:
             f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "
             f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
             f"global_outer={row.get('global_peak_in_outer_window')}, "
+            f"dt_warning={row.get('stability_warnings')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_defect_control_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D defect control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"role={row.get('defect_control_role')}, "
+            f"radius_x={_format_optional(row.get('defect_radius_multiplier'))}, "
+            f"k={_format_optional(row.get('defect_stiffness_multiplier'))}, "
+            f"damp={_format_optional(row.get('defect_damping_multiplier'))}, "
+            f"coupling={_format_optional(row.get('defect_coupling_multiplier'))}, "
+            f"work/area={_format_optional(row.get('work_per_source_area'))}, "
+            f"fixed_peak/work={_format_optional(row.get('fixed_near_shell_peak_fraction_of_work'))}, "
+            f"fixed_retention={_format_optional(row.get('fixed_near_shell_tail_retention'))}, "
+            f"fixed_outer/near={_format_optional(row.get('fixed_outer_to_near_tail_energy_ratio'))}, "
+            f"fixed_global_outer={row.get('fixed_global_peak_in_outer_window')}, "
             f"dt_warning={row.get('stability_warnings')}"
         )
     print(f"summary CSV: {result['summary_csv']}")

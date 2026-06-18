@@ -41,8 +41,10 @@ Current interpretation:
 - The optional 41^3 original-cubic comparator did not pass the same cleanliness check because its outer/near ratio rose to `7.17`, while the 41^3 direct-shell negative control remained transient with retention `5.7e-7`.
 - The calibrated 41^3 amplitude/phase threshold control classified as `amplitude_phase_tolerant`: the sign-flip family stayed clean from `0.5x` to `1.5x` amplitude and from `-pi/8` to `+pi/8` phase offset.
 - Direct core and direct shell controls in that 41^3 threshold pass remained transient, with near retention around `2.5e-6` and `5.7e-7`.
+- The calibrated 41^3 defect-ablation control classified as `defect_radius_sensitive`, not defect-required: the no-defect neutral lattice retained the fixed-window near-shell tail with retention `0.583`, outer/near `1.25`, radius median `5.05`, and global outer false.
+- Individual stiffness, coupling, and damping neutralizations stayed close to the reference. The larger-radius variant was the main caution, with retention `0.519` and outer/near `2.01`.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is one tiny 41^3 half-dt / stricter-integration confirmation around the calibrated sign-flip reference.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is one tiny neutral-lattice boundary-phase negative control at 41^3.
 
 ## Latest Evidence
 
@@ -756,14 +758,51 @@ Interpretation:
 - Direct core and direct shell controls remained transient, so the boundary-transport distinction still holds at 41^3.
 - This strengthens the 3D candidate but still does not justify a broad 3D sweep.
 
+### 3D Defect Dependence Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-defect-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\defect_control_3d_20260618_133637\defect_control_3d_report.md`
+- Summary CSV: `runs\defect_control_3d_20260618_133637\defect_control_3d_summary.csv`
+- Classification: `defect_radius_sensitive`
+- Work matching: every variant was matched to the calibrated target work per physical source area, `0.105027`.
+- Main comparison window: fixed physical near-shell window anchored to the original radius, `5.0` to `9.0`.
+- Stability: no dt warnings.
+
+Important fixed-window values:
+
+| Variant | Radius x | k x | damping x | coupling x | Peak/Work | Retention | Radius Median | Radius Range | Outer/Near | Global Outer | Arrival |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| current_defect_reference | 1.00 | 0.65 | 0.75 | 0.60 | 2.03e-7 | 0.578 | 5.05 | 0.00 | 1.49 | false | 9.36 |
+| no_defect_neutral_lattice | 1.00 | 1.00 | 1.00 | 1.00 | 2.39e-7 | 0.583 | 5.05 | 1.44 | 1.25 | false | 9.68 |
+| defect_stiffness_multiplier_1_0 | 1.00 | 1.00 | 0.75 | 0.60 | 2.04e-7 | 0.576 | 5.05 | 0.00 | 1.44 | false | 9.36 |
+| defect_coupling_multiplier_1_0 | 1.00 | 0.65 | 0.75 | 1.00 | 2.32e-7 | 0.548 | 5.05 | 1.44 | 1.39 | false | 9.60 |
+| defect_damping_multiplier_1_0 | 1.00 | 0.65 | 1.00 | 0.60 | 2.02e-7 | 0.556 | 5.05 | 0.00 | 1.54 | false | 9.36 |
+| smaller_defect_radius | 0.75 | 0.65 | 0.75 | 0.60 | 2.22e-7 | 0.568 | 5.05 | 1.44 | 1.41 | false | 9.52 |
+| larger_defect_radius | 1.25 | 0.65 | 0.75 | 0.60 | 1.78e-7 | 0.519 | 5.05 | 1.44 | 2.01 | false | 9.20 |
+
+Interpretation:
+
+- This does not support the stronger claim that the retained near-shell tail requires the spherical defect/cavity.
+- The no-defect neutral lattice preserved the fixed-window tail and even lowered outer/near residue relative to the current-defect reference.
+- Individual stiffness, coupling, and damping ablations did not collapse the signal.
+- Larger defect radius mildly weakens/contaminates the tail by pushing outer/near just above the current threshold, so the pattern is radius-sensitive, but not defect-required under this control.
+- Current best wording: boundary-driven, cubic-phase retained shell-window transport at 41^3, with some defect-radius sensitivity. Do not call it defect-localized yet.
+
 ## Current Next Step
 
-Stay targeted and probe stricter integration for the calibrated 41^3 sign-flipped cubic boundary reference:
+Stay targeted and test whether the neutral-lattice survival is specific to the cubic sign-flip boundary phase:
 
-- Use `41^3` only for the already confirmed sign-flipped cubic reference.
+- Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
-- Use `sign_flip_amp_1_0_reference` from `runs\threshold_control_3d_20260618_124524` as the primary 3D reference.
-- Run only a small half-dt / stricter-integration confirmation around that reference.
+- Use the no-defect neutral lattice from `runs\defect_control_3d_20260618_133637` as the key comparison.
+- Run only one or two neutral-lattice non-cubic boundary phase controls.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
 - Keep global radial peak as an artifact/boundary-residue check.

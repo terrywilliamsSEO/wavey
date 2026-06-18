@@ -212,7 +212,11 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
     grid_size = int(float(row["grid_size"]))
     dx = float(row["dx"])
     domain_size = dx * float(max(grid_size - 1, 1))
-    defect_radius = float(base.defect.radius_physical if base.defect.radius_physical is not None else base.defect.radius)
+    defect_radius = float(
+        row.get("defect_radius")
+        or base.defect.radius_physical
+        or base.defect.radius
+    )
     sponge_width = float(row.get("sponge_width") or base.boundary_damping_width_physical or base.boundary_damping_width)
     sponge_strength = float(row.get("sponge_strength") or base.boundary_damping_strength)
     if "sponge_strength" not in row and str(row.get("variant", "")).endswith("stronger_sponge_31"):
@@ -239,9 +243,9 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
         global_damping=base.global_damping,
         nonlinear_strength=base.nonlinear_strength,
         defect_radius=defect_radius,
-        defect_stiffness_multiplier=base.defect.stiffness_multiplier,
-        defect_damping_multiplier=base.defect.damping_multiplier,
-        defect_coupling_multiplier=base.defect.coupling_multiplier,
+        defect_stiffness_multiplier=float(row.get("defect_stiffness_multiplier") or base.defect.stiffness_multiplier),
+        defect_damping_multiplier=float(row.get("defect_damping_multiplier") or base.defect.damping_multiplier),
+        defect_coupling_multiplier=float(row.get("defect_coupling_multiplier") or base.defect.coupling_multiplier),
         sponge_width=sponge_width,
         sponge_strength=sponge_strength,
         drive_frequency=float(row.get("drive_frequency") or base.driver.frequency),
@@ -289,6 +293,9 @@ def _geometry_audit(config: Prototype3DConfig) -> dict[str, Any]:
         "dx": config.dx,
         "domain_size": config.domain_size,
         "defect_radius": config.defect_radius,
+        "defect_stiffness_multiplier": config.defect_stiffness_multiplier,
+        "defect_damping_multiplier": config.defect_damping_multiplier,
+        "defect_coupling_multiplier": config.defect_coupling_multiplier,
         "sponge_width": config.sponge_width,
         "sponge_strength": config.sponge_strength,
         "drive_location": config.drive_location,
@@ -745,6 +752,10 @@ def _summary_fields() -> list[str]:
         "grid_size",
         "dx",
         "dt",
+        "defect_radius",
+        "defect_stiffness_multiplier",
+        "defect_damping_multiplier",
+        "defect_coupling_multiplier",
         "drive_location",
         "drive_phase_mode",
         "boundary_faces",
@@ -798,6 +809,9 @@ def _geometry_fields() -> list[str]:
         "dx",
         "domain_size",
         "defect_radius",
+        "defect_stiffness_multiplier",
+        "defect_damping_multiplier",
+        "defect_coupling_multiplier",
         "sponge_width",
         "sponge_strength",
         "drive_location",

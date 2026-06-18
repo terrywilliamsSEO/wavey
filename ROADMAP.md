@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Stay targeted after the 41^3 amplitude/phase tolerance pass; run only one tiny 41^3 stricter-integration confirmation around the calibrated sign-flipped cubic boundary reference before any broader 3D work.
+Stay targeted after the 41^3 defect-ablation pass; do not broaden into 3D sweeps. The next useful check is a tiny 41^3 neutral-lattice boundary-phase negative control to decide whether the tolerant signal is specifically cubic-phase transport or a more generic boundary standing wave.
 
-Recommended next task: keep the stronger-sponge inner-edge source setup, use the calibrated `sign_flip_amp_1_0_reference` 41^3 case as the primary 3D reference, and run a half-dt repeat with direct core/shell references only if needed. Do not run a broad 3D sweep yet.
+Recommended next task: keep the stronger-sponge inner-edge source setup and calibrated work/area target, compare neutral-lattice sign-flip against one or two neutral-lattice non-cubic boundary phases at 41^3, and keep direct controls reference-only. Do not run a broad 3D sweep yet.
 
 ## Status
 
@@ -144,24 +144,30 @@ Recommended next task: keep the stronger-sponge inner-edge source setup, use the
 - The calibrated 41^3 sign-flip reference matched the prior target work/area 0.105 and stayed clean: near peak/work 2.03e-7, retention 0.578, outer/near 1.49, global outer false, and no dt warnings.
 - Amplitude variants from 0.5x to 1.5x stayed clean with stable normalized near-shell metrics; phase offsets from -pi/8 to +pi/8 also stayed clean under matched work per physical source area.
 - Direct core and direct shell controls remained transient, with near retention about 2.5e-6 and 5.7e-7 respectively.
+- Added `prototype-3d-defect-control` for a tiny calibrated 41^3 defect-ablation control around the sign-flipped cubic stronger-sponge source.
+- Updated 3D prototype summaries and audits to preserve per-variant defect radius and defect multipliers, so defect-control audits no longer silently reconstruct every variant from the base defect.
+- Ran the 3D defect control in `runs\defect_control_3d_20260618_133637`; result classified as `defect_radius_sensitive`.
+- The no-defect neutral lattice did not weaken or remove the retained fixed-window near-shell tail: retention 0.583 versus 0.578 reference, outer/near 1.25 versus 1.49 reference, same radius median 5.05, and global outer false.
+- Individual stiffness, coupling, and damping neutralizations also stayed close to the reference. The larger-radius variant was the only clear caution, with retention 0.519 and outer/near 2.01.
 
 ### In Progress
 
-- Tiny 41^3 half-dt / stricter-integration confirmation around the calibrated sign-flipped cubic boundary reference.
+- Tiny 41^3 neutral-lattice boundary-phase negative control.
 
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep.
 - Start from the stronger-sponge inner-edge boundary source setup.
-- Promote the calibrated `sign_flip_amp_1_0_reference` 41^3 case from `runs\threshold_control_3d_20260618_124524` as the primary 3D reference.
+- Use the neutral-lattice sign-flip result from `runs\defect_control_3d_20260618_133637` as the main comparison point for the next negative control.
 - Preserve matched injected work per physical source area.
-- Run only a small half-dt repeat of the calibrated 41^3 sign-flip reference before broader 3D work.
+- Run only one or two neutral-lattice non-cubic boundary phase controls at 41^3 before broader 3D work.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not require perfect six-face balance based on the latest controls.
+- Treat the 41^3 result as not strongly defect-required unless a later control contradicts the neutral-lattice survival result.
 - Keep near-defect shell-window peak/work, retention, radius range, arrival time, and outer/near tail ratio as the primary 3D metrics.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls or broad 3D sweeps until the sign-flip 41^3 stricter-integration behavior is understood.
+- Do not run neighboring-frequency long controls or broad 3D sweeps until the neutral-lattice boundary-phase specificity is understood.
 
 ## Phases
 
@@ -346,3 +352,8 @@ Possible work:
 - 2026-06-18: Added `python main.py prototype-3d-threshold-control --config configs\long_validation_peak_0_92.json`.
 - 2026-06-18: Ran the calibrated 41^3 amplitude/phase threshold control in `runs\threshold_control_3d_20260618_124524`; classification was `amplitude_phase_tolerant`.
 - 2026-06-18: The sign-flip family stayed clean from 0.5x to 1.5x amplitude and from -pi/8 to +pi/8 phase offset, while direct core/shell remained transient; updated the next step to one tiny 41^3 half-dt confirmation before broader 3D work.
+- 2026-06-18: Added `python main.py prototype-3d-defect-control --config configs\long_validation_peak_0_92.json`.
+- 2026-06-18: Updated 3D prototype summary/audit reconstruction to include per-variant defect radius and stiffness/damping/coupling multipliers.
+- 2026-06-18: Ran the calibrated 41^3 defect-ablation control in `runs\defect_control_3d_20260618_133637`; classification was `defect_radius_sensitive`.
+- 2026-06-18: Neutralizing the defect did not weaken the fixed-window tail, so the current 3D interpretation shifts away from “defect-required localization” toward a cubic-boundary transport/standing-wave family with some defect-radius sensitivity.
+- 2026-06-18: Updated the next step to one tiny 41^3 neutral-lattice non-cubic boundary-phase negative control before any broad 3D work.
