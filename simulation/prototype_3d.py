@@ -71,6 +71,8 @@ class Prototype3DConfig:
     boundary_phase_offset: float = 0.0
     boundary_cubic_phase_sign: float = 1.0
     boundary_face_amplitude_scales: dict[str, float] | None = None
+    defect_inner_radius: float | None = None
+    defect_nonlinear_strength: float | None = None
 
     @property
     def dx(self) -> float:
@@ -96,7 +98,10 @@ class Lattice3D:
         self.coords = _coordinate_payload(config)
         radius = self.coords["radius"]
         self.source = Source3D(config, self.coords)
-        self.defect_mask = radius <= config.defect_radius
+        if config.defect_inner_radius is None:
+            self.defect_mask = radius <= config.defect_radius
+        else:
+            self.defect_mask = (radius >= config.defect_inner_radius) & (radius <= config.defect_radius)
         self.core_mask = radius <= config.defect_radius + config.dx
         self.sponge_extra = _sponge_extra(config, self.coords)
         if config.exclude_source_from_sponge_damping and np.any(self.source.mask):
@@ -105,9 +110,12 @@ class Lattice3D:
         self.stiffness = np.full_like(self.u, config.base_stiffness)
         self.damping = np.full_like(self.u, config.global_damping) + self.sponge_extra
         self.coupling_multiplier = np.ones_like(self.u)
+        self.nonlinear_strength = np.full_like(self.u, config.nonlinear_strength)
         self.stiffness[self.defect_mask] *= config.defect_stiffness_multiplier
         self.damping[self.defect_mask] *= config.defect_damping_multiplier
         self.coupling_multiplier[self.defect_mask] *= config.defect_coupling_multiplier
+        if config.defect_nonlinear_strength is not None:
+            self.nonlinear_strength[self.defect_mask] = config.defect_nonlinear_strength
 
     def external_force(self, time: float) -> np.ndarray:
         return self.source.force(time)
@@ -118,7 +126,7 @@ class Lattice3D:
         acc = (
             self.config.coupling_strength * self.coupling_multiplier * lap
             - self.stiffness * self.u
-            - self.config.nonlinear_strength * self.u**3
+            - self.nonlinear_strength * self.u**3
             - self.damping * self.v
             + force
         )
@@ -137,7 +145,7 @@ class Lattice3D:
         return (
             0.5 * self.v**2
             + 0.5 * self.stiffness * self.u**2
-            + 0.25 * self.config.nonlinear_strength * self.u**4
+            + 0.25 * self.nonlinear_strength * self.u**4
             + 0.25 * self.config.coupling_strength * neighbor_sum
         ) * self.config.cell_volume
 
@@ -544,9 +552,12 @@ def _summarize_variant(
         "drive_frequency": config.drive_frequency,
         "drive_cutoff_time": config.drive_cutoff_time,
         "defect_radius": config.defect_radius,
+        "nonlinear_strength": config.nonlinear_strength,
         "defect_stiffness_multiplier": config.defect_stiffness_multiplier,
         "defect_damping_multiplier": config.defect_damping_multiplier,
         "defect_coupling_multiplier": config.defect_coupling_multiplier,
+        "defect_inner_radius": config.defect_inner_radius,
+        "defect_nonlinear_strength": config.defect_nonlinear_strength,
         "boundary_area": source.boundary_area,
         "boundary_faces": list(_normalize_boundary_faces(config.boundary_faces)),
         "boundary_face_count": len(_normalize_boundary_faces(config.boundary_faces)),
@@ -833,9 +844,12 @@ def _summary_fields() -> list[str]:
         "drive_frequency",
         "drive_cutoff_time",
         "defect_radius",
+        "nonlinear_strength",
         "defect_stiffness_multiplier",
         "defect_damping_multiplier",
         "defect_coupling_multiplier",
+        "defect_inner_radius",
+        "defect_nonlinear_strength",
         "boundary_area",
         "boundary_faces",
         "boundary_face_count",

@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Stay targeted after the 41^3 radial-window neutral-lattice audit; do not broaden into 3D sweeps. The next useful check is a tiny stronger/different-defect lift probe to see whether any defect variant can create clear lift over the neutral cubic-boundary shell tail.
+Pivot the 3D branch from "defect well" language to structured boundary transport modes. The tiny defect-lift sweep found no defect variant that beat the neutral-lattice baseline under the strict lift criteria.
 
-Recommended next task: keep the stronger-sponge inner-edge sign-flip source setup and calibrated work/area target, use neutral lattice as the baseline, and test only a few stronger/different defect variants against the stable radius-5 shell window. Do not run a broad 3D sweep yet.
+Recommended next task: run one tiny neutral-lattice boundary-phase negative control at 41^3. Keep the stronger-sponge inner-edge source, matched work per physical source area, same shell-window metrics, and compare whether the clean retained shell tail requires cubic/sign-flip phase structure rather than generic boundary injection. Do not run a broad 3D sweep yet.
 
 ## Status
 
@@ -153,25 +153,29 @@ Recommended next task: keep the stronger-sponge inner-edge sign-flip source setu
 - Ran the radial-window audit in `runs\radial_window_audit_3d_20260618_152906`; result classified as `neutral_lattice_reproduces_shell_tail`.
 - At the key radius-5 shell window, defect lift was near unity rather than enhanced: retention lift 0.990, peak/work lift 0.848, radius shift 0, arrival shift 0.32, radial-profile correlation 0.981, and both defect and neutral windows were clean.
 - No scanned stable shell window showed defect retention and peak/work lift above 1.5. The current result is a robust cubic-boundary shell-tail transport pattern, not a demonstrated defect effect.
+- Added shell/cavity-wall and defect-only nonlinear support to the tiny 3D prototype path.
+- Added `prototype-3d-defect-lift-sweep` for a tiny stronger/different-defect sweep against the neutral-lattice sign-flip baseline.
+- Ran the 3D defect-lift sweep in `runs\defect_lift_sweep_3d_20260618_163154`; result classified as `no_defect_lift_found`.
+- No scanned window lifted both retention and peak/work above 1.5. Max retention lift was 1.262 (`high_coupling_inclusion_c1_5` at radius 6.5) with peak/work lift 1.007; max peak/work lift was 1.170 (`low_coupling_cavity_c0_25` at radius 6.5) with retention lift 0.799 and outer/near 2.87.
+- The best clean near-miss was low defect damping at radius 2.5: retention lift 1.251, peak/work lift 0.874, retention 0.770, outer/near 1.23, and global outer false. It still failed the strict rule.
 
 ### In Progress
 
-- Tiny 41^3 stronger/different-defect lift probe against the neutral-lattice baseline.
+- None. The next step is ready and should stay tiny.
 
 ### Next
 
-- Keep the work targeted; do not run a broad 3D sweep.
-- Start from the stronger-sponge inner-edge boundary source setup.
-- Use the neutral-lattice sign-flip result from `runs\radial_window_audit_3d_20260618_152906` as the baseline.
-- Preserve matched injected work per physical source area.
-- Test only a few stronger/different defect variants at 41^3, scored by defect_lift over neutral at the stable radius-5 shell window.
+- Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
+- Use the neutral-lattice 41^3 sign-flip setup as the primary 3D reference.
+- Run a tiny neutral-lattice boundary-phase negative control: sign-flip cubic repeat, same-coverage uniform phase, fixed-seed random phase, global phase offsets, and possibly face-offset controls.
+- Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, grid size 41^3, and the same shell-window scans.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not require perfect six-face balance based on the latest controls.
-- Treat the 41^3 result as not defect-dependent unless a later stronger/different defect creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
+- Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-defect shell-window peak/work, retention, radius range, arrival time, and outer/near tail ratio as the primary 3D metrics.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls or broad 3D sweeps until a targeted defect-lift probe says whether a defect can actually do work.
+- Do not run neighboring-frequency long controls or broad 3D sweeps until the neutral-lattice boundary-phase controls say whether the retained shell tail is cubic-phase specific or generic boundary transport.
 
 ## Phases
 
@@ -359,9 +363,12 @@ Possible work:
 - 2026-06-18: Added `python main.py prototype-3d-defect-control --config configs\long_validation_peak_0_92.json`.
 - 2026-06-18: Updated 3D prototype summary/audit reconstruction to include per-variant defect radius and stiffness/damping/coupling multipliers.
 - 2026-06-18: Ran the calibrated 41^3 defect-ablation control in `runs\defect_control_3d_20260618_133637`; classification was `defect_radius_sensitive`.
-- 2026-06-18: Neutralizing the defect did not weaken the fixed-window tail, so the current 3D interpretation shifts away from “defect-required localization” toward a cubic-boundary transport/standing-wave family with some defect-radius sensitivity.
+- 2026-06-18: Neutralizing the defect did not weaken the fixed-window tail, so the current 3D interpretation shifts away from "defect-required localization" toward a cubic-boundary transport/standing-wave family with some defect-radius sensitivity.
 - 2026-06-18: Updated the next step to one tiny 41^3 neutral-lattice non-cubic boundary-phase negative control before any broad 3D work.
 - 2026-06-18: Added `python main.py prototype-3d-radial-window-audit --config configs\long_validation_peak_0_92.json`.
 - 2026-06-18: Ran the current-defect vs neutral-lattice radial-window audit in `runs\radial_window_audit_3d_20260618_152906`; classification was `neutral_lattice_reproduces_shell_tail`.
 - 2026-06-18: At radius 5.0, defect lift was 0.990 for retention and 0.848 for peak/work, with radial-profile correlation 0.981 and no radius shift. This confirms the current defect is not doing the work.
 - 2026-06-18: Updated the next step to a tiny stronger/different-defect lift probe against the neutral-lattice baseline before any broad 3D work.
+- 2026-06-18: Added shell/cavity-wall and defect-only nonlinear 3D support plus `python main.py prototype-3d-defect-lift-sweep --config configs\long_validation_peak_0_92.json`.
+- 2026-06-18: Ran the tiny 41^3 defect-lift sweep in `runs\defect_lift_sweep_3d_20260618_163154`; classification was `no_defect_lift_found`.
+- 2026-06-18: No defect variant satisfied the strict lift condition. Max retention lift was 1.262, max peak/work lift was 1.170, and zero windows lifted both metrics above 1.5, so the 3D branch pivots to structured boundary transport modes.

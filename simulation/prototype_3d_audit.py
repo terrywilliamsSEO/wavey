@@ -241,7 +241,7 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
         base_stiffness=base.base_stiffness,
         coupling_strength=base.coupling_strength,
         global_damping=base.global_damping,
-        nonlinear_strength=base.nonlinear_strength,
+        nonlinear_strength=float(row.get("nonlinear_strength") or base.nonlinear_strength),
         defect_radius=defect_radius,
         defect_stiffness_multiplier=float(row.get("defect_stiffness_multiplier") or base.defect.stiffness_multiplier),
         defect_damping_multiplier=float(row.get("defect_damping_multiplier") or base.defect.damping_multiplier),
@@ -263,6 +263,8 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
         boundary_phase_offset=float(row.get("boundary_phase_offset") or 0.0),
         boundary_cubic_phase_sign=float(row.get("boundary_cubic_phase_sign") or 1.0),
         boundary_face_amplitude_scales=face_scales,
+        defect_inner_radius=_optional_float(row.get("defect_inner_radius")),
+        defect_nonlinear_strength=_optional_float(row.get("defect_nonlinear_strength")),
     )
 
 
@@ -293,9 +295,12 @@ def _geometry_audit(config: Prototype3DConfig) -> dict[str, Any]:
         "dx": config.dx,
         "domain_size": config.domain_size,
         "defect_radius": config.defect_radius,
+        "nonlinear_strength": config.nonlinear_strength,
         "defect_stiffness_multiplier": config.defect_stiffness_multiplier,
         "defect_damping_multiplier": config.defect_damping_multiplier,
         "defect_coupling_multiplier": config.defect_coupling_multiplier,
+        "defect_inner_radius": config.defect_inner_radius,
+        "defect_nonlinear_strength": config.defect_nonlinear_strength,
         "sponge_width": config.sponge_width,
         "sponge_strength": config.sponge_strength,
         "drive_location": config.drive_location,
@@ -433,6 +438,12 @@ def _read_numeric_csv(path: Path) -> list[dict[str, float]]:
 def _float(value: Any) -> float:
     if value in (None, ""):
         return 0.0
+    return float(value)
+
+
+def _optional_float(value: Any) -> float | None:
+    if value in (None, "", "None", "none", "null"):
+        return None
     return float(value)
 
 
@@ -753,9 +764,12 @@ def _summary_fields() -> list[str]:
         "dx",
         "dt",
         "defect_radius",
+        "nonlinear_strength",
         "defect_stiffness_multiplier",
         "defect_damping_multiplier",
         "defect_coupling_multiplier",
+        "defect_inner_radius",
+        "defect_nonlinear_strength",
         "drive_location",
         "drive_phase_mode",
         "boundary_faces",
@@ -809,9 +823,12 @@ def _geometry_fields() -> list[str]:
         "dx",
         "domain_size",
         "defect_radius",
+        "nonlinear_strength",
         "defect_stiffness_multiplier",
         "defect_damping_multiplier",
         "defect_coupling_multiplier",
+        "defect_inner_radius",
+        "defect_nonlinear_strength",
         "sponge_width",
         "sponge_strength",
         "drive_location",

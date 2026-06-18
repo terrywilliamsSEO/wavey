@@ -254,6 +254,14 @@ python main.py prototype-3d-radial-window-audit --config configs\long_validation
 
 This reruns only the current-defect and neutral-lattice sign-flip cases, scans fixed shell windows at selected radii, and reports defect-lift ratios, radial-profile correlations, shell stability, arrival times, and frame similarity.
 
+Run the tiny 41^3 stronger/different-defect lift sweep with:
+
+```powershell
+python main.py prototype-3d-defect-lift-sweep --config configs\long_validation_peak_0_92.json
+```
+
+This keeps the calibrated sign-flipped cubic stronger-sponge source fixed, uses the neutral lattice as the baseline, varies only hand-picked defect parameters, and requires strict lift in both retention and peak/work before calling a defect effect. If it finds no lift, the 3D interpretation should pivot toward structured boundary transport modes.
+
 ## Run one simulation
 
 ```powershell
@@ -531,6 +539,19 @@ When `prototype-3d-radial-window-audit` is used, the control folder includes:
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per radial-window variant
+- `failure_mode_audit/` with the variant-relative shell-window audit artifacts
+
+When `prototype-3d-defect-lift-sweep` is used, the control folder includes:
+
+- `defect_lift_sweep_summary.csv`
+- `defect_lift_sweep_3d_summary.json`
+- `defect_lift_sweep_3d_report.md`
+- `defect_lift_window_comparison.csv`
+- `defect_lift_profile_comparison.csv`
+- `defect_lift_variant_window_metrics.csv`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per defect-lift variant
 - `failure_mode_audit/` with the variant-relative shell-window audit artifacts
 
 ## Metrics

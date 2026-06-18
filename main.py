@@ -40,6 +40,10 @@ from simulation.prototype_3d_defect_control import (
     DefectControl3DOptions,
     run_3d_defect_control,
 )
+from simulation.prototype_3d_defect_lift_sweep import (
+    DefectLiftSweep3DOptions,
+    run_3d_defect_lift_sweep,
+)
 from simulation.prototype_3d_grid_confirmation import (
     GridConfirmation3DOptions,
     run_3d_grid_confirmation_control,
@@ -394,6 +398,37 @@ def build_parser() -> argparse.ArgumentParser:
     radial_window_parser.add_argument("--window-width", type=float, help="Physical width for each scanned shell window; defaults to near-shell-width-dx * dx")
     radial_window_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
     radial_window_parser.add_argument(
+        "--window-radii",
+        type=float,
+        nargs="+",
+        default=[2.5, 3.5, 5.0, 6.5, 8.0, 10.0, 12.0],
+        help="Inner radii of shell windows to scan",
+    )
+
+    defect_lift_parser = subparsers.add_parser(
+        "prototype-3d-defect-lift-sweep",
+        help="Run a tiny stronger/different-defect lift sweep against the neutral 3D shell-tail baseline",
+    )
+    defect_lift_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    defect_lift_parser.add_argument("--output-root", default="runs", help="Directory for 3D defect-lift sweep outputs")
+    defect_lift_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this sweep is intended for 41^3")
+    defect_lift_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    defect_lift_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    defect_lift_parser.add_argument("--radial-bins", type=int, default=24, help="Number of radial bins for shell-window profiles")
+    defect_lift_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    defect_lift_parser.add_argument("--window-width", type=float, help="Physical width for each scanned shell window; defaults to near-shell-width-dx * dx")
+    defect_lift_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    defect_lift_parser.add_argument("--lift-threshold", type=float, default=1.5, help="Required lift threshold for retention and peak/work")
+    defect_lift_parser.add_argument(
+        "--max-profile-correlation-for-lift",
+        type=float,
+        default=0.95,
+        help="Maximum radial or window-profile correlation allowed for a lifted defect to count as profile-different",
+    )
+    defect_lift_parser.add_argument("--min-retention", type=float, default=0.45, help="Minimum shell-window retention for a clean lifted window")
+    defect_lift_parser.add_argument("--max-outer-ratio", type=float, default=2.0, help="Maximum outer/shell tail ratio for a clean lifted window")
+    defect_lift_parser.add_argument("--max-radius-range", type=float, default=4.5, help="Maximum late-tail shell peak radius range for a clean lifted window")
+    defect_lift_parser.add_argument(
         "--window-radii",
         type=float,
         nargs="+",
@@ -809,6 +844,30 @@ def main() -> None:
             ),
         )
         _print_3d_radial_window_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-defect-lift-sweep":
+        config = _load_sim_config(args.config)
+        result = run_3d_defect_lift_sweep(
+            config,
+            options=DefectLiftSweep3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                sample_every=args.sample_every,
+                radial_bins=args.radial_bins,
+                window_radii=tuple(args.window_radii),
+                window_width=args.window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                min_retention=args.min_retention,
+                max_outer_ratio=args.max_outer_ratio,
+                max_radius_range=args.max_radius_range,
+                lift_threshold=args.lift_threshold,
+                max_profile_correlation_for_lift=args.max_profile_correlation_for_lift,
+            ),
+        )
+        _print_3d_defect_lift_sweep_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1383,6 +1442,35 @@ def _print_3d_radial_window_audit_summary(result: dict[str, Any]) -> None:
     print(f"summary CSV: {result['summary_csv']}")
     print(f"comparison CSV: {result['comparison_csv']}")
     print(f"variant window CSV: {result['variant_windows_csv']}")
+    print(f"profile CSV: {result['profile_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_defect_lift_sweep_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D defect-lift sweep complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print(f"best window radius: {_format_optional(classification.get('best_window_radius'))}")
+    print("variant best windows:")
+    for row in result["variant_summaries"]:
+        print(
+            f"  - {row['variant']}: "
+            f"success={row.get('strict_success')}, "
+            f"r={_format_optional(row.get('best_window_radius'))}, "
+            f"lift_ret={_format_optional(row.get('best_defect_lift_retention'))}, "
+            f"lift_peak={_format_optional(row.get('best_defect_lift_peak_work'))}, "
+            f"ret={_format_optional(row.get('best_defect_retention'))}, "
+            f"outer/near={_format_optional(row.get('best_defect_outer_near'))}, "
+            f"profile_corr={_format_optional(row.get('best_radial_profile_correlation'))}, "
+            f"global_outer={row.get('best_defect_global_outer')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
+    print(f"variant window CSV: {result['variant_window_csv']}")
     print(f"profile CSV: {result['profile_csv']}")
     print(f"report: {result['report_path']}")
     print(f"audit report: {result['audit_report_path']}")

@@ -32,6 +32,25 @@ class Prototype3DTests(unittest.TestCase):
 
         self.assertTrue(np.all(np.isfinite(lattice.energy_density())))
 
+    def test_shell_defect_mask_can_leave_center_neutral(self) -> None:
+        config = _small_3d_config("boundary", "uniform")
+        config.defect_radius = 2.0
+        config.defect_inner_radius = 1.0
+        lattice = Lattice3D(config)
+        center = config.grid_size // 2
+
+        self.assertFalse(bool(lattice.defect_mask[center, center, center]))
+        self.assertGreater(int(np.count_nonzero(lattice.defect_mask)), 0)
+
+    def test_defect_only_nonlinearity_applies_inside_defect_mask(self) -> None:
+        config = _small_3d_config("boundary", "uniform")
+        config.nonlinear_strength = 0.0
+        config.defect_nonlinear_strength = 0.7
+        lattice = Lattice3D(config)
+
+        self.assertAlmostEqual(float(np.max(lattice.nonlinear_strength[lattice.defect_mask])), 0.7)
+        self.assertAlmostEqual(float(np.max(lattice.nonlinear_strength[~lattice.defect_mask])), 0.0)
+
     def test_shell_breathing_detector_detects_periodic_shell_energy(self) -> None:
         samples = []
         for idx in range(80):
