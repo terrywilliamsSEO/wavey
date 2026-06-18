@@ -36,6 +36,10 @@ from simulation.prototype_3d_cubic_focus import (
     CubicFocusControlOptions,
     run_3d_cubic_focus_control,
 )
+from simulation.prototype_3d_grid_confirmation import (
+    GridConfirmation3DOptions,
+    run_3d_grid_confirmation_control,
+)
 from simulation.prototype_3d_source_sponge import (
     SourceSpongeControlOptions,
     run_3d_source_sponge_control,
@@ -311,6 +315,25 @@ def build_parser() -> argparse.ArgumentParser:
     cubic_confirmation_parser.add_argument("--stronger-sponge-relative-multiplier", type=float, default=1.5, help="Stronger sponge multiplier relative to the confirmation baseline sponge")
     cubic_confirmation_parser.add_argument("--half-dt-multiplier", type=float, default=0.5, help="Time-step multiplier for the half-dt variants")
     cubic_confirmation_parser.add_argument("--amplitude-reduction-multiplier", type=float, default=0.75, help="Drive-amplitude multiplier for the sign-flip amplitude-reduced probe")
+
+    grid_confirmation_parser = subparsers.add_parser(
+        "prototype-3d-grid-confirmation-control",
+        help="Run a tiny fixed-domain 31^3 to 41^3 grid confirmation for the clean 3D sign-flip source",
+    )
+    grid_confirmation_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    grid_confirmation_parser.add_argument("--output-root", default="runs", help="Directory for 3D grid-confirmation outputs")
+    grid_confirmation_parser.add_argument("--baseline-grid-size", type=int, default=31, help="Baseline 3D grid size")
+    grid_confirmation_parser.add_argument("--refined-grid-size", type=int, default=41, help="Refined 3D grid size")
+    grid_confirmation_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    grid_confirmation_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
+    grid_confirmation_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    grid_confirmation_parser.add_argument("--skip-original-cubic-41", action="store_true", help="Skip the optional original cubic 41^3 comparator")
+    grid_confirmation_parser.add_argument(
+        "--negative-control",
+        choices=("direct_shell", "uniform_phase"),
+        default="direct_shell",
+        help="Single 41^3 negative control to run",
+    )
 
     return parser
 
@@ -645,6 +668,24 @@ def main() -> None:
             ),
         )
         _print_3d_cubic_confirmation_control_summary(result)
+        return
+
+    if args.command == "prototype-3d-grid-confirmation-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_grid_confirmation_control(
+            config,
+            options=GridConfirmation3DOptions(
+                output_root=args.output_root,
+                baseline_grid_size=args.baseline_grid_size,
+                refined_grid_size=args.refined_grid_size,
+                sample_every=args.sample_every,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                include_original_cubic_41=not args.skip_original_cubic_41,
+                negative_control=args.negative_control,
+            ),
+        )
+        _print_3d_grid_confirmation_control_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1103,6 +1144,33 @@ def _print_3d_cubic_confirmation_control_summary(result: dict[str, Any]) -> None
             f"role={row.get('cubic_confirmation_role')}, "
             f"dt={_format_optional(row.get('dt'))}, "
             f"sponge_x={_format_optional(row.get('sponge_strength_multiplier'))}, "
+            f"work/area={_format_optional(row.get('work_per_source_area'))}, "
+            f"near_peak/work={_format_optional(row.get('near_shell_peak_fraction_of_work'))}, "
+            f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "
+            f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}, "
+            f"dt_warning={row.get('stability_warnings')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_grid_confirmation_control_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D grid-confirmation control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"grid={row.get('grid_size')}, "
+            f"dx={_format_optional(row.get('dx'))}, "
+            f"family={row.get('grid_confirmation_family')}, "
+            f"role={row.get('grid_confirmation_role')}, "
             f"work/area={_format_optional(row.get('work_per_source_area'))}, "
             f"near_peak/work={_format_optional(row.get('near_shell_peak_fraction_of_work'))}, "
             f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "

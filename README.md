@@ -222,6 +222,14 @@ python main.py prototype-3d-cubic-confirmation-control --config configs\long_val
 
 This confirms the original cubic and sign-flipped cubic boundary phases with deterministic repeats, half-dt variants, stronger/weaker sponge variants around the current stronger-sponge baseline, one sign-flip amplitude-reduced probe, and direct core/shell reference controls.
 
+Run the tiny fixed-domain 31^3 to 41^3 3D grid confirmation with:
+
+```powershell
+python main.py prototype-3d-grid-confirmation-control --config configs\long_validation_peak_0_92.json
+```
+
+This is a single-candidate resolution lift, not a 3D sweep. It compares the 31^3 sign-flipped cubic stronger-sponge reference with a 41^3 sign-flipped cubic candidate, an optional 41^3 original-cubic comparator, and one 41^3 negative control under matched physical domain, defect, source geometry, sponge settings, and injected work per physical source area.
+
 ## Run one simulation
 
 ```powershell
@@ -456,6 +464,16 @@ When `prototype-3d-cubic-confirmation-control` is used, the control folder inclu
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per cubic-confirmation variant
+- `failure_mode_audit/` with the near-defect shell-window audit artifacts
+
+When `prototype-3d-grid-confirmation-control` is used, the control folder includes:
+
+- `grid_confirmation_3d_summary.csv`
+- `grid_confirmation_3d_summary.json`
+- `grid_confirmation_3d_report.md`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per grid-confirmation variant
 - `failure_mode_audit/` with the near-defect shell-window audit artifacts
 
 ## Metrics

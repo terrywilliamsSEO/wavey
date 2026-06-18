@@ -37,8 +37,10 @@ Current interpretation:
 - The cubic dt/sponge confirmation classified as `cubic_phase_dt_sponge_confirmed`: original cubic and sign-flipped cubic both survived deterministic repeat, half-dt, stronger-sponge, and weak-sponge checks with no global outer flags and no dt warnings.
 - `cubic_phase_sign_flip_stronger_sponge` is now the best 3D boundary variant: near peak/work `4.16e-7`, near retention `0.656`, outer/near `0.739`, stable near radius median `5.05`, and arrival time `9.76`.
 - The sign-flip amplitude-reduced probe at `0.75x` drive amplitude also stayed clean, so the next tiny 31^3 question is lower-amplitude and phase/timing threshold sensitivity, not grid size.
+- The tiny fixed-domain 31^3 to 41^3 grid confirmation classified as `sign_flip_resolution_lift_confirmed`: the 41^3 sign-flipped cubic stronger-sponge candidate preserved the clean near-shell tail with global outer false, retention `0.578`, outer/near `1.49`, near radius median `5.05`, and no dt warnings.
+- The optional 41^3 original-cubic comparator did not pass the same cleanliness check because its outer/near ratio rose to `7.17`, while the 41^3 direct-shell negative control remained transient with retention `5.7e-7`.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or larger 3D grids. The next step is to stay at 31^3 and run a narrow drive-strength / phase-threshold probe around `cubic_phase_sign_flip`.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is one tiny lower-amplitude / phase-threshold probe around `sign_flip_stronger_sponge_41`.
 
 ## Latest Evidence
 
@@ -665,13 +667,49 @@ Interpretation:
 - Direct core and shell forcing remain transient, so the boundary-transport distinction still holds in this 3D confirmation.
 - The 0.75 amplitude-reduced sign-flip probe did not expose a threshold. The next useful check is a lower-amplitude / small phase-timing threshold probe at 31^3.
 
+### 3D Grid Confirmation
+
+Command:
+
+```powershell
+python main.py prototype-3d-grid-confirmation-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\grid_confirmation_3d_20260618_112610\grid_confirmation_3d_report.md`
+- Summary CSV: `runs\grid_confirmation_3d_20260618_112610\grid_confirmation_3d_summary.csv`
+- Classification: `sign_flip_resolution_lift_confirmed`
+- Best variant: `sign_flip_stronger_sponge_31` by score, but the key candidate is `sign_flip_stronger_sponge_41`.
+- Physical controls: same domain, defect physical radius, sponge width, source inner-edge distance, source physical width, drive frequency, cutoff time, stronger sponge, and work per physical source area.
+- Stability: no dt warnings.
+
+Important values:
+
+| Variant | Grid | dx | Work/Area | Near Peak/Work | Near Retention | Near Radius Median | Near Radius Range | Outer/Near Tail | Global Outer | Arrival |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| sign_flip_stronger_sponge_31 | 31 | 1.333 | 0.1050 | 4.16e-7 | 0.656 | 5.05 | 1.44 | 0.739 | false | 9.76 |
+| sign_flip_stronger_sponge_41 | 41 | 1.000 | 0.1050 | 2.03e-7 | 0.578 | 5.05 | 0.00 | 1.49 | false | 9.36 |
+| original_cubic_stronger_sponge_41 | 41 | 1.000 | 0.1050 | 7.05e-8 | 0.617 | 5.05 | 2.89 | 7.17 | false | 10.24 |
+| direct_shell_41_negative_control | 41 | 1.000 | n/a | 9.79e-2 | 0.00000057 | 5.05 | 0.00 | 9.08 | false | 3.20 |
+
+Interpretation:
+
+- The clean sign-flipped cubic near-shell tail survives one controlled 3D resolution lift from 31^3 to 41^3.
+- The 41^3 near peak/work is lower by about half, but remains the same order of magnitude and the retention remains meaningful.
+- The 41^3 outer/near tail ratio worsens from `0.739` to `1.49`, but remains within the current controlled threshold and global outer remains false.
+- The near-shell radius stays fixed at `5.05`, with tighter late-tail radius range at 41^3.
+- Direct shell forcing at 41^3 is still transient, so direct local shell injection does not reproduce the retained boundary tail.
+- Original cubic at 41^3 is not clean under the same criterion; sign-flip should remain the primary 3D reference.
+- This is not permission for a broad 3D sweep. It only justifies one tiny 41^3 threshold/phase check around sign-flip.
+
 ## Current Next Step
 
-Stay at 31^3 and probe the confirmed sign-flipped cubic boundary reference:
+Stay targeted and probe the confirmed 41^3 sign-flipped cubic boundary reference:
 
-- Keep the grid at `31^3`.
+- Use `41^3` only for the already confirmed sign-flipped cubic reference.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
-- Use `cubic_phase_sign_flip` as the primary 3D reference.
+- Use `sign_flip_stronger_sponge_41` as the primary 3D reference.
 - Run only a small lower-amplitude / phase-timing threshold set.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
