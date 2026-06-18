@@ -71,6 +71,7 @@ class Prototype3DConfig:
     boundary_phase_offset: float = 0.0
     boundary_cubic_phase_sign: float = 1.0
     boundary_face_amplitude_scales: dict[str, float] | None = None
+    boundary_random_phase_seed: int | None = None
     defect_inner_radius: float | None = None
     defect_nonlinear_strength: float | None = None
 
@@ -215,6 +216,8 @@ class Source3D:
             return np.full_like(self.weights, config.boundary_phase_offset)
         if config.drive_phase_mode == "face_offsets":
             return self._face_offset_phase_map(config.boundary_face_phase_offsets or {}) + config.boundary_phase_offset
+        if config.drive_phase_mode == "random":
+            return self._random_phase_map()
         if config.drive_phase_mode != "cubic":
             raise ValueError(f"Unsupported 3D drive_phase_mode: {config.drive_phase_mode}")
         x = self.coords["x"]
@@ -224,6 +227,12 @@ class Source3D:
         cubic = (x**4 + y**4 + z**4) / (r**4) - 0.6
         scale = np.max(np.abs(cubic[self.mask])) if np.any(self.mask) else 1.0
         return config.boundary_phase_offset + config.boundary_cubic_phase_sign * 0.5 * np.pi * cubic / (scale + EPSILON)
+
+    def _random_phase_map(self) -> np.ndarray:
+        rng = np.random.default_rng(self.config.boundary_random_phase_seed or 0)
+        phase_map = np.zeros_like(self.weights)
+        phase_map[self.mask] = rng.uniform(0.0, 2.0 * np.pi, size=int(np.count_nonzero(self.mask)))
+        return phase_map + self.config.boundary_phase_offset
 
     def _face_offset_phase_map(self, offsets: dict[str, float]) -> np.ndarray:
         if not self.face_coverages:
@@ -565,6 +574,7 @@ def _summarize_variant(
         "boundary_phase_offset": config.boundary_phase_offset,
         "boundary_cubic_phase_sign": config.boundary_cubic_phase_sign,
         "boundary_face_amplitude_scales": config.boundary_face_amplitude_scales or {},
+        "boundary_random_phase_seed": config.boundary_random_phase_seed,
         "effective_source_volume": source.effective_volume,
         "effective_source_area": source.effective_area,
         "boundary_source_inner_distance": config.boundary_source_inner_distance,
@@ -857,6 +867,7 @@ def _summary_fields() -> list[str]:
         "boundary_phase_offset",
         "boundary_cubic_phase_sign",
         "boundary_face_amplitude_scales",
+        "boundary_random_phase_seed",
         "effective_source_volume",
         "effective_source_area",
         "boundary_source_inner_distance",

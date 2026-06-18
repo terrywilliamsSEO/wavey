@@ -47,8 +47,9 @@ Current interpretation:
 - No scanned stable shell window showed defect lift above `1.5` for both retention and peak/work. The current 3D signal is not defect-dependent yet.
 - The tiny stronger/different-defect lift sweep classified as `no_defect_lift_found`: max retention lift was `1.262`, max peak/work lift was `1.170`, and zero windows lifted both metrics above `1.5`.
 - The 3D branch should now pivot from "defect well" language to structured boundary transport modes. Use the neutral lattice as the primary reference for the next 3D mechanism control.
+- The first neutral-lattice interference diagnostic classified as `interference_supported_standing_weak`: random phase controls lost phase coherence and became outer-window flagged, while cubic phase controls stayed organized, but standing-shell persistence did not clear the stricter threshold.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is one tiny neutral-lattice boundary-phase negative control.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is one dense two-variant standing-shell persistence confirmation.
 
 ## Latest Evidence
 
@@ -870,16 +871,53 @@ Interpretation:
 - The strongest peak/work near-miss came with weaker retention and high outer/near contamination, so it does not satisfy the retained near-shell success rule.
 - Current best wording: structured cubic-boundary shell-window transport at 41^3, not defect-well localization.
 
+### 3D Interference Diagnostics
+
+Command:
+
+```powershell
+python main.py prototype-3d-interference-diagnostics --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\interference_diagnostics_3d_20260618_175806\interference_diagnostics_3d_report.md`
+- Summary CSV: `runs\interference_diagnostics_3d_20260618_175806\interference_diagnostics_summary.csv`
+- Phase CSV: `runs\interference_diagnostics_3d_20260618_175806\phase_coherence_timeseries.csv`
+- Modal CSV: `runs\interference_diagnostics_3d_20260618_175806\modal_projection_timeseries.csv`
+- Wavefront CSV: `runs\interference_diagnostics_3d_20260618_175806\wavefront_timeseries.csv`
+- Classification: `interference_supported_standing_weak`
+
+Important values:
+
+| Variant | Phase | Near Ret | Outer/Near | Global Outer | Coherence | Standing | Cubic Proj | Constructive | Destructive | Arrival | Wavefront Cross |
+| --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| neutral_cubic_sign_flip_reference | cubic | 0.583 | 1.25 | false | 0.409 | 0.515 | 0.146 | 0.634 | 0.186 | 9.6 | 17.6 |
+| neutral_uniform_same_coverage | uniform | 0.515 | 2.15 | false | 0.320 | 0.527 | 0.192 | 0.574 | 0.231 | 9.6 | 18.4 |
+| neutral_cubic_phase_offset | cubic | 0.758 | 1.07 | false | 0.426 | 0.533 | 0.187 | 0.611 | 0.142 | 8.8 | 16.0 |
+| neutral_random_phase_seed_31092 | random | 0.876 | 6.32 | true | 0.013 | 0.469 | 0.004 | 0.336 | 0.322 | 14.4 | n/a |
+| neutral_random_phase_seed_41092 | random | 0.867 | 5.76 | true | 0.018 | 0.462 | 0.004 | 0.345 | 0.325 | 14.4 | n/a |
+
+Interpretation:
+
+- Same-work per-cell random phase controls do not reproduce the clean shell-window family: they retain energy, but it is outer-dominated and incoherent.
+- Cubic sign-flip and cubic phase-offset variants retain clean shell-window behavior with much higher phase coherence and cubic/modal projection proxies.
+- Uniform same-coverage is borderline: it keeps some retention but exceeds the outer/near cleanliness limit, so it does not isolate a clean retained shell.
+- Standing-shell persistence is below the current threshold (`0.515` and `0.533` versus `0.60`), so the strongest claim should wait.
+- Current best wording: structured boundary-interference is likely central, but standing-shell persistence still needs a denser confirmation.
+
 ## Current Next Step
 
-Pivot to structured boundary transport controls:
+Confirm standing-shell persistence without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Run only a tiny boundary-phase negative control: sign-flip cubic repeat, same-coverage uniform phase, fixed-seed random phase, global phase offsets, and possibly face-offset controls.
+- Run only two variants: neutral cubic sign-flip repeat and one deterministic random-phase negative control.
+- Use denser post-cutoff diagnostic snapshots than the first interference run.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
+- Make standing-shell persistence and phase coherence the deciding diagnostics.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.

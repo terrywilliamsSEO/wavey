@@ -48,6 +48,10 @@ from simulation.prototype_3d_grid_confirmation import (
     GridConfirmation3DOptions,
     run_3d_grid_confirmation_control,
 )
+from simulation.prototype_3d_interference_diagnostics import (
+    InterferenceDiagnostics3DOptions,
+    run_3d_interference_diagnostics,
+)
 from simulation.prototype_3d_radial_window_audit import (
     RadialWindowAudit3DOptions,
     run_3d_radial_window_audit,
@@ -435,6 +439,24 @@ def build_parser() -> argparse.ArgumentParser:
         default=[2.5, 3.5, 5.0, 6.5, 8.0, 10.0, 12.0],
         help="Inner radii of shell windows to scan",
     )
+
+    interference_parser = subparsers.add_parser(
+        "prototype-3d-interference-diagnostics",
+        help="Run tiny neutral-lattice phase/interference diagnostics for the clean 3D shell-tail family",
+    )
+    interference_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    interference_parser.add_argument("--output-root", default="runs", help="Directory for 3D interference diagnostic outputs")
+    interference_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this diagnostic is intended for 41^3")
+    interference_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    interference_parser.add_argument("--sample-every", type=int, default=10, help="Sample interval for 3D metrics")
+    interference_parser.add_argument("--diagnostic-sample-every", type=int, default=20, help="Sample interval for phase/interference diagnostics")
+    interference_parser.add_argument("--radial-bins", type=int, default=24, help="Number of radial bins for shell-window profiles")
+    interference_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Inner radius of the measured shell window")
+    interference_parser.add_argument("--shell-window-width", type=float, help="Physical width for the measured shell window; defaults to near-shell-width-dx * dx")
+    interference_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    interference_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    interference_parser.add_argument("--phase-offset", type=float, default=0.5 * 3.141592653589793, help="Global cubic phase offset control in radians")
+    interference_parser.add_argument("--random-phase-seeds", type=int, nargs="+", default=[31092, 41092], help="Seeds for deterministic per-cell random boundary phase controls")
 
     return parser
 
@@ -836,6 +858,7 @@ def main() -> None:
                 grid_size=args.grid_size,
                 reference_source_grid_size=args.reference_source_grid_size,
                 sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
                 radial_bins=args.radial_bins,
                 window_radii=tuple(args.window_radii),
                 window_width=args.window_width,
@@ -868,6 +891,27 @@ def main() -> None:
             ),
         )
         _print_3d_defect_lift_sweep_summary(result)
+        return
+
+    if args.command == "prototype-3d-interference-diagnostics":
+        config = _load_sim_config(args.config)
+        result = run_3d_interference_diagnostics(
+            config,
+            options=InterferenceDiagnostics3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                sample_every=args.sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                phase_offset=args.phase_offset,
+                random_phase_seeds=tuple(args.random_phase_seeds),
+            ),
+        )
+        _print_3d_interference_diagnostics_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1472,6 +1516,35 @@ def _print_3d_defect_lift_sweep_summary(result: dict[str, Any]) -> None:
     print(f"comparison CSV: {result['comparison_csv']}")
     print(f"variant window CSV: {result['variant_window_csv']}")
     print(f"profile CSV: {result['profile_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_interference_diagnostics_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D interference diagnostics complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"role={row.get('interference_role')}, "
+            f"phase={row.get('drive_phase_mode')}, "
+            f"work/area={_format_optional(row.get('work_per_source_area'))}, "
+            f"near_ret={_format_optional(row.get('near_shell_tail_retention'))}, "
+            f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
+            f"coherence={_format_optional(row.get('tail_phase_coherence_mean'))}, "
+            f"standing={_format_optional(row.get('standing_shell_persistence'))}, "
+            f"cubic_proj={_format_optional(row.get('tail_cubic_projection_mean'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"phase CSV: {result['phase_csv']}")
+    print(f"modal CSV: {result['modal_csv']}")
+    print(f"wavefront CSV: {result['wavefront_csv']}")
     print(f"report: {result['report_path']}")
     print(f"audit report: {result['audit_report_path']}")
 

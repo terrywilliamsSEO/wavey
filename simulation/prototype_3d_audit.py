@@ -263,6 +263,7 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
         boundary_phase_offset=float(row.get("boundary_phase_offset") or 0.0),
         boundary_cubic_phase_sign=float(row.get("boundary_cubic_phase_sign") or 1.0),
         boundary_face_amplitude_scales=face_scales,
+        boundary_random_phase_seed=_optional_int(row.get("boundary_random_phase_seed")),
         defect_inner_radius=_optional_float(row.get("defect_inner_radius")),
         defect_nonlinear_strength=_optional_float(row.get("defect_nonlinear_strength")),
     )
@@ -311,6 +312,7 @@ def _geometry_audit(config: Prototype3DConfig) -> dict[str, Any]:
         "boundary_phase_offset": config.boundary_phase_offset,
         "boundary_cubic_phase_sign": config.boundary_cubic_phase_sign,
         "boundary_face_amplitude_scales": config.boundary_face_amplitude_scales or {},
+        "boundary_random_phase_seed": config.boundary_random_phase_seed,
         "boundary_source_inner_distance": config.boundary_source_inner_distance,
         "boundary_source_width": config.boundary_source_width or config.dx,
         "exclude_source_from_sponge_damping": config.exclude_source_from_sponge_damping,
@@ -445,6 +447,12 @@ def _optional_float(value: Any) -> float | None:
     if value in (None, "", "None", "none", "null"):
         return None
     return float(value)
+
+
+def _optional_int(value: Any) -> int | None:
+    if value in (None, "", "None", "none", "null"):
+        return None
+    return int(float(value))
 
 
 def _bool(value: Any) -> bool:
@@ -778,6 +786,7 @@ def _summary_fields() -> list[str]:
         "boundary_phase_offset",
         "boundary_cubic_phase_sign",
         "boundary_face_amplitude_scales",
+        "boundary_random_phase_seed",
         "boundary_source_inner_distance",
         "boundary_source_width",
         "exclude_source_from_sponge_damping",
@@ -839,6 +848,7 @@ def _geometry_fields() -> list[str]:
         "boundary_phase_offset",
         "boundary_cubic_phase_sign",
         "boundary_face_amplitude_scales",
+        "boundary_random_phase_seed",
         "boundary_source_inner_distance",
         "boundary_source_width",
         "exclude_source_from_sponge_damping",

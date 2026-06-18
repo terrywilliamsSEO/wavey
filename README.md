@@ -262,6 +262,14 @@ python main.py prototype-3d-defect-lift-sweep --config configs\long_validation_p
 
 This keeps the calibrated sign-flipped cubic stronger-sponge source fixed, uses the neutral lattice as the baseline, varies only hand-picked defect parameters, and requires strict lift in both retention and peak/work before calling a defect effect. If it finds no lift, the 3D interpretation should pivot toward structured boundary transport modes.
 
+Run the tiny neutral-lattice 3D interference diagnostic with:
+
+```powershell
+python main.py prototype-3d-interference-diagnostics --config configs\long_validation_peak_0_92.json
+```
+
+This keeps the 41^3 neutral-lattice sign-flipped cubic stronger-sponge setup fixed, matches work per physical source area, and compares cubic phase with same-coverage uniform, cubic phase-offset, and deterministic per-cell random phase controls. It exports phase coherence, constructive/destructive alignment, modal projection proxies, wavefront timing, randomization controls, and standing-shell persistence diagnostics.
+
 ## Run one simulation
 
 ```powershell
@@ -552,6 +560,24 @@ When `prototype-3d-defect-lift-sweep` is used, the control folder includes:
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per defect-lift variant
+- `failure_mode_audit/` with the variant-relative shell-window audit artifacts
+
+When `prototype-3d-interference-diagnostics` is used, the control folder includes:
+
+- `interference_diagnostics_summary.csv`
+- `interference_diagnostics_3d_summary.json`
+- `interference_diagnostics_3d_report.md`
+- `phase_coherence_timeseries.csv`
+- `modal_projection_timeseries.csv`
+- `wavefront_timeseries.csv`
+- `phase_coherence_plot.png`
+- `modal_projection_plot.png`
+- `wavefront_shell_energy_plot.png`
+- `interference_diagnostics/<variant>/phase_alignment_midplane.png`
+- `interference_diagnostics/<variant>/shell_energy_midplane.png`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per phase-control variant
 - `failure_mode_audit/` with the variant-relative shell-window audit artifacts
 
 ## Metrics

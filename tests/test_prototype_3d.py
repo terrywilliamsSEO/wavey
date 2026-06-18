@@ -23,6 +23,21 @@ class Prototype3DTests(unittest.TestCase):
         self.assertGreater(phases.size, 0)
         self.assertGreater(float(np.std(phases)), 0.0)
 
+    def test_boundary_random_phase_is_seeded(self) -> None:
+        first_config = _small_3d_config("boundary", "random")
+        second_config = _small_3d_config("boundary", "random")
+        different_config = _small_3d_config("boundary", "random")
+        first_config.boundary_random_phase_seed = 123
+        second_config.boundary_random_phase_seed = 123
+        different_config.boundary_random_phase_seed = 456
+
+        first = Lattice3D(first_config).source.phase_map
+        second = Lattice3D(second_config).source.phase_map
+        different = Lattice3D(different_config).source.phase_map
+
+        self.assertTrue(np.allclose(first, second))
+        self.assertFalse(np.allclose(first, different))
+
     def test_lattice_step_produces_finite_energy(self) -> None:
         config = _small_3d_config("boundary", "uniform")
         lattice = Lattice3D(config)
