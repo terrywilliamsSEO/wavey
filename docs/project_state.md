@@ -34,8 +34,11 @@ Current interpretation:
 - The focused 3D cubic-source control classified as `cubic_phase_structure_not_full_symmetry`: six-face cubic repeated cleanly and sign-flipped cubic stayed clean, while uniform/random phase controls were outer-window flagged.
 - Mild cubic symmetry breaks, specifically removing one face and weakening two faces, also stayed clean. This means exact six-face balance is not isolated as the required ingredient at 31^3; the stronger clue is cubic phase structure with phase-timing sensitivity.
 - The global phase-offset cubic variant was outer-window flagged, so do not overstate phase robustness.
+- The cubic dt/sponge confirmation classified as `cubic_phase_dt_sponge_confirmed`: original cubic and sign-flipped cubic both survived deterministic repeat, half-dt, stronger-sponge, and weak-sponge checks with no global outer flags and no dt warnings.
+- `cubic_phase_sign_flip_stronger_sponge` is now the best 3D boundary variant: near peak/work `4.16e-7`, near retention `0.656`, outer/near `0.739`, stable near radius median `5.05`, and arrival time `9.76`.
+- The sign-flip amplitude-reduced probe at `0.75x` drive amplitude also stayed clean, so the next tiny 31^3 question is lower-amplitude and phase/timing threshold sensitivity, not grid size.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or larger 3D grids. The next step is to stay at 31^3 and run a basic dt/sponge confirmation for the clean cubic-phase boundary family, especially `cubic_phase_sign_flip`.
+- Do not run broad long sweeps or larger 3D grids. The next step is to stay at 31^3 and run a narrow drive-strength / phase-threshold probe around `cubic_phase_sign_flip`.
 
 ## Latest Evidence
 
@@ -620,13 +623,56 @@ Interpretation:
 - The global phase-offset cubic case was outer-window flagged, so phase timing is sensitive.
 - Direct core/shell controls remain transient: they spike near-shell energy early but do not retain it post-cutoff.
 
+### 3D Cubic dt/Sponge Confirmation
+
+Command:
+
+```powershell
+python main.py prototype-3d-cubic-confirmation-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\cubic_confirmation_3d_20260618_110234\cubic_confirmation_control_report.md`
+- Summary CSV: `runs\cubic_confirmation_3d_20260618_110234\cubic_confirmation_control_summary.csv`
+- Classification: `cubic_phase_dt_sponge_confirmed`
+- Best boundary variant: `cubic_phase_sign_flip_stronger_sponge`
+- Baseline sponge: `2x` original 3D sponge strength; stronger confirmation variant: `3x` original.
+- Work matching: boundary confirmation variants held at about `0.105044` injected work per physical source area, except the explicit amplitude-reduced probe.
+- Stability: no dt warnings for any variant.
+
+Important values:
+
+| Variant | Role | dt | Sponge x vs baseline | Work/Area | Near Peak/Work | Near Retention | Near Radius Median | Near Radius Range | Outer/Near Tail | Global Outer | Arrival |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| six_face_cubic_reference | reference | 0.04 | 1.00 | 0.1050 | 1.86e-7 | 0.681 | 9.38 | 0.00 | 2.94 | false | 10.16 |
+| six_face_cubic_half_dt | half dt | 0.02 | 1.00 | 0.1050 | 1.85e-7 | 0.681 | 9.38 | 0.00 | 2.95 | false | 10.16 |
+| six_face_cubic_stronger_sponge | stronger sponge | 0.04 | 1.50 | 0.1050 | 1.85e-7 | 0.675 | 9.38 | 0.00 | 2.58 | false | 10.16 |
+| six_face_cubic_weak_sponge | weak sponge | 0.04 | 0.75 | 0.1050 | 1.86e-7 | 0.688 | 9.38 | 0.00 | 3.30 | false | 10.16 |
+| cubic_phase_sign_flip_reference | reference | 0.04 | 1.00 | 0.1050 | 4.16e-7 | 0.666 | 5.05 | 1.44 | 0.877 | false | 9.76 |
+| cubic_phase_sign_flip_half_dt | half dt | 0.02 | 1.00 | 0.1050 | 4.14e-7 | 0.670 | 5.05 | 1.44 | 0.881 | false | 9.72 |
+| cubic_phase_sign_flip_stronger_sponge | stronger sponge | 0.04 | 1.50 | 0.1050 | 4.16e-7 | 0.656 | 5.05 | 1.44 | 0.739 | false | 9.76 |
+| cubic_phase_sign_flip_weak_sponge | weak sponge | 0.04 | 0.75 | 0.1050 | 4.17e-7 | 0.679 | 5.05 | 1.44 | 1.01 | false | 9.76 |
+| cubic_phase_sign_flip_amplitude_reduced | amplitude reduced | 0.04 | 1.00 | 0.0591 | 4.16e-7 | 0.666 | 5.05 | 1.44 | 0.877 | false | 9.76 |
+| direct_core_control | direct control | 0.04 | 1.00 | n/a | 6.53e-2 | 0.0000030 | 5.05 | 0.00 | 0.72 | false | 3.20 |
+| direct_shell_control | direct control | 0.04 | 1.00 | n/a | 9.52e-2 | 0.00000069 | 5.05 | 4.33 | 3.91 | false | 3.20 |
+
+Interpretation:
+
+- The clean cubic-phase family survived stricter integration: half-dt preserved near peak/work, retention, arrival, radius, and outer/near tail metrics.
+- Stronger sponge improved the sign-flip outer/near ratio from `0.877` to `0.739` while keeping retention above `0.65`.
+- Weak sponge stayed clean but raised outer/near residue, especially for the original cubic phase.
+- Direct core and shell forcing remain transient, so the boundary-transport distinction still holds in this 3D confirmation.
+- The 0.75 amplitude-reduced sign-flip probe did not expose a threshold. The next useful check is a lower-amplitude / small phase-timing threshold probe at 31^3.
+
 ## Current Next Step
 
-Stay at 31^3 and confirm the clean cubic-phase boundary family:
+Stay at 31^3 and probe the confirmed sign-flipped cubic boundary reference:
 
 - Keep the grid at `31^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
-- Confirm the original six-face cubic reference and the `cubic_phase_sign_flip` variant with a basic dt or sponge check.
+- Use `cubic_phase_sign_flip` as the primary 3D reference.
+- Run only a small lower-amplitude / phase-timing threshold set.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
 - Keep global radial peak as an artifact/boundary-residue check.

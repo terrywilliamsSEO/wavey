@@ -28,6 +28,10 @@ from simulation.prototype_3d_audit import (
     Prototype3DFailureAuditOptions,
     run_3d_failure_audit,
 )
+from simulation.prototype_3d_cubic_confirmation import (
+    CubicConfirmationControlOptions,
+    run_3d_cubic_confirmation_control,
+)
 from simulation.prototype_3d_cubic_focus import (
     CubicFocusControlOptions,
     run_3d_cubic_focus_control,
@@ -292,6 +296,21 @@ def build_parser() -> argparse.ArgumentParser:
     cubic_focus_parser.add_argument("--imbalance-scale", type=float, default=0.75, help="Amplitude multiplier for the first weakened face")
     cubic_focus_parser.add_argument("--second-imbalance-scale", type=float, default=0.85, help="Amplitude multiplier for the second weakened face")
     cubic_focus_parser.add_argument("--random-phase-seed", type=int, default=31092, help="Deterministic seed for repeated random face phases")
+
+    cubic_confirmation_parser = subparsers.add_parser(
+        "prototype-3d-cubic-confirmation-control",
+        help="Run tiny 31^3 dt/sponge confirmations for clean cubic-phase 3D boundary sources",
+    )
+    cubic_confirmation_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    cubic_confirmation_parser.add_argument("--output-root", default="runs", help="Directory for cubic-confirmation control outputs")
+    cubic_confirmation_parser.add_argument("--grid-size", type=int, default=31, help="3D grid size; keep tiny at 31^3")
+    cubic_confirmation_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    cubic_confirmation_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
+    cubic_confirmation_parser.add_argument("--base-sponge-strength-multiplier", type=float, default=2.0, help="Baseline stronger sponge multiplier versus the original 3D sponge")
+    cubic_confirmation_parser.add_argument("--weak-sponge-relative-multiplier", type=float, default=0.75, help="Weak sponge multiplier relative to the confirmation baseline sponge")
+    cubic_confirmation_parser.add_argument("--stronger-sponge-relative-multiplier", type=float, default=1.5, help="Stronger sponge multiplier relative to the confirmation baseline sponge")
+    cubic_confirmation_parser.add_argument("--half-dt-multiplier", type=float, default=0.5, help="Time-step multiplier for the half-dt variants")
+    cubic_confirmation_parser.add_argument("--amplitude-reduction-multiplier", type=float, default=0.75, help="Drive-amplitude multiplier for the sign-flip amplitude-reduced probe")
 
     return parser
 
@@ -607,6 +626,25 @@ def main() -> None:
             ),
         )
         _print_3d_cubic_focus_control_summary(result)
+        return
+
+    if args.command == "prototype-3d-cubic-confirmation-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_cubic_confirmation_control(
+            config,
+            options=CubicConfirmationControlOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                sample_every=args.sample_every,
+                near_shell_width_dx=args.near_shell_width_dx,
+                base_sponge_strength_multiplier=args.base_sponge_strength_multiplier,
+                weak_sponge_relative_multiplier=args.weak_sponge_relative_multiplier,
+                stronger_sponge_relative_multiplier=args.stronger_sponge_relative_multiplier,
+                half_dt_multiplier=args.half_dt_multiplier,
+                amplitude_reduction_multiplier=args.amplitude_reduction_multiplier,
+            ),
+        )
+        _print_3d_cubic_confirmation_control_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1044,6 +1082,33 @@ def _print_3d_cubic_focus_control_summary(result: dict[str, Any]) -> None:
             f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "
             f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
             f"global_outer={row.get('global_peak_in_outer_window')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_cubic_confirmation_control_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D cubic-confirmation control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"family={row.get('cubic_confirmation_family')}, "
+            f"role={row.get('cubic_confirmation_role')}, "
+            f"dt={_format_optional(row.get('dt'))}, "
+            f"sponge_x={_format_optional(row.get('sponge_strength_multiplier'))}, "
+            f"work/area={_format_optional(row.get('work_per_source_area'))}, "
+            f"near_peak/work={_format_optional(row.get('near_shell_peak_fraction_of_work'))}, "
+            f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "
+            f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}, "
+            f"dt_warning={row.get('stability_warnings')}"
         )
     print(f"summary CSV: {result['summary_csv']}")
     print(f"report: {result['report_path']}")

@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Stay at 31^3 and confirm the clean cubic-phase 3D boundary family before expanding 3D or running broad sweeps.
+Stay at 31^3 and run one narrow drive-strength / phase-threshold probe around the confirmed sign-flipped cubic 3D boundary reference before expanding 3D or running broad sweeps.
 
-Recommended next task: keep the stronger-sponge inner-edge source setup and run a basic dt or sponge confirmation for the clean cubic-phase variant, especially the `cubic_phase_sign_flip` case. Do not increase 3D grid size yet.
+Recommended next task: keep the stronger-sponge inner-edge source setup, use `cubic_phase_sign_flip` as the primary 3D reference, and test a tiny set of lower amplitudes and small phase/timing offsets. Do not increase 3D grid size yet.
 
 ## Status
 
@@ -130,18 +130,24 @@ Recommended next task: keep the stronger-sponge inner-edge source setup and run 
 - Ran the cubic-focus control in `runs\cubic_focus_3d_20260618_101501`; result classified as `cubic_phase_structure_not_full_symmetry`.
 - Six-face cubic repeated exactly, cubic phase sign flip stayed clean and was the best boundary variant, uniform and random phase controls were global-outer-window flagged, and direct core/shell controls remained transient.
 - Missing one cubic face and mild face-amplitude imbalance also stayed clean, so perfect six-face balance is not isolated as the required ingredient; the global phase-offset variant was global-outer-window flagged, so phase timing remains sensitive.
+- Added `prototype-3d-cubic-confirmation-control` for tiny 31^3 dt/sponge confirmation around the original cubic and sign-flipped cubic boundary phases.
+- Ran the cubic confirmation in `runs\cubic_confirmation_3d_20260618_110234`; result classified as `cubic_phase_dt_sponge_confirmed`.
+- Original cubic and sign-flipped cubic both survived deterministic repeat, half-dt, stronger-sponge, and weak-sponge checks with global outer-window flag false and no dt warnings.
+- `cubic_phase_sign_flip_stronger_sponge` was the best boundary variant: near peak/work 4.16e-7, near retention 0.656, outer/near tail ratio 0.739, near radius median 5.05, and arrival time 9.76.
+- The sign-flip amplitude-reduced probe at 0.75 drive amplitude also stayed clean, with work/area reduced to 0.0591 but the same normalized near-shell pattern, so the next tiny 31^3 question is a lower-amplitude/phase-threshold probe rather than grid size.
 
 ### In Progress
 
-- Tiny 31^3 basic dt/sponge confirmation around the clean cubic-phase boundary family.
+- Tiny 31^3 drive-strength / phase-threshold probe around the confirmed sign-flipped cubic boundary reference.
 
 ### Next
 
 - Keep the grid at 31^3.
 - Start from the stronger-sponge inner-edge boundary source setup.
-- Confirm `cubic_phase_sign_flip` and the original six-face cubic reference with a basic dt or sponge check.
+- Promote `cubic_phase_sign_flip` as the primary 3D reference for the next tiny probe.
 - Preserve matched injected work per physical source area.
-- Keep cubic phase structure as the main 3D source hypothesis, but do not require perfect six-face balance based on the latest control.
+- Test only a small set of drive-strength and phase/timing threshold variants before any larger grid.
+- Keep cubic phase structure as the main 3D source hypothesis, but do not require perfect six-face balance based on the latest controls.
 - Keep near-defect shell-window peak/work, retention, radius range, arrival time, and outer/near tail ratio as the primary 3D metrics.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
@@ -320,3 +326,7 @@ Possible work:
 - 2026-06-18: Ran the cubic-focus control in `runs\cubic_focus_3d_20260618_101501`; classification was `cubic_phase_structure_not_full_symmetry`.
 - 2026-06-18: Six-face cubic repeated cleanly, sign-flipped cubic was the best clean boundary variant, uniform/random phase controls stayed outer-window flagged, and direct core/shell controls stayed transient.
 - 2026-06-18: Missing one cubic face and mild face imbalance also stayed clean, so the next step is a small dt/sponge confirmation of the cubic-phase family rather than a larger grid.
+- 2026-06-18: Added `python main.py prototype-3d-cubic-confirmation-control --config configs\long_validation_peak_0_92.json`.
+- 2026-06-18: Ran cubic dt/sponge confirmation in `runs\cubic_confirmation_3d_20260618_110234`; classification was `cubic_phase_dt_sponge_confirmed`.
+- 2026-06-18: Original and sign-flipped cubic phases survived repeat, half-dt, stronger-sponge, and weak-sponge checks with no global outer flags and no dt warnings; direct core/shell remained transient.
+- 2026-06-18: The sign-flip stronger-sponge variant was the best boundary result, and the 0.75 amplitude-reduced sign-flip probe stayed clean, so the next tiny 31^3 step is a lower-amplitude/phase-threshold probe before any grid increase.

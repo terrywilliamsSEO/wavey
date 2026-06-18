@@ -214,6 +214,14 @@ python main.py prototype-3d-cubic-focus-control --config configs\long_validation
 
 This repeats the six-face cubic source, flips the cubic phase sign, applies a global phase offset, removes one face, slightly imbalances face amplitudes, compares uniform six-face coverage, repeats a fixed-seed random phase, and keeps direct core/shell controls as reference-only comparators.
 
+Run the tiny 31^3 cubic dt/sponge confirmation with:
+
+```powershell
+python main.py prototype-3d-cubic-confirmation-control --config configs\long_validation_peak_0_92.json
+```
+
+This confirms the original cubic and sign-flipped cubic boundary phases with deterministic repeats, half-dt variants, stronger/weaker sponge variants around the current stronger-sponge baseline, one sign-flip amplitude-reduced probe, and direct core/shell reference controls.
+
 ## Run one simulation
 
 ```powershell
@@ -438,6 +446,16 @@ When `prototype-3d-cubic-focus-control` is used, the control folder includes:
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per cubic-focus variant
+- `failure_mode_audit/` with the near-defect shell-window audit artifacts
+
+When `prototype-3d-cubic-confirmation-control` is used, the control folder includes:
+
+- `cubic_confirmation_control_summary.csv`
+- `cubic_confirmation_control_summary.json`
+- `cubic_confirmation_control_report.md`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per cubic-confirmation variant
 - `failure_mode_audit/` with the near-defect shell-window audit artifacts
 
 ## Metrics
