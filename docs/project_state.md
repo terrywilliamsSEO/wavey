@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-06-17
+Last updated: 2026-06-18
 
 ## One-Screen Summary
 
@@ -29,7 +29,7 @@ Current interpretation:
 - A deeper inward source creates a huge early near-shell peak but does not retain it, so the current best 3D geometry is `source_at_inner_sponge_edge`, not the deeper gap source.
 - The 3D sponge-strength control classified as `sponge_strength_suppresses_outer_contamination`: stronger sponge at the original width preserved the near-defect shell tail while lowering outer/near tail contamination.
 - Weak sponge increased outer residue. Wider sponge variants retained the near-shell tail, but because the source location was held fixed, the widened sponge reintroduced full source/sponge overlap and the audit flagged global outer-window dominance.
-- The 3D source-geometry control classified as `boundary_source_geometry_preserves_near_shell`: six-face cubic remains the cleanest retained near-shell boundary case, while uniform/reduced-face/random boundary variants are global-outer-window flagged.
+- The 3D source-geometry control was rerun after clipping all selected face sources to the inner active-domain boundary. It classified again as `boundary_source_geometry_preserves_near_shell`: six-face cubic remains the cleanest retained near-shell boundary case, while uniform/reduced-face/random boundary variants are still global-outer-window flagged.
 - Direct core and direct shell controls generated large early near-shell peaks but did not retain them, so they still do not reproduce the retained boundary tail.
 - Do not call this exotic physics.
 - Do not run broad long sweeps or larger 3D grids. The next step is to stay at 31^3 and narrow around the preserved six-face cubic boundary geometry.
@@ -546,12 +546,13 @@ python main.py prototype-3d-source-geometry-control --config configs\long_valida
 
 Latest summarized run:
 
-- Local report: `runs\source_geometry_3d_20260617_171350\source_geometry_control_report.md`
-- Summary CSV: `runs\source_geometry_3d_20260617_171350\source_geometry_control_summary.csv`
+- Local report: `runs\source_geometry_3d_20260618_092029\source_geometry_control_report.md`
+- Summary CSV: `runs\source_geometry_3d_20260618_092029\source_geometry_control_summary.csv`
 - Classification: `boundary_source_geometry_preserves_near_shell`
 - Best boundary variant: `six_face_rotating_cubic_phase`
 - Work matching: boundary variants held at about `0.105044` injected work per physical source area.
 - Source/sponge overlap: `0` for all boundary variants after explicit face sources were clipped to the inner active-domain boundary.
+- Rerun answer: one-face, two-face, and four-face variants still global-outer flag after clipping, so their outer-window contamination is not explained only by source/sponge/corner overlap.
 
 Important values:
 
@@ -571,7 +572,7 @@ Interpretation:
 
 - Six-face cubic remains the cleanest boundary geometry because it preserves the retained near-shell tail and avoids global outer-window dominance.
 - None of the tested source geometries produced a stronger clean retained tail than six-face cubic.
-- Uniform, reduced-face, phased-opposite, and random-phase boundary variants can retain near-shell energy, but their global shell peak is still flagged in the outer window.
+- Uniform, reduced-face, phased-opposite, and random-phase boundary variants can retain near-shell energy, but their global shell peak is still flagged in the outer window even with source/sponge overlap confirmed at `0`.
 - The random-phase control produced the largest near peak/work among boundary variants, but it is not a clean pass because it is global-outer-window flagged.
 - Direct core and direct shell forcing produce large early near-shell peak/work values but near retention collapses to about `1e-6`, so they are transient controls rather than retained shell-tail reproductions.
 

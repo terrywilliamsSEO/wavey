@@ -122,9 +122,9 @@ Recommended next task: keep the grid at 31^3, keep the stronger-sponge inner-edg
 - Stronger sponge at the original width preserved the near-defect shell tail while reducing outer/near tail contamination from 3.88 to 2.94; weak sponge raised outer residue to 4.88, and wider sponge reintroduced full source/sponge overlap because the source location was held fixed.
 - Added explicit 3D boundary-face source selection and per-face phase offsets while preserving the inner active-domain source/sponge separation.
 - Added `prototype-3d-source-geometry-control` for tiny 31^3 matched-work boundary source-geometry controls plus direct core/shell comparators.
-- Ran the source-geometry control in `runs\source_geometry_3d_20260617_171350`; result classified as `boundary_source_geometry_preserves_near_shell`.
+- Reran the source-geometry control in `runs\source_geometry_3d_20260618_092029`; result classified again as `boundary_source_geometry_preserves_near_shell`.
 - Six-face cubic remained the cleanest retained near-shell boundary geometry: near peak/work 1.86e-7, near retention 0.681, outer/near 2.94, and global outer-window flag false.
-- Uniform, one-face, two-opposite-face, four-side-face, phased-opposite, and random-phase boundary variants retained near-shell energy but were global-outer-window flagged; direct core/shell controls produced early near-shell peaks but did not retain them.
+- Uniform, one-face, two-opposite-face, four-side-face, phased-opposite, and random-phase boundary variants retained near-shell energy but were global-outer-window flagged even after clipping all selected face sources to the inner active-domain boundary; direct core/shell controls produced early near-shell peaks but did not retain them.
 
 ### In Progress
 
@@ -308,3 +308,5 @@ Possible work:
 - 2026-06-17: Added explicit 3D boundary-face source selection and `python main.py prototype-3d-source-geometry-control --config configs\long_validation_peak_0_92.json`.
 - 2026-06-17: Ran source-geometry controls in `runs\source_geometry_3d_20260617_171350`; classified as `boundary_source_geometry_preserves_near_shell`.
 - 2026-06-17: Six-face cubic remained the cleanest retained boundary case, while reduced-face/uniform/random variants were outer-window flagged and direct core/shell forcing was not retained; updated the next step to narrow around six-face cubic at 31^3.
+- 2026-06-18: Reran the cleaned source-geometry control in `runs\source_geometry_3d_20260618_092029`; classification stayed `boundary_source_geometry_preserves_near_shell`.
+- 2026-06-18: One-face, two-face, four-face, uniform, phased-opposite, and random-phase variants still global-outer flagged after source/sponge overlap was confirmed at zero, so the current next step remains narrowing around six-face cubic at 31^3.
