@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or broad 3D sweeps; the next step is one tiny lower-amplitude / phase-threshold check around the confirmed 41^3 sign-flipped cubic 3D boundary reference.
+- Do not run broad long sweeps or broad 3D sweeps; the next step is one tiny 41^3 half-dt / stricter-integration confirmation around the calibrated sign-flipped cubic 3D boundary reference.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -33,7 +33,9 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - The 0.75 amplitude-reduced sign-flip probe stayed clean, so the first grid-size lift was allowed as a single-candidate check only.
 - The tiny fixed-domain 31^3 to 41^3 grid confirmation classified as `sign_flip_resolution_lift_confirmed` in `runs\grid_confirmation_3d_20260618_112610`: 41^3 sign-flipped cubic stayed clean with near retention 0.578, outer/near 1.49, near peak/work 2.03e-7, near radius median 5.05, arrival time 9.36, global outer false, and no dt warnings.
 - The optional 41^3 original cubic comparator did not pass the same cleanliness check because outer/near rose to 7.17. The 41^3 direct-shell negative control was transient with near retention 5.7e-7.
-- The current next physics step is one tiny 41^3 lower-amplitude / phase-threshold probe around `sign_flip_stronger_sponge_41`; do not widen into a grid or source-geometry sweep.
+- The calibrated 41^3 amplitude/phase threshold control classified as `amplitude_phase_tolerant` in `runs\threshold_control_3d_20260618_124524`: 0.5x-1.5x amplitude and -pi/8 to +pi/8 phase offsets stayed clean, with global outer false and no dt warnings.
+- The calibrated 41^3 reference matched target work/area 0.105027 and kept near retention 0.578, outer/near 1.49, near peak/work 2.03e-7, and arrival 9.36. Direct core/shell controls stayed transient with near retention about 2.5e-6 and 5.7e-7.
+- The current next physics step is one tiny 41^3 half-dt / stricter-integration confirmation around the calibrated `sign_flip_amp_1_0_reference`; do not widen into a grid or source-geometry sweep.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -82,6 +84,7 @@ python main.py prototype-3d-source-geometry-control --config configs\long_valida
 python main.py prototype-3d-cubic-focus-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-cubic-confirmation-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-grid-confirmation-control --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-threshold-control --config configs\long_validation_peak_0_92.json
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json

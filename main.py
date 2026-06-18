@@ -40,6 +40,10 @@ from simulation.prototype_3d_grid_confirmation import (
     GridConfirmation3DOptions,
     run_3d_grid_confirmation_control,
 )
+from simulation.prototype_3d_threshold_control import (
+    ThresholdControl3DOptions,
+    run_3d_threshold_control,
+)
 from simulation.prototype_3d_source_sponge import (
     SourceSpongeControlOptions,
     run_3d_source_sponge_control,
@@ -334,6 +338,25 @@ def build_parser() -> argparse.ArgumentParser:
         default="direct_shell",
         help="Single 41^3 negative control to run",
     )
+
+    threshold_parser = subparsers.add_parser(
+        "prototype-3d-threshold-control",
+        help="Run a tiny 41^3 amplitude/phase threshold check for the clean 3D sign-flip source",
+    )
+    threshold_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    threshold_parser.add_argument("--output-root", default="runs", help="Directory for 3D threshold-control outputs")
+    threshold_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this control is intended for 41^3")
+    threshold_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    threshold_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    threshold_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Near-defect shell audit width in dx units")
+    threshold_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    threshold_parser.add_argument(
+        "--skip-amp-1-5",
+        action="store_true",
+        help="Skip the optional 1.5x high-amplitude variant",
+    )
+    threshold_parser.add_argument("--skip-direct-core", action="store_true", help="Skip the direct-core reference control")
+    threshold_parser.add_argument("--skip-direct-shell", action="store_true", help="Skip the direct-shell reference control")
 
     return parser
 
@@ -686,6 +709,26 @@ def main() -> None:
             ),
         )
         _print_3d_grid_confirmation_control_summary(result)
+        return
+
+    if args.command == "prototype-3d-threshold-control":
+        config = _load_sim_config(args.config)
+        amplitude_multipliers = (0.5, 0.75, 1.0, 1.25) if args.skip_amp_1_5 else (0.5, 0.75, 1.0, 1.25, 1.5)
+        result = run_3d_threshold_control(
+            config,
+            options=ThresholdControl3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                sample_every=args.sample_every,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                amplitude_multipliers=amplitude_multipliers,
+                include_direct_core=not args.skip_direct_core,
+                include_direct_shell=not args.skip_direct_shell,
+            ),
+        )
+        _print_3d_threshold_control_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1171,6 +1214,32 @@ def _print_3d_grid_confirmation_control_summary(result: dict[str, Any]) -> None:
             f"dx={_format_optional(row.get('dx'))}, "
             f"family={row.get('grid_confirmation_family')}, "
             f"role={row.get('grid_confirmation_role')}, "
+            f"work/area={_format_optional(row.get('work_per_source_area'))}, "
+            f"near_peak/work={_format_optional(row.get('near_shell_peak_fraction_of_work'))}, "
+            f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "
+            f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}, "
+            f"dt_warning={row.get('stability_warnings')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_threshold_control_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D threshold control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"axis={row.get('threshold_axis')}, "
+            f"amp_x={_format_optional(row.get('threshold_multiplier'))}, "
+            f"phase={row.get('phase_offset_label')}, "
             f"work/area={_format_optional(row.get('work_per_source_area'))}, "
             f"near_peak/work={_format_optional(row.get('near_shell_peak_fraction_of_work'))}, "
             f"near_retention={_format_optional(row.get('near_shell_tail_retention'))}, "

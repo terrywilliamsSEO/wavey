@@ -36,11 +36,13 @@ Current interpretation:
 - The global phase-offset cubic variant was outer-window flagged, so do not overstate phase robustness.
 - The cubic dt/sponge confirmation classified as `cubic_phase_dt_sponge_confirmed`: original cubic and sign-flipped cubic both survived deterministic repeat, half-dt, stronger-sponge, and weak-sponge checks with no global outer flags and no dt warnings.
 - `cubic_phase_sign_flip_stronger_sponge` is now the best 3D boundary variant: near peak/work `4.16e-7`, near retention `0.656`, outer/near `0.739`, stable near radius median `5.05`, and arrival time `9.76`.
-- The sign-flip amplitude-reduced probe at `0.75x` drive amplitude also stayed clean, so the next tiny 31^3 question is lower-amplitude and phase/timing threshold sensitivity, not grid size.
+- The earlier 31^3 `0.75x` sign-flip amplitude-reduced probe stayed clean and motivated the later 41^3 amplitude/phase tolerance check.
 - The tiny fixed-domain 31^3 to 41^3 grid confirmation classified as `sign_flip_resolution_lift_confirmed`: the 41^3 sign-flipped cubic stronger-sponge candidate preserved the clean near-shell tail with global outer false, retention `0.578`, outer/near `1.49`, near radius median `5.05`, and no dt warnings.
 - The optional 41^3 original-cubic comparator did not pass the same cleanliness check because its outer/near ratio rose to `7.17`, while the 41^3 direct-shell negative control remained transient with retention `5.7e-7`.
+- The calibrated 41^3 amplitude/phase threshold control classified as `amplitude_phase_tolerant`: the sign-flip family stayed clean from `0.5x` to `1.5x` amplitude and from `-pi/8` to `+pi/8` phase offset.
+- Direct core and direct shell controls in that 41^3 threshold pass remained transient, with near retention around `2.5e-6` and `5.7e-7`.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is one tiny lower-amplitude / phase-threshold probe around `sign_flip_stronger_sponge_41`.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is one tiny 41^3 half-dt / stricter-integration confirmation around the calibrated sign-flip reference.
 
 ## Latest Evidence
 
@@ -665,7 +667,7 @@ Interpretation:
 - Stronger sponge improved the sign-flip outer/near ratio from `0.877` to `0.739` while keeping retention above `0.65`.
 - Weak sponge stayed clean but raised outer/near residue, especially for the original cubic phase.
 - Direct core and shell forcing remain transient, so the boundary-transport distinction still holds in this 3D confirmation.
-- The 0.75 amplitude-reduced sign-flip probe did not expose a threshold. The next useful check is a lower-amplitude / small phase-timing threshold probe at 31^3.
+- The 0.75 amplitude-reduced sign-flip probe did not expose a threshold. The grid-confirmation and 41^3 threshold controls below supersede this as the current 3D reference path.
 
 ### 3D Grid Confirmation
 
@@ -701,16 +703,67 @@ Interpretation:
 - The near-shell radius stays fixed at `5.05`, with tighter late-tail radius range at 41^3.
 - Direct shell forcing at 41^3 is still transient, so direct local shell injection does not reproduce the retained boundary tail.
 - Original cubic at 41^3 is not clean under the same criterion; sign-flip should remain the primary 3D reference.
-- This is not permission for a broad 3D sweep. It only justifies one tiny 41^3 threshold/phase check around sign-flip.
+- This was not permission for a broad 3D sweep. It only justified the tiny 41^3 threshold/phase check below.
+
+### 3D Amplitude/Phase Threshold Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-threshold-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\threshold_control_3d_20260618_124524\threshold_control_3d_report.md`
+- Summary CSV: `runs\threshold_control_3d_20260618_124524\threshold_control_3d_summary.csv`
+- Classification: `amplitude_phase_tolerant`
+- Best variant by score: `sign_flip_phase_neg_pi_8`
+- Calibration: 41^3 reference was calibrated to the 31^3 sign-flip stronger-sponge target work per source area, `0.105027`.
+- Stability: no dt warnings.
+
+Important amplitude values:
+
+| Variant | Amp x | Work/Area | Near Peak/Work | Near Retention | Outer/Near Tail | Global Outer | Arrival |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| sign_flip_amp_0_5 | 0.50 | 0.0263 | 2.03e-7 | 0.578 | 1.49 | false | 9.36 |
+| sign_flip_amp_0_75 | 0.75 | 0.0591 | 2.03e-7 | 0.578 | 1.49 | false | 9.36 |
+| sign_flip_amp_1_0_reference | 1.00 | 0.1050 | 2.03e-7 | 0.578 | 1.49 | false | 9.36 |
+| sign_flip_amp_1_25 | 1.25 | 0.1641 | 2.03e-7 | 0.578 | 1.49 | false | 9.36 |
+| sign_flip_amp_1_5 | 1.50 | 0.2363 | 2.03e-7 | 0.578 | 1.49 | false | 9.36 |
+
+Important phase values:
+
+| Variant | Phase | Work/Area | Near Peak/Work | Near Retention | Outer/Near Tail | Global Outer | Arrival |
+| --- | --- | ---: | ---: | ---: | ---: | --- | ---: |
+| sign_flip_phase_neg_pi_8 | -pi/8 | 0.1050 | 2.05e-7 | 0.583 | 1.35 | false | 9.36 |
+| sign_flip_phase_neg_pi_16 | -pi/16 | 0.1050 | 2.06e-7 | 0.573 | 1.42 | false | 9.36 |
+| sign_flip_phase_pos_pi_16 | +pi/16 | 0.1050 | 1.96e-7 | 0.598 | 1.53 | false | 9.36 |
+| sign_flip_phase_pos_pi_8 | +pi/8 | 0.1050 | 1.86e-7 | 0.635 | 1.56 | false | 9.36 |
+
+Direct controls:
+
+| Variant | Near Peak/Work | Near Retention | Outer/Near Tail | Global Outer | Arrival |
+| --- | ---: | ---: | ---: | --- | ---: |
+| direct_core_41_control | 6.22e-2 | 0.0000025 | 1.46 | false | 3.20 |
+| direct_shell_41_control | 9.79e-2 | 0.00000057 | 9.08 | false | 3.20 |
+
+Interpretation:
+
+- The calibrated 41^3 sign-flip family did not show a lower-amplitude collapse across the tested `0.5x` to `1.5x` drive range.
+- Normalized near-shell metrics were nearly invariant across amplitude, which is more consistent with a robust linear-ish transport family than a sharp threshold inside this tested range.
+- Small phase offsets did not destroy the signal; even `+/-pi/8` stayed clean under matched work per physical source area.
+- Direct core and direct shell controls remained transient, so the boundary-transport distinction still holds at 41^3.
+- This strengthens the 3D candidate but still does not justify a broad 3D sweep.
 
 ## Current Next Step
 
-Stay targeted and probe the confirmed 41^3 sign-flipped cubic boundary reference:
+Stay targeted and probe stricter integration for the calibrated 41^3 sign-flipped cubic boundary reference:
 
 - Use `41^3` only for the already confirmed sign-flipped cubic reference.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
-- Use `sign_flip_stronger_sponge_41` as the primary 3D reference.
-- Run only a small lower-amplitude / phase-timing threshold set.
+- Use `sign_flip_amp_1_0_reference` from `runs\threshold_control_3d_20260618_124524` as the primary 3D reference.
+- Run only a small half-dt / stricter-integration confirmation around that reference.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
 - Keep global radial peak as an artifact/boundary-residue check.

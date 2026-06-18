@@ -230,6 +230,14 @@ python main.py prototype-3d-grid-confirmation-control --config configs\long_vali
 
 This is a single-candidate resolution lift, not a 3D sweep. It compares the 31^3 sign-flipped cubic stronger-sponge reference with a 41^3 sign-flipped cubic candidate, an optional 41^3 original-cubic comparator, and one 41^3 negative control under matched physical domain, defect, source geometry, sponge settings, and injected work per physical source area.
 
+Run the tiny calibrated 41^3 amplitude/phase threshold check with:
+
+```powershell
+python main.py prototype-3d-threshold-control --config configs\long_validation_peak_0_92.json
+```
+
+This is also not a 3D sweep. It starts from the calibrated 41^3 sign-flipped cubic stronger-sponge source, tests only a small set of amplitude multipliers and global phase offsets, and keeps direct core/shell controls as transient reference checks.
+
 ## Run one simulation
 
 ```powershell
@@ -474,6 +482,16 @@ When `prototype-3d-grid-confirmation-control` is used, the control folder includ
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per grid-confirmation variant
+- `failure_mode_audit/` with the near-defect shell-window audit artifacts
+
+When `prototype-3d-threshold-control` is used, the control folder includes:
+
+- `threshold_control_3d_summary.csv`
+- `threshold_control_3d_summary.json`
+- `threshold_control_3d_report.md`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per threshold-control variant
 - `failure_mode_audit/` with the near-defect shell-window audit artifacts
 
 ## Metrics
