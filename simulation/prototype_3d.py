@@ -68,6 +68,9 @@ class Prototype3DConfig:
     exclude_source_from_sponge_damping: bool = False
     boundary_faces: tuple[str, ...] = ("x_min", "x_max", "y_min", "y_max", "z_min", "z_max")
     boundary_face_phase_offsets: dict[str, float] | None = None
+    boundary_phase_offset: float = 0.0
+    boundary_cubic_phase_sign: float = 1.0
+    boundary_face_amplitude_scales: dict[str, float] | None = None
 
     @property
     def dx(self) -> float:
@@ -147,14 +150,15 @@ class Source3D:
         self.coords = coords
         self.face_coverages = self._face_coverages()
         self.weights = self._weights()
+        self.geometric_weights = self._geometric_weights()
         self.mask = self.weights > EPSILON
         self.phase_map = self._phase_map()
         self.boundary_area = self._boundary_area()
         self.source_width = config.boundary_source_width or config.dx
-        driven_volume = float(np.sum(self.weights) * config.cell_volume)
-        self.effective_area = driven_volume / max(self.source_width, EPSILON) if config.drive_location == "boundary" else 0.0
-        self.normalization_scale = self.boundary_area / (driven_volume + EPSILON) if config.drive_location == "boundary" else 1.0
-        self.effective_volume = driven_volume
+        source_volume = float(np.sum(self.geometric_weights) * config.cell_volume)
+        self.effective_area = source_volume / max(self.source_width, EPSILON) if config.drive_location == "boundary" else 0.0
+        self.normalization_scale = self.boundary_area / (source_volume + EPSILON) if config.drive_location == "boundary" else 1.0
+        self.effective_volume = source_volume
 
     def _weights(self) -> np.ndarray:
         config = self.config
@@ -162,7 +166,11 @@ class Source3D:
         if config.drive_location == "boundary":
             if not self.face_coverages:
                 return np.zeros_like(radius)
-            return np.maximum.reduce(list(self.face_coverages.values()))
+            scaled = []
+            scales = config.boundary_face_amplitude_scales or {}
+            for face, coverage in self.face_coverages.items():
+                scaled.append(coverage * float(scales.get(face, 1.0)))
+            return np.maximum.reduce(scaled)
         if config.drive_location == "core":
             return (radius <= config.defect_radius + config.dx).astype(float)
         if config.drive_location == "shell":
@@ -170,6 +178,13 @@ class Source3D:
             outer = config.shell_outer_radius if config.shell_outer_radius is not None else config.defect_radius + 3.0 * config.dx
             return ((radius >= inner) & (radius <= outer)).astype(float)
         raise ValueError(f"Unsupported 3D drive_location: {config.drive_location}")
+
+    def _geometric_weights(self) -> np.ndarray:
+        if self.config.drive_location == "boundary":
+            if not self.face_coverages:
+                return np.zeros_like(self.coords["radius"])
+            return np.maximum.reduce(list(self.face_coverages.values()))
+        return self.weights
 
     def _face_coverages(self) -> dict[str, np.ndarray]:
         config = self.config
@@ -189,9 +204,9 @@ class Source3D:
     def _phase_map(self) -> np.ndarray:
         config = self.config
         if config.drive_phase_mode == "uniform":
-            return np.zeros_like(self.weights)
+            return np.full_like(self.weights, config.boundary_phase_offset)
         if config.drive_phase_mode == "face_offsets":
-            return self._face_offset_phase_map(config.boundary_face_phase_offsets or {})
+            return self._face_offset_phase_map(config.boundary_face_phase_offsets or {}) + config.boundary_phase_offset
         if config.drive_phase_mode != "cubic":
             raise ValueError(f"Unsupported 3D drive_phase_mode: {config.drive_phase_mode}")
         x = self.coords["x"]
@@ -200,7 +215,7 @@ class Source3D:
         r = np.maximum(self.coords["radius"], config.dx)
         cubic = (x**4 + y**4 + z**4) / (r**4) - 0.6
         scale = np.max(np.abs(cubic[self.mask])) if np.any(self.mask) else 1.0
-        return 0.5 * np.pi * cubic / (scale + EPSILON)
+        return config.boundary_phase_offset + config.boundary_cubic_phase_sign * 0.5 * np.pi * cubic / (scale + EPSILON)
 
     def _face_offset_phase_map(self, offsets: dict[str, float]) -> np.ndarray:
         if not self.face_coverages:
@@ -532,6 +547,9 @@ def _summarize_variant(
         "boundary_faces": list(_normalize_boundary_faces(config.boundary_faces)),
         "boundary_face_count": len(_normalize_boundary_faces(config.boundary_faces)),
         "boundary_face_phase_offsets": config.boundary_face_phase_offsets or {},
+        "boundary_phase_offset": config.boundary_phase_offset,
+        "boundary_cubic_phase_sign": config.boundary_cubic_phase_sign,
+        "boundary_face_amplitude_scales": config.boundary_face_amplitude_scales or {},
         "effective_source_volume": source.effective_volume,
         "effective_source_area": source.effective_area,
         "boundary_source_inner_distance": config.boundary_source_inner_distance,
@@ -814,6 +832,9 @@ def _summary_fields() -> list[str]:
         "boundary_faces",
         "boundary_face_count",
         "boundary_face_phase_offsets",
+        "boundary_phase_offset",
+        "boundary_cubic_phase_sign",
+        "boundary_face_amplitude_scales",
         "effective_source_volume",
         "effective_source_area",
         "boundary_source_inner_distance",

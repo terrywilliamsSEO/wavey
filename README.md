@@ -206,6 +206,14 @@ python main.py prototype-3d-source-geometry-control --config configs\long_valida
 
 This tests six-face uniform, one-face, two-opposite-face, four-side-face, six-face cubic phase, phased-opposite-face, and random-phase boundary sources, plus direct core/shell comparators, all at matched injected work.
 
+Run the tiny 31^3 focused six-face cubic control with:
+
+```powershell
+python main.py prototype-3d-cubic-focus-control --config configs\long_validation_peak_0_92.json
+```
+
+This repeats the six-face cubic source, flips the cubic phase sign, applies a global phase offset, removes one face, slightly imbalances face amplitudes, compares uniform six-face coverage, repeats a fixed-seed random phase, and keeps direct core/shell controls as reference-only comparators.
+
 ## Run one simulation
 
 ```powershell
@@ -420,6 +428,16 @@ When `prototype-3d-source-geometry-control` is used, the control folder includes
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per source-geometry variant
+- `failure_mode_audit/` with the near-defect shell-window audit artifacts
+
+When `prototype-3d-cubic-focus-control` is used, the control folder includes:
+
+- `cubic_focus_control_summary.csv`
+- `cubic_focus_control_summary.json`
+- `cubic_focus_control_report.md`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per cubic-focus variant
 - `failure_mode_audit/` with the near-defect shell-window audit artifacts
 
 ## Metrics

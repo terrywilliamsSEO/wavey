@@ -31,8 +31,11 @@ Current interpretation:
 - Weak sponge increased outer residue. Wider sponge variants retained the near-shell tail, but because the source location was held fixed, the widened sponge reintroduced full source/sponge overlap and the audit flagged global outer-window dominance.
 - The 3D source-geometry control was rerun after clipping all selected face sources to the inner active-domain boundary. It classified again as `boundary_source_geometry_preserves_near_shell`: six-face cubic remains the cleanest retained near-shell boundary case, while uniform/reduced-face/random boundary variants are still global-outer-window flagged.
 - Direct core and direct shell controls generated large early near-shell peaks but did not retain them, so they still do not reproduce the retained boundary tail.
+- The focused 3D cubic-source control classified as `cubic_phase_structure_not_full_symmetry`: six-face cubic repeated cleanly and sign-flipped cubic stayed clean, while uniform/random phase controls were outer-window flagged.
+- Mild cubic symmetry breaks, specifically removing one face and weakening two faces, also stayed clean. This means exact six-face balance is not isolated as the required ingredient at 31^3; the stronger clue is cubic phase structure with phase-timing sensitivity.
+- The global phase-offset cubic variant was outer-window flagged, so do not overstate phase robustness.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or larger 3D grids. The next step is to stay at 31^3 and narrow around the preserved six-face cubic boundary geometry.
+- Do not run broad long sweeps or larger 3D grids. The next step is to stay at 31^3 and run a basic dt/sponge confirmation for the clean cubic-phase boundary family, especially `cubic_phase_sign_flip`.
 
 ## Latest Evidence
 
@@ -576,13 +579,54 @@ Interpretation:
 - The random-phase control produced the largest near peak/work among boundary variants, but it is not a clean pass because it is global-outer-window flagged.
 - Direct core and direct shell forcing produce large early near-shell peak/work values but near retention collapses to about `1e-6`, so they are transient controls rather than retained shell-tail reproductions.
 
+### 3D Cubic-Focus Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-cubic-focus-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\cubic_focus_3d_20260618_101501\cubic_focus_control_report.md`
+- Summary CSV: `runs\cubic_focus_3d_20260618_101501\cubic_focus_control_summary.csv`
+- Classification: `cubic_phase_structure_not_full_symmetry`
+- Best boundary variant: `cubic_phase_sign_flip`
+- Work matching: boundary variants held at about `0.105044` injected work per physical source area.
+- Source/sponge overlap: `0` for all boundary variants.
+
+Important values:
+
+| Variant | Role | Faces | Phase | Sign/Offset | Near Peak/Work | Near Retention | Near Radius Range | Outer/Near Tail | Global Outer | Arrival |
+| --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- | ---: |
+| six_face_cubic_reference | reference | 6 | cubic | +1 / 0 | 1.86e-7 | 0.681 | 0.00 | 2.94 | false | 10.16 |
+| six_face_cubic_repeat | repeat | 6 | cubic | +1 / 0 | 1.86e-7 | 0.681 | 0.00 | 2.94 | false | 10.16 |
+| cubic_phase_sign_flip | cubic perturbation | 6 | cubic | -1 / 0 | 4.16e-7 | 0.666 | 1.44 | 0.877 | false | 9.76 |
+| cubic_phase_offset | cubic perturbation | 6 | cubic | +1 / 1.571 | 1.82e-7 | 0.773 | 0.00 | 2.93 | true | 9.44 |
+| cubic_missing_z_max_face | symmetry break | 5 | cubic | +1 / 0 | 1.74e-7 | 0.705 | 0.00 | 3.08 | false | 10.08 |
+| cubic_face_imbalance | symmetry break | 6 | cubic | +1 / 0 | 1.82e-7 | 0.685 | 0.00 | 2.98 | false | 10.16 |
+| six_face_uniform_same_coverage | non-cubic control | 6 | uniform | n/a | 1.76e-7 | 0.682 | 1.44 | 1.09 | true | 9.20 |
+| random_phase_seed_31092_a/b | random control | 6 | face offsets | fixed seed | 6.30e-7 | 0.831 | 1.44 | 1.34 | true | 9.60 |
+| direct_core_control | direct control | n/a | uniform | n/a | 6.53e-2 | 0.0000030 | 0.00 | 0.72 | false | 3.20 |
+| direct_shell_control | direct control | n/a | uniform | n/a | 9.52e-2 | 0.00000069 | 4.33 | 3.91 | false | 3.20 |
+
+Interpretation:
+
+- Six-face cubic repeated exactly, so the previous clean case is reproducible under this deterministic setup.
+- The sign-flipped cubic phase was the strongest clean boundary variant in near peak/work and outer/near tail ratio.
+- Uniform and random phase controls are not clean passes because their global shell peak is still in the outer window, even though random phase has a high near peak/work value.
+- Removing one face and adding mild face-amplitude imbalance did not dirty the cubic case. Perfect six-face balance is therefore not isolated as the required mechanism at 31^3.
+- The global phase-offset cubic case was outer-window flagged, so phase timing is sensitive.
+- Direct core/shell controls remain transient: they spike near-shell energy early but do not retain it post-cutoff.
+
 ## Current Next Step
 
-Stay at 31^3 and narrow around the preserved six-face cubic boundary geometry:
+Stay at 31^3 and confirm the clean cubic-phase boundary family:
 
 - Keep the grid at `31^3`.
-- Use the inner-sponge-edge source location, stronger sponge at the original width, and six-face cubic boundary phase as the current best cleanup.
-- Compare only narrow cubic-phase/source details or basic confirmation controls.
+- Use the inner-sponge-edge source location and stronger sponge at the original width.
+- Confirm the original six-face cubic reference and the `cubic_phase_sign_flip` variant with a basic dt or sponge check.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
 - Keep global radial peak as an artifact/boundary-residue check.

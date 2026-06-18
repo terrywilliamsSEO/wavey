@@ -225,6 +225,9 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
     face_offsets = _json_or_value(row.get("boundary_face_phase_offsets"))
     if not isinstance(face_offsets, dict):
         face_offsets = None
+    face_scales = _json_or_value(row.get("boundary_face_amplitude_scales"))
+    if not isinstance(face_scales, dict):
+        face_scales = None
     return Prototype3DConfig(
         name=str(row["variant"]),
         grid_size=grid_size,
@@ -253,6 +256,9 @@ def _config_from_summary(row: dict[str, Any], base: SimulationConfig) -> Prototy
         exclude_source_from_sponge_damping=_bool(row.get("exclude_source_from_sponge_damping")),
         boundary_faces=boundary_faces,
         boundary_face_phase_offsets=face_offsets,
+        boundary_phase_offset=float(row.get("boundary_phase_offset") or 0.0),
+        boundary_cubic_phase_sign=float(row.get("boundary_cubic_phase_sign") or 1.0),
+        boundary_face_amplitude_scales=face_scales,
     )
 
 
@@ -290,6 +296,9 @@ def _geometry_audit(config: Prototype3DConfig) -> dict[str, Any]:
         "boundary_faces": list(config.boundary_faces),
         "boundary_face_count": len(config.boundary_faces),
         "boundary_face_phase_offsets": config.boundary_face_phase_offsets or {},
+        "boundary_phase_offset": config.boundary_phase_offset,
+        "boundary_cubic_phase_sign": config.boundary_cubic_phase_sign,
+        "boundary_face_amplitude_scales": config.boundary_face_amplitude_scales or {},
         "boundary_source_inner_distance": config.boundary_source_inner_distance,
         "boundary_source_width": config.boundary_source_width or config.dx,
         "exclude_source_from_sponge_damping": config.exclude_source_from_sponge_damping,
@@ -741,6 +750,9 @@ def _summary_fields() -> list[str]:
         "boundary_faces",
         "boundary_face_count",
         "boundary_face_phase_offsets",
+        "boundary_phase_offset",
+        "boundary_cubic_phase_sign",
+        "boundary_face_amplitude_scales",
         "boundary_source_inner_distance",
         "boundary_source_width",
         "exclude_source_from_sponge_damping",
@@ -793,6 +805,9 @@ def _geometry_fields() -> list[str]:
         "boundary_faces",
         "boundary_face_count",
         "boundary_face_phase_offsets",
+        "boundary_phase_offset",
+        "boundary_cubic_phase_sign",
+        "boundary_face_amplitude_scales",
         "boundary_source_inner_distance",
         "boundary_source_width",
         "exclude_source_from_sponge_damping",

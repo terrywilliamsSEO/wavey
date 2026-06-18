@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or larger 3D grids; the next step is to stay at 31^3 and narrow around the preserved six-face cubic 3D boundary geometry.
+- Do not run broad long sweeps or larger 3D grids; the next step is to stay at 31^3 and run a basic dt/sponge confirmation for the clean cubic-phase 3D boundary family.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -26,7 +26,9 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - `source_inside_domain_gap_from_sponge` produced a huge early near-shell peak, but its post-cutoff near-shell retention collapsed, so treat it as a transient control rather than the best geometry.
 - The 3D sponge-strength control classified as `sponge_strength_suppresses_outer_contamination`: stronger sponge at the original width preserved the near-shell tail and reduced outer/near tail contamination from 3.88 to 2.94, while weak sponge increased outer residue and wider sponge reintroduced full source/sponge overlap.
 - The 3D source-geometry control classified as `boundary_source_geometry_preserves_near_shell` again when rerun in `runs\source_geometry_3d_20260618_092029`: six-face cubic remained the cleanest boundary case, while uniform/reduced-face/random boundary variants were global-outer-window flagged even with source/sponge overlap confirmed at zero. Direct core/shell forcing was transient rather than retained.
-- The current next physics step is a tiny 31^3 narrowing control around the six-face cubic boundary geometry before increasing grid size.
+- The focused 3D cubic-source control classified as `cubic_phase_structure_not_full_symmetry` in `runs\cubic_focus_3d_20260618_101501`: six-face cubic repeated cleanly, sign-flipped cubic was the best clean boundary variant, uniform/random phase controls were global-outer-window flagged, and direct core/shell forcing was transient.
+- Mild cubic symmetry breaks stayed clean in that focused control, so perfect six-face balance is not isolated as the required ingredient. The stronger clue is cubic phase structure, with phase timing still sensitive because the global phase-offset variant was outer-window flagged.
+- The current next physics step is a tiny 31^3 dt/sponge confirmation around the clean cubic-phase boundary family, especially `cubic_phase_sign_flip`, before increasing grid size.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -72,6 +74,7 @@ python main.py prototype-3d-audit --run-path runs\prototype_3d_20260617_152319 -
 python main.py prototype-3d-source-sponge-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-sponge-strength-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-source-geometry-control --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-cubic-focus-control --config configs\long_validation_peak_0_92.json
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json

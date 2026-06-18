@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Stay at 31^3 and narrow around the preserved six-face cubic 3D boundary geometry before expanding 3D or running broad sweeps.
+Stay at 31^3 and confirm the clean cubic-phase 3D boundary family before expanding 3D or running broad sweeps.
 
-Recommended next task: keep the grid at 31^3, keep the stronger-sponge inner-edge source setup, and run a narrow confirmation around the six-face cubic boundary geometry. Do not increase 3D grid size yet.
+Recommended next task: keep the stronger-sponge inner-edge source setup and run a basic dt or sponge confirmation for the clean cubic-phase variant, especially the `cubic_phase_sign_flip` case. Do not increase 3D grid size yet.
 
 ## Status
 
@@ -125,17 +125,23 @@ Recommended next task: keep the grid at 31^3, keep the stronger-sponge inner-edg
 - Reran the source-geometry control in `runs\source_geometry_3d_20260618_092029`; result classified again as `boundary_source_geometry_preserves_near_shell`.
 - Six-face cubic remained the cleanest retained near-shell boundary geometry: near peak/work 1.86e-7, near retention 0.681, outer/near 2.94, and global outer-window flag false.
 - Uniform, one-face, two-opposite-face, four-side-face, phased-opposite, and random-phase boundary variants retained near-shell energy but were global-outer-window flagged even after clipping all selected face sources to the inner active-domain boundary; direct core/shell controls produced early near-shell peaks but did not retain them.
+- Added cubic phase/sign/offset and face-amplitude perturbation support for the 3D source.
+- Added `prototype-3d-cubic-focus-control` for a tiny 31^3 focused control around the clean six-face cubic boundary source.
+- Ran the cubic-focus control in `runs\cubic_focus_3d_20260618_101501`; result classified as `cubic_phase_structure_not_full_symmetry`.
+- Six-face cubic repeated exactly, cubic phase sign flip stayed clean and was the best boundary variant, uniform and random phase controls were global-outer-window flagged, and direct core/shell controls remained transient.
+- Missing one cubic face and mild face-amplitude imbalance also stayed clean, so perfect six-face balance is not isolated as the required ingredient; the global phase-offset variant was global-outer-window flagged, so phase timing remains sensitive.
 
 ### In Progress
 
-- Tiny 31^3 narrowing control around the preserved six-face cubic boundary geometry.
+- Tiny 31^3 basic dt/sponge confirmation around the clean cubic-phase boundary family.
 
 ### Next
 
 - Keep the grid at 31^3.
-- Start from the six-face cubic boundary geometry with stronger sponge at the original width.
+- Start from the stronger-sponge inner-edge boundary source setup.
+- Confirm `cubic_phase_sign_flip` and the original six-face cubic reference with a basic dt or sponge check.
 - Preserve matched injected work per physical source area.
-- Narrow around cubic boundary phase/source details and basic confirmations before any larger grid.
+- Keep cubic phase structure as the main 3D source hypothesis, but do not require perfect six-face balance based on the latest control.
 - Keep near-defect shell-window peak/work, retention, radius range, arrival time, and outer/near tail ratio as the primary 3D metrics.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
@@ -310,3 +316,7 @@ Possible work:
 - 2026-06-17: Six-face cubic remained the cleanest retained boundary case, while reduced-face/uniform/random variants were outer-window flagged and direct core/shell forcing was not retained; updated the next step to narrow around six-face cubic at 31^3.
 - 2026-06-18: Reran the cleaned source-geometry control in `runs\source_geometry_3d_20260618_092029`; classification stayed `boundary_source_geometry_preserves_near_shell`.
 - 2026-06-18: One-face, two-face, four-face, uniform, phased-opposite, and random-phase variants still global-outer flagged after source/sponge overlap was confirmed at zero, so the current next step remains narrowing around six-face cubic at 31^3.
+- 2026-06-18: Added `python main.py prototype-3d-cubic-focus-control --config configs\long_validation_peak_0_92.json`.
+- 2026-06-18: Ran the cubic-focus control in `runs\cubic_focus_3d_20260618_101501`; classification was `cubic_phase_structure_not_full_symmetry`.
+- 2026-06-18: Six-face cubic repeated cleanly, sign-flipped cubic was the best clean boundary variant, uniform/random phase controls stayed outer-window flagged, and direct core/shell controls stayed transient.
+- 2026-06-18: Missing one cubic face and mild face imbalance also stayed clean, so the next step is a small dt/sponge confirmation of the cubic-phase family rather than a larger grid.
