@@ -43,8 +43,10 @@ Current interpretation:
 - Direct core and direct shell controls in that 41^3 threshold pass remained transient, with near retention around `2.5e-6` and `5.7e-7`.
 - The calibrated 41^3 defect-ablation control classified as `defect_radius_sensitive`, not defect-required: the no-defect neutral lattice retained the fixed-window near-shell tail with retention `0.583`, outer/near `1.25`, radius median `5.05`, and global outer false.
 - Individual stiffness, coupling, and damping neutralizations stayed close to the reference. The larger-radius variant was the main caution, with retention `0.519` and outer/near `2.01`.
+- The radial-window neutral-lattice audit classified as `neutral_lattice_reproduces_shell_tail`: at the key radius-5 window, defect lift was `0.990` for retention and `0.848` for peak/work, with radial-profile correlation `0.981` and no radius shift.
+- No scanned stable shell window showed defect lift above `1.5` for both retention and peak/work. The current 3D signal is not defect-dependent yet.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is one tiny neutral-lattice boundary-phase negative control at 41^3.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is one tiny stronger/different-defect lift probe against the neutral-lattice baseline.
 
 ## Latest Evidence
 
@@ -795,15 +797,54 @@ Interpretation:
 - Larger defect radius mildly weakens/contaminates the tail by pushing outer/near just above the current threshold, so the pattern is radius-sensitive, but not defect-required under this control.
 - Current best wording: boundary-driven, cubic-phase retained shell-window transport at 41^3, with some defect-radius sensitivity. Do not call it defect-localized yet.
 
+### 3D Radial-Window Neutral-Lattice Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-radial-window-audit --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\radial_window_audit_3d_20260618_152906\radial_window_audit_3d_report.md`
+- Summary CSV: `runs\radial_window_audit_3d_20260618_152906\radial_window_audit_3d_summary.csv`
+- Comparison CSV: `runs\radial_window_audit_3d_20260618_152906\radial_window_comparison.csv`
+- Profile CSV: `runs\radial_window_audit_3d_20260618_152906\radial_window_profile_comparison.csv`
+- Classification: `neutral_lattice_reproduces_shell_tail`
+- Shell-window semantics: requested radius is the inner shell-window edge; default width is `4.0` physical units at 41^3.
+- Stability: no dt warnings.
+
+Important window comparisons:
+
+| Radius | Def Ret | Neu Ret | Lift Ret | Def Peak/Work | Neu Peak/Work | Lift Peak | Def Outer/Near | Neu Outer/Near | Radius Shift | Arrival Shift | Radial Corr | Clean D/N |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 2.5 | 0.712 | 0.616 | 1.156 | 1.70e-7 | 2.12e-7 | 0.801 | 1.44 | 1.33 | 0.00 | 0.32 | 0.981 | true/true |
+| 3.5 | 0.712 | 0.616 | 1.156 | 1.70e-7 | 2.12e-7 | 0.801 | 1.44 | 1.33 | 0.00 | 0.32 | 0.981 | true/true |
+| 5.0 | 0.578 | 0.583 | 0.990 | 2.03e-7 | 2.39e-7 | 0.848 | 1.49 | 1.25 | 0.00 | 0.32 | 0.981 | true/true |
+| 6.5 | 0.351 | 0.380 | 0.923 | 2.13e-7 | 2.03e-7 | 1.051 | 2.33 | 2.25 | 0.00 | 0.16 | 0.981 | false/false |
+| 8.0 | 0.300 | 0.329 | 0.911 | 2.42e-7 | 2.42e-7 | 1.000 | 2.40 | 2.18 | 1.44 | 0.00 | 0.981 | false/false |
+| 10.0 | 0.000006 | 0.000007 | 0.910 | 0.0215 | 0.0215 | 1.000 | 1.26 | 1.14 | 0.00 | 0.00 | 0.981 | false/false |
+| 12.0 | 0.000003 | 0.000003 | 0.968 | 0.0457 | 0.0457 | 1.000 | 1.17 | 1.13 | 0.00 | 0.00 | 0.981 | false/false |
+
+Interpretation:
+
+- The radius-5 window directly answers the prior defect-ablation concern: defect lift is approximately unity, not enhanced.
+- The lower windows at 2.5 and 3.5 are retained and clean, but the neutral lattice still produces comparable or stronger peak/work.
+- Outer windows at 10 and 12 show high peak/work but near-zero retention, so they are transient/outer-window artifacts rather than useful retained shell candidates.
+- Radial profile correlation is high across comparisons, reinforcing that current defect and neutral lattice are producing the same broad radial transport pattern.
+- Current classification: `neutral_lattice_reproduces_shell_tail`.
+
 ## Current Next Step
 
-Stay targeted and test whether the neutral-lattice survival is specific to the cubic sign-flip boundary phase:
+Stay targeted and test whether a stronger/different defect can create lift over the neutral-lattice cubic-boundary tail:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
-- Use the no-defect neutral lattice from `runs\defect_control_3d_20260618_133637` as the key comparison.
-- Run only one or two neutral-lattice non-cubic boundary phase controls.
+- Use the neutral-lattice baseline from `runs\radial_window_audit_3d_20260618_152906`.
+- Run only a tiny stronger/different-defect lift probe.
 - Keep injected work matched per physical source area.
+- Require defect_lift above roughly `1.5-2.0` at a stable shell radius before reviving defect-localization language.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.

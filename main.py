@@ -44,6 +44,10 @@ from simulation.prototype_3d_grid_confirmation import (
     GridConfirmation3DOptions,
     run_3d_grid_confirmation_control,
 )
+from simulation.prototype_3d_radial_window_audit import (
+    RadialWindowAudit3DOptions,
+    run_3d_radial_window_audit,
+)
 from simulation.prototype_3d_threshold_control import (
     ThresholdControl3DOptions,
     run_3d_threshold_control,
@@ -375,6 +379,27 @@ def build_parser() -> argparse.ArgumentParser:
     defect_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
     defect_parser.add_argument("--smaller-radius-multiplier", type=float, default=0.75, help="Multiplier for the smaller-defect-radius variant")
     defect_parser.add_argument("--larger-radius-multiplier", type=float, default=1.25, help="Multiplier for the larger-defect-radius variant")
+
+    radial_window_parser = subparsers.add_parser(
+        "prototype-3d-radial-window-audit",
+        help="Run a tiny 41^3 radial-window neutral-vs-defect audit for the clean 3D sign-flip source",
+    )
+    radial_window_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    radial_window_parser.add_argument("--output-root", default="runs", help="Directory for 3D radial-window audit outputs")
+    radial_window_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this audit is intended for 41^3")
+    radial_window_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    radial_window_parser.add_argument("--sample-every", type=int, default=2, help="Sample interval for 3D metrics")
+    radial_window_parser.add_argument("--radial-bins", type=int, default=24, help="Number of radial bins for shell-window profiles")
+    radial_window_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    radial_window_parser.add_argument("--window-width", type=float, help="Physical width for each scanned shell window; defaults to near-shell-width-dx * dx")
+    radial_window_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    radial_window_parser.add_argument(
+        "--window-radii",
+        type=float,
+        nargs="+",
+        default=[2.5, 3.5, 5.0, 6.5, 8.0, 10.0, 12.0],
+        help="Inner radii of shell windows to scan",
+    )
 
     return parser
 
@@ -765,6 +790,25 @@ def main() -> None:
             ),
         )
         _print_3d_defect_control_summary(result)
+        return
+
+    if args.command == "prototype-3d-radial-window-audit":
+        config = _load_sim_config(args.config)
+        result = run_3d_radial_window_audit(
+            config,
+            options=RadialWindowAudit3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                sample_every=args.sample_every,
+                radial_bins=args.radial_bins,
+                window_radii=tuple(args.window_radii),
+                window_width=args.window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+            ),
+        )
+        _print_3d_radial_window_audit_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1312,6 +1356,34 @@ def _print_3d_defect_control_summary(result: dict[str, Any]) -> None:
             f"dt_warning={row.get('stability_warnings')}"
         )
     print(f"summary CSV: {result['summary_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_radial_window_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D radial-window audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best window radius: {_format_optional(classification.get('best_window_radius'))}")
+    print("windows:")
+    for row in result["window_comparisons"]:
+        print(
+            f"  - r={_format_optional(row.get('window_radius'))}: "
+            f"def_ret={_format_optional(row.get('defect_retention'))}, "
+            f"neu_ret={_format_optional(row.get('neutral_retention'))}, "
+            f"lift_ret={_format_optional(row.get('defect_lift_retention'))}, "
+            f"def_peak/work={_format_optional(row.get('defect_peak_work'))}, "
+            f"neu_peak/work={_format_optional(row.get('neutral_peak_work'))}, "
+            f"lift_peak={_format_optional(row.get('defect_lift_peak_work'))}, "
+            f"radial_corr={_format_optional(row.get('radial_profile_correlation'))}, "
+            f"frame_sim={_format_optional(row.get('window_best_frame_similarity'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
+    print(f"variant window CSV: {result['variant_windows_csv']}")
+    print(f"profile CSV: {result['profile_csv']}")
     print(f"report: {result['report_path']}")
     print(f"audit report: {result['audit_report_path']}")
 

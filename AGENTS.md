@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or broad 3D sweeps; the next step is one tiny 41^3 neutral-lattice non-cubic boundary-phase negative control.
+- Do not run broad long sweeps or broad 3D sweeps; the next step is one tiny 41^3 stronger/different-defect lift probe against the neutral-lattice baseline.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -37,8 +37,10 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - The calibrated 41^3 reference matched target work/area 0.105027 and kept near retention 0.578, outer/near 1.49, near peak/work 2.03e-7, and arrival 9.36. Direct core/shell controls stayed transient with near retention about 2.5e-6 and 5.7e-7.
 - The calibrated 41^3 defect-ablation control classified as `defect_radius_sensitive` in `runs\defect_control_3d_20260618_133637`: the no-defect neutral lattice preserved the fixed-window tail with retention 0.583, outer/near 1.25, radius median 5.05, global outer false, and no dt warnings.
 - Individual stiffness/coupling/damping neutralizations stayed close to the current-defect reference. The larger-radius variant was the main caution, with retention 0.519 and outer/near 2.01.
-- Do not currently phrase the 3D candidate as defect-required localization. Better wording: boundary-driven cubic-phase shell-window transport at 41^3, with some defect-radius sensitivity.
-- The current next physics step is one tiny 41^3 neutral-lattice non-cubic boundary-phase negative control; do not widen into a grid or source-geometry sweep.
+- The radial-window neutral-lattice audit classified as `neutral_lattice_reproduces_shell_tail` in `runs\radial_window_audit_3d_20260618_152906`: at radius 5, defect lift was 0.990 for retention and 0.848 for peak/work, with radial-profile correlation 0.981 and no radius shift.
+- No stable scanned shell window showed defect lift above 1.5 for both retention and peak/work.
+- Do not currently phrase the 3D candidate as defect-required localization. Better wording: boundary-driven cubic-phase shell-window transport at 41^3; the current defect is not doing the work yet.
+- The current next physics step is one tiny 41^3 stronger/different-defect lift probe against the neutral-lattice baseline; do not widen into a grid or source-geometry sweep.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -89,6 +91,7 @@ python main.py prototype-3d-cubic-confirmation-control --config configs\long_val
 python main.py prototype-3d-grid-confirmation-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-threshold-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-defect-control --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-radial-window-audit --config configs\long_validation_peak_0_92.json
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json

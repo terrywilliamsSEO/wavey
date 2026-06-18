@@ -246,6 +246,14 @@ python main.py prototype-3d-defect-control --config configs\long_validation_peak
 
 This checks whether the retained near-shell tail requires the spherical defect. It keeps the calibrated sign-flipped cubic stronger-sponge source fixed, matches work per physical source area, compares neutral and partially neutralized defect variants, and reports a fixed physical near-shell window anchored to the original defect radius.
 
+Run the tiny 41^3 radial-window neutral-lattice audit with:
+
+```powershell
+python main.py prototype-3d-radial-window-audit --config configs\long_validation_peak_0_92.json
+```
+
+This reruns only the current-defect and neutral-lattice sign-flip cases, scans fixed shell windows at selected radii, and reports defect-lift ratios, radial-profile correlations, shell stability, arrival times, and frame similarity.
+
 ## Run one simulation
 
 ```powershell
@@ -510,6 +518,19 @@ When `prototype-3d-defect-control` is used, the control folder includes:
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per defect-control variant
+- `failure_mode_audit/` with the variant-relative shell-window audit artifacts
+
+When `prototype-3d-radial-window-audit` is used, the control folder includes:
+
+- `radial_window_audit_3d_summary.csv`
+- `radial_window_audit_3d_summary.json`
+- `radial_window_comparison.csv`
+- `radial_window_variant_metrics.csv`
+- `radial_window_profile_comparison.csv`
+- `radial_window_audit_3d_report.md`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per radial-window variant
 - `failure_mode_audit/` with the variant-relative shell-window audit artifacts
 
 ## Metrics
