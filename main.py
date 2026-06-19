@@ -651,6 +651,12 @@ def build_parser() -> argparse.ArgumentParser:
     cutoff_phase_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
     cutoff_phase_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
     cutoff_phase_parser.add_argument("--phase-offset", type=float, default=0.5 * 3.141592653589793, help="Reference global cubic phase offset in radians")
+    cutoff_phase_parser.add_argument(
+        "--release-phase-island-refinement",
+        action="store_true",
+        help="Use the tight passive cutoff/polarity preset around sign_flip_cutoff_minus_0p1",
+    )
+    cutoff_phase_parser.add_argument("--reference-variant", help="Variant used as the comparison reference for classification")
     cutoff_phase_parser.add_argument("--cutoff-center", type=float, help="Winning cutoff center; defaults to base cutoff plus cutoff-delta")
     cutoff_phase_parser.add_argument("--cutoff-delta", type=float, default=2.0, help="Offset from base cutoff used when cutoff-center is omitted")
     cutoff_phase_parser.add_argument("--cutoff-offsets", type=float, nargs="+", default=[-1.0, -0.5, 0.0, 0.5, 1.0], help="Tiny cutoff offsets around the center")
@@ -1348,6 +1354,16 @@ def main() -> None:
 
     if args.command == "prototype-3d-cutoff-phase-map-control":
         config = _load_sim_config(args.config)
+        refinement_offsets = (-0.16, -0.14, -0.12, -0.10, -0.08, -0.06, -0.04)
+        cutoff_offsets = tuple(args.cutoff_offsets)
+        phase_offsets = tuple(args.phase_offset_deltas)
+        polarity_cutoff_offsets = tuple(args.polarity_cutoff_offsets)
+        reference_variant = args.reference_variant or "phase_offset_cutoff_reference"
+        if args.release_phase_island_refinement:
+            cutoff_offsets = refinement_offsets
+            phase_offsets = (0.0,)
+            polarity_cutoff_offsets = refinement_offsets
+            reference_variant = args.reference_variant or "sign_flip_cutoff_minus_0p1"
         result = run_3d_cutoff_phase_map_control(
             config,
             options=CutoffPhaseMap3DOptions(
@@ -1363,12 +1379,13 @@ def main() -> None:
                 near_shell_width_dx=args.near_shell_width_dx,
                 sponge_strength_multiplier=args.sponge_strength_multiplier,
                 phase_offset=args.phase_offset,
+                reference_variant=reference_variant,
                 cutoff_center=args.cutoff_center,
                 cutoff_delta=args.cutoff_delta,
-                cutoff_offsets=tuple(args.cutoff_offsets),
-                phase_offsets=tuple(args.phase_offset_deltas),
+                cutoff_offsets=cutoff_offsets,
+                phase_offsets=phase_offsets,
                 include_polarity_family=not args.no_polarity_family,
-                polarity_cutoff_offsets=tuple(args.polarity_cutoff_offsets),
+                polarity_cutoff_offsets=polarity_cutoff_offsets,
                 arrival_threshold_fraction=args.arrival_threshold_fraction,
                 exit_threshold_fraction=args.exit_threshold_fraction,
                 exit_hold_samples=args.exit_hold_samples,
@@ -2239,6 +2256,7 @@ def _print_3d_cutoff_phase_map_summary(result: dict[str, Any]) -> None:
             f"global_outer={row.get('global_peak_in_outer_window')}"
         )
     print(f"summary CSV: {result['summary_csv']}")
+    print(f"ranked CSV: {result['ranked_csv']}")
     print(f"timeseries CSV: {result['timeseries_csv']}")
     print(f"events CSV: {result['events_csv']}")
     print(f"report: {result['report_path']}")

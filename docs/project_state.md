@@ -61,9 +61,11 @@ Current interpretation:
 - The reduced-work phase-matched second-pulse check also classified as `second_pulse_contaminated_or_inconclusive`: 0.1x-0.5x pulses and shorter 1.0-duration pulses still reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`.
 - The travel-time-adjusted first-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: empirical boundary-to-shell travel time was `9.44`, so the first-refocus target launch moved to `t=26.4`, but all active rows still had fewer refocus peaks, worse decay, outer/shell above `1.0`, and negative `added_work_efficiency`.
 - The travel-time-adjusted second-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: the second-refocus target launch moved to `t=31.68`, but active rows still failed strict clean criteria. Best ranked active row reached retention `0.491`, but only six/five peaks, outer/shell `1.254`, decay `-0.0455`, and negative `added_work_efficiency`.
-- Active second pulses are now shelved until a new mechanism justifies revisiting them; the immediate path returns to passive release-phase/cutoff engineering around the cutoff `17.75-18.05` timing island with frequency fixed at `0.92`.
+- Active second pulses are now shelved until a new mechanism justifies revisiting them; the immediate path remains passive cutoff engineering, now centered on the provisional cutoff `17.94` point with frequency fixed at `0.92`.
+- The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
+- The new `release phase island stability` check rejected the `17.94` row as a stable island because no neighboring row reproduced the 11/10 peak count. The next step is a tighter passive cutoff-only check around `17.94`, not active reinjection.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is passive phase/cutoff engineering, not traps, rotation, medium shaping, defects, grid changes, frequency combinations, or more active second-pulse tests.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is passive cutoff-only refinement, not traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second-pulse tests.
 
 ## Latest Evidence
 
@@ -1317,20 +1319,59 @@ Interpretation:
 - Both first-refocus and second-refocus travel-time micro-maps failed with negative `added_work_efficiency`, so active second pulses are shelved for now.
 - The next work should return to passive release-phase/cutoff engineering around the already supported timing island.
 
+### 3D Passive Release-Phase Island Refinement
+
+Command:
+
+```powershell
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --release-phase-island-refinement
+```
+
+Latest summarized run:
+
+- Local report: `runs\cutoff_phase_map_3d_20260619_145631\cutoff_phase_map_3d_report.md`
+- Summary CSV: `runs\cutoff_phase_map_3d_20260619_145631\cutoff_phase_map_summary.csv`
+- Ranked CSV: `runs\cutoff_phase_map_3d_20260619_145631\cutoff_phase_ranked_summary.csv`
+- Timeseries CSV: `runs\cutoff_phase_map_3d_20260619_145631\cutoff_phase_map_timeseries.csv`
+- Events CSV: `runs\cutoff_phase_map_3d_20260619_145631\cutoff_phase_map_events.csv`
+- Classification: `cutoff_phase_single_point_best`
+- Stability result: `single_point_best`
+- Best variant: `sign_flip_cutoff_minus_0p06`
+- Setup: `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched work per physical source area `0.105027`, frequency `0.92`, radius-5 shell window, extended duration `t=96`
+
+Important values:
+
+| Variant | Family | Cutoff | Phase At Cutoff | Peaks | Refocus | Exit | Retention | Outer/Shell | Decay | Global Outer |
+| --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | --- |
+| sign_flip_cutoff_minus_0p06 | sign_flip | 17.94 | 0.5048 | 11 | 10 | false | 0.314 | 0.631 | -0.02396 | false |
+| sign_flip_cutoff_minus_0p04 | sign_flip | 17.96 | 0.5232 | 10 | 9 | false | 0.309 | 0.618 | -0.02424 | false |
+| sign_flip_cutoff_minus_0p14 | sign_flip | 17.86 | 0.4312 | 9 | 8 | false | 0.325 | 0.686 | -0.02361 | false |
+| sign_flip_cutoff_minus_0p12 | sign_flip | 17.88 | 0.4496 | 9 | 8 | false | 0.325 | 0.674 | -0.02360 | false |
+| sign_flip_cutoff_minus_0p1 | sign_flip | 17.90 | 0.4680 | 9 | 8 | false | 0.322 | 0.660 | -0.02365 | false |
+| phase_offset_cutoff_minus_0p04 | phase_offset | 17.96 | 0.7732 | 9 | 8 | false | 0.263 | 0.754 | -0.02810 | false |
+
+Interpretation:
+
+- The preset tested cutoff offsets `-0.16`, `-0.14`, `-0.12`, `-0.10`, `-0.08`, `-0.06`, and `-0.04` for both the phase-offset and sign-flip/polarity families, with `sign_flip_cutoff_minus_0p1` as the comparison reference.
+- The sign-flip family stayed clean across the whole tested pocket: no shell exit, outer/shell below `1.0`, and no global outer-window flag.
+- The new best point is cutoff `17.94`, phase `0.5048` cycles. It improves the clean sequence from the prior nine/eight reference to eleven/ten peaks while keeping retention above `0.30`.
+- The new stability section deliberately does not call this a stable island yet. Only the `-0.06` row reproduced the 11/10 count; the adjacent `-0.04` row dropped to 10/9 and the earlier clean plateau stayed at 9/8.
+- The next work should run one tighter passive cutoff-only check around `17.94` to see whether the 11/10 point has neighboring support. Active second pulses remain shelved.
+
 ## Current Next Step
 
-Return to passive release-phase/cutoff engineering:
+Return to passive release-phase/cutoff engineering around the new provisional best point:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Start from `sign_flip_cutoff_minus_0p1`: cutoff `17.9`, cutoff phase `0.468` cycles, frequency `0.92`.
+- Start from `sign_flip_cutoff_minus_0p06`: cutoff `17.94`, cutoff phase `0.5048` cycles, frequency `0.92`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
-- Tighten the passive cutoff/release-phase map around cutoff `17.75-18.05` with frequency fixed at `0.92`.
+- Run a tighter passive cutoff-only check around cutoff `17.94` to determine whether the 11/10 result is a neighboring island or an isolated point.
 - Track phase at cutoff for every row.
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
-- Rank by refocus count, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, global outer false, and phase at cutoff.
+- Rank by major shell-window peak count, refocus count, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, global outer false, and phase at cutoff.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny while the passive timing island is being mapped.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.

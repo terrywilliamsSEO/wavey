@@ -12,6 +12,7 @@ from simulation.prototype_3d_cutoff_phase_map import (
     _ranked_rows,
     _variant_plan,
     classify_cutoff_phase_map,
+    release_phase_island_stability,
 )
 
 
@@ -66,14 +67,65 @@ class Prototype3DCutoffPhaseMapTests(unittest.TestCase):
 
     def test_classification_detects_strong_timing_island(self) -> None:
         rows = [
-            _row("phase_offset_cutoff_reference", peaks=9, refocus=8, retention=0.269, outer=0.809, phase=0.81),
-            _row("phase_offset_cutoff_plus_0p5", peaks=10, refocus=9, retention=0.32, outer=0.70, phase=0.86),
+            _row("phase_offset_cutoff_reference", peaks=9, refocus=8, retention=0.269, outer=0.809, phase=0.81, cutoff_offset=0.0),
+            _row("phase_offset_cutoff_plus_0p5", peaks=10, refocus=9, retention=0.32, outer=0.70, phase=0.86, cutoff_offset=0.5),
+            _row("phase_offset_cutoff_plus_1p0", peaks=10, refocus=9, retention=0.31, outer=0.75, phase=0.90, cutoff_offset=1.0),
         ]
 
         result = classify_cutoff_phase_map(rows, CutoffPhaseMap3DOptions())
 
         self.assertEqual(result["label"], "cutoff_phase_timing_island_supported")
         self.assertEqual(result["best_variant"], "phase_offset_cutoff_plus_0p5")
+        self.assertEqual(
+            result["release_phase_island_stability"]["label"],
+            "neighboring_cluster_supported",
+        )
+
+    def test_classification_uses_sign_flip_reference_for_tight_refinement(self) -> None:
+        rows = [
+            _row(
+                "sign_flip_cutoff_minus_0p14",
+                family="sign_flip",
+                axis="polarity_cutoff",
+                cutoff_offset=-0.14,
+                peaks=9,
+                refocus=8,
+                retention=0.312,
+                outer=0.70,
+                phase=0.43,
+            ),
+            _row(
+                "sign_flip_cutoff_minus_0p12",
+                family="sign_flip",
+                axis="polarity_cutoff",
+                cutoff_offset=-0.12,
+                peaks=9,
+                refocus=8,
+                retention=0.318,
+                outer=0.68,
+                phase=0.45,
+            ),
+            _row(
+                "sign_flip_cutoff_minus_0p1",
+                family="sign_flip",
+                axis="polarity_cutoff",
+                cutoff_offset=-0.10,
+                peaks=9,
+                refocus=8,
+                retention=0.322,
+                outer=0.66,
+                phase=0.468,
+            ),
+        ]
+
+        result = classify_cutoff_phase_map(
+            rows,
+            CutoffPhaseMap3DOptions(reference_variant="sign_flip_cutoff_minus_0p1"),
+        )
+
+        self.assertEqual(result["label"], "cutoff_phase_timing_island_supported")
+        self.assertEqual(result["best_variant"], "sign_flip_cutoff_minus_0p1")
+        self.assertTrue(result["release_phase_island_stability"]["is_stable"])
 
     def test_classification_reports_tolerant_without_improvement(self) -> None:
         rows = [
@@ -100,6 +152,28 @@ class Prototype3DCutoffPhaseMapTests(unittest.TestCase):
         self.assertTrue(ranked[0]["outer_shell_below_1"])
         self.assertFalse(ranked[1]["outer_shell_below_1"])
 
+    def test_ranked_rows_prioritize_major_shell_peaks_before_refocus(self) -> None:
+        rows = [
+            _row("higher_refocus", peaks=8, refocus=8, retention=0.50, outer=0.50, phase=0.2),
+            _row("higher_major", peaks=9, refocus=7, retention=0.45, outer=0.50, phase=0.3),
+        ]
+
+        ranked = _ranked_rows(rows)
+
+        self.assertEqual([row["variant"] for row in ranked], ["higher_major", "higher_refocus"])
+
+    def test_release_phase_stability_rejects_single_isolated_point(self) -> None:
+        rows = [
+            _row("phase_offset_cutoff_reference", peaks=9, refocus=8, retention=0.269, outer=0.809, phase=0.81, cutoff_offset=0.0),
+            _row("phase_offset_cutoff_plus_0p5", peaks=10, refocus=9, retention=0.32, outer=0.70, phase=0.86, cutoff_offset=0.5),
+            _row("phase_offset_cutoff_plus_1p0", peaks=9, refocus=8, retention=0.31, outer=0.75, phase=0.90, cutoff_offset=1.0),
+        ]
+
+        stability = release_phase_island_stability(rows, CutoffPhaseMap3DOptions())
+
+        self.assertEqual(stability["label"], "single_point_best")
+        self.assertFalse(stability["is_stable"])
+
 
 def _row(
     variant: str,
@@ -110,6 +184,8 @@ def _row(
     outer: float,
     phase: float,
     family: str = "phase_offset",
+    axis: str = "cutoff",
+    cutoff_offset: float = 0.0,
     exit_detected: bool = False,
     global_outer: bool = False,
 ) -> dict:
@@ -126,6 +202,8 @@ def _row(
         "post_cutoff_shell_decay_rate": -0.03,
         "global_peak_in_outer_window": global_outer,
         "cutoff_phase_cycles": phase,
+        "axis_label": axis,
+        "cutoff_offset_from_center": cutoff_offset,
     }
 
 

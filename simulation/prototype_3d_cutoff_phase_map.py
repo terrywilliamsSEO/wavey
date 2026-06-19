@@ -37,6 +37,7 @@ from .prototype_3d_threshold_control import _calibrated_reference_amplitude, _ca
 class CutoffPhaseMap3DOptions(RefocusingEngineering3DOptions):
     """Options for a tiny cutoff phase/timing map."""
 
+    reference_variant: str = "phase_offset_cutoff_reference"
     cutoff_center: float | None = None
     cutoff_offsets: tuple[float, ...] = (-1.0, -0.5, 0.0, 0.5, 1.0)
     phase_offsets: tuple[float, ...] = (-float(np.pi) / 16.0, 0.0, float(np.pi) / 16.0)
@@ -91,7 +92,7 @@ def run_3d_cutoff_phase_map_control(
         event_rows.extend(result["events"])
 
     classification = classify_cutoff_phase_map(rows, options)
-    reference = _cutoff_reference_row(rows)
+    reference = _cutoff_reference_row(rows, options)
     for row in rows:
         row.update(_comparison_fields(row, reference))
         row["cutoff_phase_map_classification"] = classification["label"]
@@ -146,21 +147,31 @@ def classify_cutoff_phase_map(
     options = options or CutoffPhaseMap3DOptions()
     if not rows:
         return {"label": "inconclusive", "reason": "No cutoff-phase rows were available.", "checks": {}}
-    reference = _cutoff_reference_row(rows)
+    reference = _cutoff_reference_row(rows, options)
     checks = {row["variant"]: _row_checks(row, reference, options) for row in rows}
     clean_rows = [row for row in rows if _is_clean(row, reference, options)]
     improved = [row for row in clean_rows if row is not reference and _beats_reference(row, reference)]
     strong = [row for row in clean_rows if _is_strong(row, options)]
     clustered = _phase_cluster(strong or improved or [reference], options)
+    stability = release_phase_island_stability(rows, options)
     polarity_rows = [row for row in clean_rows if row.get("family") == "sign_flip"]
     phase_rows = [row for row in clean_rows if row.get("family") == "phase_offset"]
     best = _best_variant(clean_rows or rows)
 
-    if strong and clustered:
+    if strong and clustered and stability["is_stable"]:
         return {
             "label": "cutoff_phase_timing_island_supported",
-            "reason": "At least one strong clean timing variant met strict retention/outer guards and high-performing release phases cluster within tolerance.",
+            "reason": "Strong clean timing variants met strict retention/outer guards and the best rows form a neighboring release-phase cluster.",
             "best_variant": best,
+            "release_phase_island_stability": stability,
+            "checks": checks,
+        }
+    if strong:
+        return {
+            "label": "cutoff_phase_single_point_best",
+            "reason": "At least one strong clean timing variant met strict guards, but the best rows did not form a neighboring cutoff cluster.",
+            "best_variant": best,
+            "release_phase_island_stability": stability,
             "checks": checks,
         }
     if improved:
@@ -168,6 +179,7 @@ def classify_cutoff_phase_map(
             "label": "cutoff_timing_improved",
             "reason": f"A nearby release timing improved at least one refocusing metric without violating cleanliness guards. Best: {best}.",
             "best_variant": best,
+            "release_phase_island_stability": stability,
             "checks": checks,
         }
     if polarity_rows and phase_rows:
@@ -178,6 +190,7 @@ def classify_cutoff_phase_map(
                 "label": "polarity_family_sensitive",
                 "reason": "Both polarity families stayed interpretable, but their best rows differ and no timing variant beat the cutoff reference.",
                 "best_variant": best,
+                "release_phase_island_stability": stability,
                 "checks": checks,
             }
     if len(clean_rows) > 1:
@@ -185,12 +198,14 @@ def classify_cutoff_phase_map(
             "label": "cutoff_phase_tolerant_no_improvement",
             "reason": "Nearby cutoff phases stayed clean, but none improved the cutoff_long reference enough to call a timing island.",
             "best_variant": best,
+            "release_phase_island_stability": stability,
             "checks": checks,
         }
     return {
         "label": "cutoff_phase_inconclusive",
         "reason": "The cutoff phase map did not produce enough clean comparable rows for interpretation.",
         "best_variant": best,
+        "release_phase_island_stability": stability,
         "checks": checks,
     }
 
@@ -316,8 +331,19 @@ def _add_control_fields(
     row["cutoff_phase_label"] = f"{cutoff_phase:.4f} cycles"
 
 
-def _cutoff_reference_row(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
-    return next((row for row in rows if row.get("variant") == "phase_offset_cutoff_reference"), rows[0] if rows else None)
+def _cutoff_reference_row(
+    rows: list[dict[str, Any]],
+    options: CutoffPhaseMap3DOptions | None = None,
+) -> dict[str, Any] | None:
+    if not rows:
+        return None
+    options = options or CutoffPhaseMap3DOptions()
+    preferred = getattr(options, "reference_variant", None)
+    if preferred:
+        match = next((row for row in rows if row.get("variant") == preferred), None)
+        if match is not None:
+            return match
+    return next((row for row in rows if row.get("variant") == "phase_offset_cutoff_reference"), rows[0])
 
 
 def _row_checks(
@@ -426,6 +452,7 @@ def _ranked_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _rank_key(row: dict[str, Any]) -> tuple[float, ...]:
     decay = float(row.get("post_cutoff_shell_decay_rate") or 0.0)
     return (
+        float(row.get("major_shell_peak_count") or 0.0),
         float(row.get("refocus_peak_count") or 0.0),
         0.0 if bool(row.get("shell_exit_detected")) else 1.0,
         float(row.get("tail_shell_retention") or 0.0),
@@ -433,6 +460,103 @@ def _rank_key(row: dict[str, Any]) -> tuple[float, ...]:
         -abs(decay),
         0.0 if bool(row.get("global_peak_in_outer_window")) else 1.0,
     )
+
+
+def release_phase_island_stability(
+    rows: list[dict[str, Any]],
+    options: CutoffPhaseMap3DOptions | None = None,
+) -> dict[str, Any]:
+    """Check whether the best release-phase rows are neighboring cutoff samples."""
+
+    options = options or CutoffPhaseMap3DOptions()
+    if not rows:
+        return {
+            "label": "no_rows",
+            "is_stable": False,
+            "reason": "No cutoff-phase rows were available.",
+            "candidate_variants": [],
+            "candidate_offsets": [],
+            "neighboring_offset_pairs": [],
+        }
+    ranked = _ranked_rows(rows)
+    best = ranked[0]
+    best_family = best.get("family")
+    best_axis = best.get("axis_label")
+    best_major = int(best.get("major_shell_peak_count") or 0)
+    best_refocus = int(best.get("refocus_peak_count") or 0)
+    best_retention = float(best.get("tail_shell_retention") or 0.0)
+    retention_floor = max(options.strict_retention_target, 0.90 * best_retention)
+
+    same_family_rows = [
+        row
+        for row in rows
+        if row.get("family") == best_family and row.get("axis_label") == best_axis
+    ]
+    candidate_rows = [
+        row
+        for row in same_family_rows
+        if int(row.get("major_shell_peak_count") or 0) == best_major
+        and int(row.get("refocus_peak_count") or 0) == best_refocus
+        and not bool(row.get("shell_exit_detected"))
+        and not bool(row.get("global_peak_in_outer_window"))
+        and float(row.get("tail_shell_retention") or 0.0) >= retention_floor
+        and float(row.get("tail_outer_to_shell_mean") or 999.0) <= options.strict_outer_shell_target
+    ]
+    tested_offsets = _unique_sorted(
+        row.get("cutoff_offset_from_center")
+        for row in same_family_rows
+        if row.get("cutoff_offset_from_center") is not None
+    )
+    candidate_offsets = _unique_sorted(row.get("cutoff_offset_from_center") for row in candidate_rows)
+    best_offset = best.get("cutoff_offset_from_center")
+    offset_index = {offset: index for index, offset in enumerate(tested_offsets)}
+    neighboring_pairs: list[list[float]] = []
+    for left, right in zip(candidate_offsets, candidate_offsets[1:]):
+        if abs(offset_index.get(right, -99) - offset_index.get(left, 99)) == 1:
+            neighboring_pairs.append([left, right])
+    best_has_neighbor = any(best_offset in pair for pair in neighboring_pairs)
+    if neighboring_pairs and best_has_neighbor:
+        return {
+            "label": "neighboring_cluster_supported",
+            "is_stable": True,
+            "reason": "The best-quality rows include neighboring cutoff offsets in the same family, so the best point is not isolated.",
+            "best_variant": best.get("variant"),
+            "best_family": best_family,
+            "best_axis": best_axis,
+            "best_cutoff_offset_from_center": best_offset,
+            "tested_offsets": tested_offsets,
+            "candidate_variants": [row.get("variant") for row in sorted(candidate_rows, key=_rank_key, reverse=True)],
+            "candidate_offsets": candidate_offsets,
+            "neighboring_offset_pairs": neighboring_pairs,
+            "retention_floor": retention_floor,
+        }
+    if len(candidate_offsets) > 1:
+        reason = "Best-quality rows exist at multiple cutoff offsets, but the winning point lacks a neighboring best-quality sample."
+        label = "cluster_away_from_best"
+    elif candidate_offsets:
+        reason = "Only one best-quality cutoff sample met the strict neighboring-cluster guards."
+        label = "single_point_best"
+    else:
+        reason = "No row met the strict best-quality guards for a release-phase cluster."
+        label = "no_best_quality_cluster"
+    return {
+        "label": label,
+        "is_stable": False,
+        "reason": reason,
+        "best_variant": best.get("variant"),
+        "best_family": best_family,
+        "best_axis": best_axis,
+        "best_cutoff_offset_from_center": best_offset,
+        "tested_offsets": tested_offsets,
+        "candidate_variants": [row.get("variant") for row in sorted(candidate_rows, key=_rank_key, reverse=True)],
+        "candidate_offsets": candidate_offsets,
+        "neighboring_offset_pairs": neighboring_pairs,
+        "retention_floor": retention_floor,
+    }
+
+
+def _unique_sorted(values: Any) -> list[float]:
+    return sorted({round(float(value), 12) for value in values if value is not None})
 
 
 def _cutoff_phase_cycles(config: Prototype3DConfig) -> float:
@@ -481,10 +605,10 @@ def _write_report(
         "",
         "## Ranked Results",
         "",
-        "Ranking priority: refocus peaks, no shell exit, retention, outer/shell below 1.0, decay rate closest to zero, global outer flag false.",
+        "Ranking priority: major shell-window peaks, refocus peaks, no shell exit, retention, outer/shell below 1.0, decay rate closest to zero, global outer flag false.",
         "",
-        "| Rank | Variant | Family | Cutoff | Phase At Cutoff | Refocus | Exit | Ret | Outer/Shell | <1.0 | Decay | Global Outer |",
-        "| ---: | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- |",
+        "| Rank | Variant | Family | Cutoff | Phase At Cutoff | Peaks | Refocus | Exit | Ret | Outer/Shell | <1.0 | Decay | Global Outer |",
+        "| ---: | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- |",
     ]
     for row in _ranked_rows(rows):
         exit_label = "false" if not bool(row.get("shell_exit_detected")) else _format(row.get("shell_exit_time"))
@@ -495,6 +619,7 @@ def _write_report(
             f"{row.get('family')} | "
             f"{_format(row.get('drive_cutoff_time'))} | "
             f"{_format(row.get('cutoff_phase_cycles'))} | "
+            f"{row.get('major_shell_peak_count')} | "
             f"{row.get('refocus_peak_count')} | "
             f"{exit_label} | "
             f"{_format(row.get('tail_shell_retention'))} | "
@@ -533,6 +658,10 @@ def _write_report(
     lines.extend(
         [
             "",
+            "## release phase island stability",
+            "",
+            *_stability_lines(classification.get("release_phase_island_stability", {}), rows),
+            "",
             "## Interpretation",
             "",
             _interpretation(classification),
@@ -558,7 +687,9 @@ def _write_report(
 def _interpretation(classification: dict[str, Any]) -> str:
     label = classification["label"]
     if label == "cutoff_phase_timing_island_supported":
-        return "Refocusing appears release-phase sensitive, with strong clean rows clustering in cutoff phase. This supports timing-engineered trapping/refocusing."
+        return "Refocusing appears release-phase sensitive, with strong clean rows forming a neighboring cutoff cluster. This supports passive timing-engineered refocusing."
+    if label == "cutoff_phase_single_point_best":
+        return "A strong passive release-phase row exists, but this report treats it as an isolated point until neighboring cutoffs reproduce the top behavior."
     if label == "cutoff_timing_improved":
         return "A nearby cutoff timing improves the reference, but the strict phase-island criteria are not yet met."
     if label == "polarity_family_sensitive":
@@ -571,12 +702,61 @@ def _interpretation(classification: dict[str, Any]) -> str:
 def _next_step(classification: dict[str, Any]) -> str:
     label = classification["label"]
     if label == "cutoff_phase_timing_island_supported":
-        return "Use the best release phase as the reference for a tiny active second-pulse timing check before adding traps, rotation, or medium shaping."
+        return "Use the neighboring passive release-phase cluster as the reference for any next passive cutoff-only check; keep active second pulses shelved unless a new mechanism changes the premise."
+    if label == "cutoff_phase_single_point_best":
+        return "Run a tighter passive cutoff-only refinement around the isolated best point before treating it as a stable island."
     if label == "cutoff_timing_improved":
         return "Run one narrower cutoff-only map around the best timing row."
     if label == "polarity_family_sensitive":
         return "Run a tiny polarity-only control around the best family before adding rotation or medium changes."
     return "Hold the current cutoff_long reference and inspect phase/flux traces before expanding controls."
+
+
+def _stability_lines(stability: dict[str, Any], rows: list[dict[str, Any]]) -> list[str]:
+    if not stability:
+        return ["- Result: `not_computed`", "- Reason: release-phase island stability was not computed."]
+    lines = [
+        f"- Result: `{stability.get('label')}`",
+        f"- Reason: {stability.get('reason')}",
+        f"- Best family/axis: `{stability.get('best_family')}` / `{stability.get('best_axis')}`",
+        f"- Best cutoff offset: `{_format(stability.get('best_cutoff_offset_from_center'))}`",
+        f"- Candidate offsets: `{_format_sequence(stability.get('candidate_offsets', []))}`",
+        f"- Neighboring pairs: `{_format_pairs(stability.get('neighboring_offset_pairs', []))}`",
+        "",
+        "| Candidate Variant | Cutoff Offset | Cutoff | Phase At Cutoff | Peaks | Refocus | Ret | Outer/Shell |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    by_variant = {row.get("variant"): row for row in rows}
+    for variant in stability.get("candidate_variants", []):
+        row = by_variant.get(variant)
+        if row is None:
+            continue
+        lines.append(
+            "| "
+            f"{variant} | "
+            f"{_format(row.get('cutoff_offset_from_center'))} | "
+            f"{_format(row.get('drive_cutoff_time'))} | "
+            f"{_format(row.get('cutoff_phase_cycles'))} | "
+            f"{row.get('major_shell_peak_count')} | "
+            f"{row.get('refocus_peak_count')} | "
+            f"{_format(row.get('tail_shell_retention'))} | "
+            f"{_format(row.get('tail_outer_to_shell_mean'))} |"
+        )
+    if not stability.get("candidate_variants"):
+        lines.append("| n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |")
+    return lines
+
+
+def _format_sequence(values: list[Any]) -> str:
+    if not values:
+        return "n/a"
+    return ", ".join(_format(value) for value in values)
+
+
+def _format_pairs(values: list[list[Any]]) -> str:
+    if not values:
+        return "n/a"
+    return "; ".join(f"{_format(pair[0])}, {_format(pair[1])}" for pair in values if len(pair) == 2)
 
 
 def _summary_fields() -> list[str]:

@@ -324,7 +324,15 @@ Run the tighter cutoff/polarity timing check with:
 python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --cutoff-offsets -0.2 -0.1 0 0.1 0.2 --phase-offset-deltas 0 --polarity-cutoff-offsets -0.2 -0.1 0 0.1 0.2
 ```
 
-This compares cutoff times `17.8`, `17.9`, `18.0`, `18.1`, and `18.2` for both `phase_offset` and `sign_flip` families. The report ranks rows by refocus peaks, no shell exit, retention, outer/shell below `1.0`, decay rate closest to zero, and global outer false.
+This compares cutoff times `17.8`, `17.9`, `18.0`, `18.1`, and `18.2` for both `phase_offset` and `sign_flip` families. The report ranks rows by major shell-window peaks, refocus peaks, no shell exit, retention, outer/shell below `1.0`, decay rate closest to zero, and global outer false.
+
+Run the passive release-phase island refinement preset with:
+
+```powershell
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --release-phase-island-refinement
+```
+
+This keeps frequency fixed at `0.92`, uses `sign_flip_cutoff_minus_0p1` as the comparison reference, and maps cutoff offsets `-0.16`, `-0.14`, `-0.12`, `-0.10`, `-0.08`, `-0.06`, and `-0.04` for both the phase-offset and sign-flip/polarity families. The ranked report now orders rows by major shell-window peaks first, then refocus peaks, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, and global outer false. It also includes a `release phase island stability` section that distinguishes a neighboring timing cluster from a single isolated best point.
 
 Run the tiny 3D second-pulse control with:
 
@@ -356,7 +364,7 @@ The completed second-refocus reference micro-map used:
 python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-micro-map --micro-map-targets second_refocus --launch-time-offsets -0.8 -0.4 0 0.4 0.8 --second-pulse-phase-modes matched opposite plus_pi_4 minus_pi_4 --second-pulse-amplitude-scales 0.1 0.2
 ```
 
-It did not beat the no-pulse reference; return to passive release-phase/cutoff engineering before revisiting active reinjection.
+It did not beat the no-pulse reference. Active reinjection is shelved unless a new mechanism changes the premise; the current path is passive cutoff-only refinement around the provisional cutoff `17.94` point.
 
 ## Run one simulation
 
@@ -750,6 +758,8 @@ When `prototype-3d-cutoff-phase-map-control` is used, the control folder include
 - `cutoff_phase_radius_width_plot.png`
 - `cutoff_phase_flux_balance_plot.png`
 - one lifecycle run folder per cutoff/phase/polarity timing variant
+
+The cutoff-phase report includes a `release phase island stability` section when stability checks are available.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 
