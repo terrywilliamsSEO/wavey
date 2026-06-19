@@ -6,7 +6,7 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, and the tighter cutoff/polarity release-phase map found a supported timing island.
 
-Recommended next task: do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet. The travel-time-adjusted first-refocus second-pulse micro-map did not beat the no-pulse reference: the audit estimated boundary-to-shell travel time `9.44`, moved the first-refocus launch target to `t=26.4`, and tested offsets `-0.8` to `+0.8`, phases `matched/opposite/+pi/4/-pi/4`, and scales `0.1/0.2`. All active rows had negative `added_work_efficiency`, fewer refocus peaks, worse decay, and outer/shell above `1.0`. If active reinjection is still pursued, the only remaining tiny active-pulse check should target the second refocus peak using the same travel-time method; otherwise shelve second pulses and return to passive phase/cutoff engineering.
+Recommended next task: active second-pulse controls are shelved for now. The second-refocus travel-time micro-map also failed the strict success criteria: active rows sometimes raised raw retention, but none beat the no-pulse reference on clean refocus count, decay, outer/shell control, and added-work efficiency. Return to passive release-phase/cutoff engineering around the known timing island. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not add traps, rotation, medium shaping, defects, grid changes, frequency combinations, or broad sweeps yet.
 
 ## Status
 
@@ -203,6 +203,10 @@ Recommended next task: do not add traps, rotation, medium shaping, defects, grid
 - The no-pulse reference remained best: nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no exit, and global outer false.
 - The timing audit estimated boundary-to-shell travel time 9.44 and first-refocus ideal launch time 26.4. The first six shell peaks had inward shell flux; later peaks switched outward.
 - The best active family was opposite-phase around later launch offsets, but it still reached only six major peaks and five refocus peaks, with outer/shell about 1.32-1.34, decay around -0.042 to -0.043, and negative `added_work_efficiency`.
+- Ran the travel-time-adjusted second-refocus micro-map in `runs\second_pulse_3d_20260619_135358`; result classified as `second_pulse_contaminated_or_inconclusive`.
+- The no-pulse reference stayed best: nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no exit, and global outer false.
+- The best ranked active second-refocus row was `micro_second_refocus_launch_0p8_opposite_scale_0p2`: six major peaks, five refocus peaks, retention 0.491, outer/shell 1.254, decay -0.0455, and `added_work_efficiency` -1.595.
+- Because first-refocus and second-refocus travel-time micro-maps both failed, active second pulses are shelved until a new mechanism justifies revisiting them.
 
 ### In Progress
 
@@ -211,13 +215,13 @@ Recommended next task: do not add traps, rotation, medium shaping, defects, grid
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
-- Do not keep repeating first-refocus active pulses; travel-time adjustment did not fix the active-pulse disruption.
+- Do not keep repeating active second-pulse controls; first-refocus and second-refocus travel-time adjustment did not fix the active-pulse disruption.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
 - Use `sign_flip_cutoff_minus_0p1` as the reference release phase: cutoff 17.9, cutoff phase 0.468 cycles, frequency 0.92.
-- If active reinjection continues, run only one more tiny target: a second-refocus travel-time-adjusted micro-map, judged by `added_work_efficiency`, refocus count, outer/shell, decay, and no-exit criteria.
-- If second-refocus targeting also fails, shelve active second pulses and return to passive phase/cutoff engineering.
+- Return to passive phase/cutoff engineering around the cutoff 17.75-18.05 timing island with frequency fixed at 0.92.
+- Rank rows by refocus count, no shell exit, retention, outer/shell below 1.0, decay closest to zero, global outer false, and phase at cutoff.
 - Do not treat frequency 0.94 as additive with cutoff 18.
-- Do not move to trapping, rotation, medium shaping, defects, or grid changes before the second-pulse timing failure mode is understood or deliberately shelved.
+- Do not move to trapping, rotation, medium shaping, defects, grid changes, or active reinjection before the passive timing island is mapped more tightly.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
 - Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-shell peak/work, tail retention, refocus peak count, refocus ratio, exit detection/time, decay rate, inward/outward flux balance, and outer/shell tail ratio as the primary 3D metrics.
@@ -464,3 +468,6 @@ Possible work:
 - 2026-06-19: Ran the first-refocus travel-time micro-map in `runs\second_pulse_3d_20260619_125050`; classification stayed `second_pulse_contaminated_or_inconclusive`.
 - 2026-06-19: Boundary-to-shell travel time was estimated at 9.44, putting the first-refocus ideal launch at t=26.4. All active rows still lost refocus count and had negative `added_work_efficiency`; the no-pulse reference stayed best.
 - 2026-06-19: Updated the next step to either test only the second-refocus target with the same travel-time method, or shelve active second pulses and return to passive phase/cutoff engineering.
+- 2026-06-19: Ran the second-refocus travel-time micro-map in `runs\second_pulse_3d_20260619_135358`; classification stayed `second_pulse_contaminated_or_inconclusive`.
+- 2026-06-19: The no-pulse reference again stayed best on strict clean-refocus criteria. The best ranked active row, `micro_second_refocus_launch_0p8_opposite_scale_0p2`, reached retention 0.491 but dropped to six/five peaks, outer/shell 1.254, decay -0.0455, and `added_work_efficiency` -1.595.
+- 2026-06-19: Shelved active second-pulse controls for now and updated the next step to passive release-phase/cutoff engineering around the cutoff 17.75-18.05 timing island at fixed frequency 0.92.

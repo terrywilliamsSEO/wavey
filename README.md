@@ -332,7 +332,7 @@ Run the tiny 3D second-pulse control with:
 python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json
 ```
 
-This starts from the best sign-flip release phase, reads refocus times from the cutoff-phase events CSV, and compares no second pulse, first-refocus timing, preload timing, second-refocus timing, opposite-polarity, phase-matched, phase-offset, and passive-extension variants. Use `--second-pulse-amplitude-scale` or `--second-pulse-duration` for a single reduced-work follow-up.
+This starts from the best sign-flip release phase, reads refocus times from the cutoff-phase events CSV, and compares no second pulse, first-refocus timing, preload timing, second-refocus timing, opposite-polarity, phase-matched, phase-offset, and passive-extension variants. Use `--second-pulse-amplitude-scale` or `--second-pulse-duration` for a single reduced-work follow-up. Current project state: active second-pulse controls are reference/historical only, because full-amplitude, reduced-work, first-refocus travel-time, and second-refocus travel-time variants all failed strict clean-refocus criteria.
 
 Run a reduced-work second-pulse map with:
 
@@ -349,6 +349,14 @@ python main.py prototype-3d-second-pulse-control --config configs\long_validatio
 ```
 
 Micro-map mode first runs the no-pulse reference, writes `second_pulse_timing_audit.csv`, estimates boundary-to-shell travel time from the reference arrival, then launches second pulses at `target_peak_time - travel_time + offset`.
+
+The completed second-refocus reference micro-map used:
+
+```powershell
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-micro-map --micro-map-targets second_refocus --launch-time-offsets -0.8 -0.4 0 0.4 0.8 --second-pulse-phase-modes matched opposite plus_pi_4 minus_pi_4 --second-pulse-amplitude-scales 0.1 0.2
+```
+
+It did not beat the no-pulse reference; return to passive release-phase/cutoff engineering before revisiting active reinjection.
 
 ## Run one simulation
 

@@ -60,8 +60,10 @@ Current interpretation:
 - The first timed second-pulse control classified as `second_pulse_contaminated_or_inconclusive`: full-amplitude second pulses increased raw retention but reduced refocus count, worsened decay, and pushed outer/shell above `1.0`.
 - The reduced-work phase-matched second-pulse check also classified as `second_pulse_contaminated_or_inconclusive`: 0.1x-0.5x pulses and shorter 1.0-duration pulses still reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`.
 - The travel-time-adjusted first-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: empirical boundary-to-shell travel time was `9.44`, so the first-refocus target launch moved to `t=26.4`, but all active rows still had fewer refocus peaks, worse decay, outer/shell above `1.0`, and negative `added_work_efficiency`.
+- The travel-time-adjusted second-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: the second-refocus target launch moved to `t=31.68`, but active rows still failed strict clean criteria. Best ranked active row reached retention `0.491`, but only six/five peaks, outer/shell `1.254`, decay `-0.0455`, and negative `added_work_efficiency`.
+- Active second pulses are now shelved until a new mechanism justifies revisiting them; the immediate path returns to passive release-phase/cutoff engineering around the cutoff `17.75-18.05` timing island with frequency fixed at `0.92`.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is either one final second-refocus travel-time micro-map or shelving active second pulses in favor of passive phase/cutoff engineering, not traps, rotation, medium shaping, defects, grid changes, or more first-refocus pulse tests.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is passive phase/cutoff engineering, not traps, rotation, medium shaping, defects, grid changes, frequency combinations, or more active second-pulse tests.
 
 ## Latest Evidence
 
@@ -1268,26 +1270,71 @@ Interpretation:
 - Opposite-phase launches were the least bad active family, especially at later offsets, but they still cut the clean sequence from nine/eight peaks to six/five peaks.
 - No active row kept outer/shell below `1.0`, no active row improved decay beyond `-0.0237`, and every active row had negative `added_work_efficiency`.
 - The active pulse appears to create an additional packet that disrupts the already tuned release-phase cycle, even when launched early enough to arrive near the target shell peak.
-- If active pulses are pursued one more time, target the second refocus peak only; its timing audit state differs from the first refocus because the packet motion proxy is outbound and local shell phase has wrapped near zero. Otherwise shelve active second pulses and return to passive phase/cutoff engineering.
+- This motivated exactly one final active-pulse check at the second refocus peak; that follow-up also failed, so active second pulses are now shelved.
+
+### 3D Second-Refocus Travel-Time Second-Pulse Micro-Map
+
+Command:
+
+```powershell
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-micro-map --micro-map-targets second_refocus --launch-time-offsets -0.8 -0.4 0 0.4 0.8 --second-pulse-phase-modes matched opposite plus_pi_4 minus_pi_4 --second-pulse-amplitude-scales 0.1 0.2
+```
+
+Latest summarized run:
+
+- Local report: `runs\second_pulse_3d_20260619_135358\second_pulse_report.md`
+- Summary CSV: `runs\second_pulse_3d_20260619_135358\second_pulse_summary.csv`
+- Ranked CSV: `runs\second_pulse_3d_20260619_135358\second_pulse_ranked_summary.csv`
+- Timeseries CSV: `runs\second_pulse_3d_20260619_135358\second_pulse_timeseries.csv`
+- Events CSV: `runs\second_pulse_3d_20260619_135358\second_pulse_events.csv`
+- Timing audit CSV: `runs\second_pulse_3d_20260619_135358\second_pulse_timing_audit.csv`
+- Classification: `second_pulse_contaminated_or_inconclusive`
+
+Timing audit reference:
+
+- Empirical boundary-to-shell travel time: `9.44`
+- Second-refocus peak time: `41.12`
+- Second-refocus ideal launch time: `31.68`
+- Local shell phase at the second-refocus peak: `0.0515`
+- Shell radial flux at the second-refocus peak: inward
+- Packet motion proxy at the second-refocus peak: outbound
+
+Important values:
+
+| Variant | Launch Offset | Phase Mode | Scale | Center | Peaks | Refocus | Retention | Outer/Shell | Decay | Added Work Eff |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| no_second_pulse | n/a | n/a | n/a | n/a | 9 | 8 | 0.322 | 0.660 | -0.0237 | n/a |
+| micro_second_refocus_launch_0p8_opposite_scale_0p2 | 0.8 | opposite | 0.2 | 32.48 | 6 | 5 | 0.491 | 1.254 | -0.0455 | -1.595 |
+| micro_second_refocus_launch_0p8_minus_pi_4_scale_0p2 | 0.8 | minus_pi_4 | 0.2 | 32.48 | 6 | 4 | 0.501 | 1.314 | -0.0421 | -1.645 |
+| micro_second_refocus_launch_0p4_opposite_scale_0p2 | 0.4 | opposite | 0.2 | 32.08 | 5 | 4 | 0.491 | 1.255 | -0.0455 | -2.057 |
+| micro_second_refocus_launch_0p0_opposite_scale_0p2 | 0.0 | opposite | 0.2 | 31.68 | 5 | 4 | 0.490 | 1.258 | -0.0454 | -2.059 |
+
+Interpretation:
+
+- Targeting the second refocus peak did not rescue active reinjection.
+- Active rows can raise raw retention above the no-pulse reference, but they do so by injecting another packet that reduces clean return count, worsens decay, and pushes outer/shell above `1.0`.
+- The no-pulse reference remains the best strict row: nine/eight peaks, no exit, outer/shell `0.660`, decay `-0.0237`, and global outer false.
+- Both first-refocus and second-refocus travel-time micro-maps failed with negative `added_work_efficiency`, so active second pulses are shelved for now.
+- The next work should return to passive release-phase/cutoff engineering around the already supported timing island.
 
 ## Current Next Step
 
-Either run one final second-refocus travel-time micro-map or shelve active second pulses:
+Return to passive release-phase/cutoff engineering:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Start from `sign_flip_cutoff_minus_0p1`: cutoff `17.9`, cutoff phase `0.468` cycles, frequency `0.92`.
 - Keep primary injected work matched per physical source area.
-- Do not repeat first-refocus active pulses; both direct-at-peak and travel-time-adjusted first-refocus pulses disturbed the clean cycle.
-- If active reinjection continues, target only the second refocus peak with the same travel-time method, judged by `added_work_efficiency`.
-- If second-refocus targeting fails, stop active-pulse controls for now and return to passive phase/cutoff engineering.
+- Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
+- Tighten the passive cutoff/release-phase map around cutoff `17.75-18.05` with frequency fixed at `0.92`.
+- Track phase at cutoff for every row.
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
-- Score whether the second pulse increases return/refocus count, improves late return-peak ratios, slows decay, raises retention, keeps outer/shell near or below `1`, delays/removes shell exit, and avoids global outer-window flags.
+- Rank by refocus count, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, global outer false, and phase at cutoff.
 - Keep global radial peak as an artifact/boundary-residue check.
-- Keep the grid tiny until this failure mode is understood.
+- Keep the grid tiny while the passive timing island is being mapped.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
-- Do not add traps, rotation, medium shaping, defects, or grid changes yet.
+- Do not add traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second pulses yet.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync
