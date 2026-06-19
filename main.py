@@ -661,6 +661,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("first", "tight"),
         help="Use the sign-flip-only ultra-fine cutoff preset around the provisional 17.94 needle",
     )
+    cutoff_phase_parser.add_argument(
+        "--threshold-robust-confirmation",
+        action="store_true",
+        help="Use the sign-flip-only 17.920-17.950 cutoff set for threshold-robust refocusing confirmation",
+    )
     cutoff_phase_parser.add_argument("--sign-flip-only", action="store_true", help="Run only the sign-flip/polarity cutoff family")
     cutoff_phase_parser.add_argument("--reference-variant", help="Variant used as the comparison reference for classification")
     cutoff_phase_parser.add_argument("--cutoff-center", type=float, help="Winning cutoff center; defaults to base cutoff plus cutoff-delta")
@@ -1381,6 +1386,12 @@ def main() -> None:
             polarity_cutoff_offsets = needle_offsets
             include_phase_offset_family = False
             reference_variant = args.reference_variant or "sign_flip_cutoff_minus_0p06"
+        if args.threshold_robust_confirmation:
+            cutoff_offsets = ()
+            phase_offsets = (0.0,)
+            polarity_cutoff_offsets = (-0.080, -0.075, -0.070, -0.065, -0.060, -0.055, -0.050)
+            include_phase_offset_family = False
+            reference_variant = args.reference_variant or "sign_flip_cutoff_minus_0p07"
         result = run_3d_cutoff_phase_map_control(
             config,
             options=CutoffPhaseMap3DOptions(

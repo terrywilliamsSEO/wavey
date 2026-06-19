@@ -16,6 +16,7 @@ from simulation.prototype_3d_cutoff_phase_map import (
     phase_lock_needle_width,
     release_phase_island_stability,
     summarize_event_threshold_sensitivity,
+    threshold_robust_refocusing_scores,
 )
 
 
@@ -89,6 +90,21 @@ class Prototype3DCutoffPhaseMapTests(unittest.TestCase):
             "sign_flip_cutoff_minus_0p045",
         ])
         self.assertTrue(all(variant.boundary_phase_offset == 0.0 for variant in variants))
+
+    def test_variant_plan_can_run_threshold_robust_confirmation_offsets(self) -> None:
+        base = SimulationConfig()
+        base.driver.frequency = 0.92
+        base.driver.drive_cutoff_time = 16.0
+        options = CutoffPhaseMap3DOptions(
+            include_phase_offset_family=False,
+            polarity_cutoff_offsets=(-0.080, -0.075, -0.070, -0.065, -0.060, -0.055, -0.050),
+        )
+
+        variants = _variant_plan(base, options)
+
+        self.assertEqual([variant.drive_cutoff_time for variant in variants], [17.92, 17.925, 17.93, 17.935, 17.94, 17.945, 17.95])
+        self.assertEqual([variant.name for variant in variants][0], "sign_flip_cutoff_minus_0p08")
+        self.assertEqual([variant.name for variant in variants][-1], "sign_flip_cutoff_minus_0p05")
 
     def test_classification_detects_strong_timing_island(self) -> None:
         rows = [
@@ -229,6 +245,21 @@ class Prototype3DCutoffPhaseMapTests(unittest.TestCase):
         self.assertEqual(summary["label"], "best_count_threshold_robust")
         self.assertEqual([row["relation_to_best"] for row in summary["variants"]], ["lower_neighbor", "best", "upper_neighbor"])
 
+    def test_threshold_robust_score_ranks_conservative_counts_first(self) -> None:
+        rows = [
+            _row("default_flashy", family="sign_flip", axis="polarity_cutoff", cutoff_offset=-0.070, peaks=4, refocus=3, retention=0.31, outer=0.64, phase=0.50, cutoff=17.93),
+            _row("stricter_stable", family="sign_flip", axis="polarity_cutoff", cutoff_offset=-0.065, peaks=3, refocus=2, retention=0.31, outer=0.64, phase=0.50, cutoff=17.935),
+        ]
+        timeseries = _threshold_series("default_flashy", 17.93, [10.0, 8.0, 3.2, 3.1])
+        timeseries.extend(_threshold_series("stricter_stable", 17.935, [10.0, 8.0, 5.0]))
+
+        robust = threshold_robust_refocusing_scores(rows, timeseries, CutoffPhaseMap3DOptions())
+
+        self.assertEqual([row["variant"] for row in robust], ["stricter_stable", "default_flashy"])
+        self.assertEqual(robust[0]["min_major_peaks_across_thresholds"], 3)
+        self.assertEqual(robust[1]["default_major_peaks"], 4)
+        self.assertGreater(robust[0]["threshold_free_shell_energy_area_after_cutoff"], 0.0)
+
 
 def _row(
     variant: str,
@@ -275,6 +306,31 @@ def _timeseries(variant: str, cutoff: float) -> list[dict]:
         (cutoff + 10.0, 0.7),
     ]:
         rows.append({"variant": variant, "time": time, "shell_window_energy": energy})
+    return rows
+
+
+def _threshold_series(variant: str, cutoff: float, peak_values: list[float]) -> list[dict]:
+    rows = []
+    time = cutoff + 1.0
+    for value in peak_values:
+        for delta, energy in [(0.0, 1.0), (1.0, value), (2.0, 1.0)]:
+            rows.append(
+                {
+                    "variant": variant,
+                    "time": time + delta,
+                    "shell_window_energy": energy,
+                    "outer_to_shell_energy": 0.6,
+                }
+            )
+        time += 6.0
+    rows.append(
+        {
+            "variant": variant,
+            "time": 52.0,
+            "shell_window_energy": 2.0,
+            "outer_to_shell_energy": 0.6,
+        }
+    )
     return rows
 
 

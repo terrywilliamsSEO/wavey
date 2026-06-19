@@ -6,7 +6,7 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, the tighter cutoff/polarity release-phase map found a supported timing island, and ultra-fine passive refinement found a narrow phase-lock needle rather than a broad timing island.
 
-Recommended next task: active second-pulse controls remain shelved. The ultra-fine passive map in `runs\cutoff_phase_map_3d_20260619_155704` found a neighboring 11/10 cluster at cutoffs `17.93`, `17.935`, and `17.94`, with best row `sign_flip_cutoff_minus_0p07` at cutoff phase `0.4956`, retention `0.317`, outer/shell `0.639`, no exit, and global outer false. However, the `phase-lock needle width` section classified the optimum as `narrow` with exact-top cutoff width `0.01`, and the event-threshold sensitivity audit classified the 11/10 count as `best_count_threshold_sensitive`. Next, inspect shell-event traces and/or harden the event detector around this narrow needle before treating 11/10 as robust physics. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not add traps, rotation, medium shaping, defects, grid changes, frequency combinations, active pulses, or broad sweeps yet.
+Recommended next task: active second-pulse controls remain shelved. The threshold-robust confirmation in `runs\cutoff_phase_map_3d_20260619_162240` confirmed the phase-lock cluster is real enough to continue because neighboring cutoffs still reproduce the default 11/10 count, but the exact peak/refocus count is threshold-sensitive. Conservative claim: the cluster preserves or improves the clean 9/8 refocusing family under stricter detection, not that 11/10 is threshold-invariant. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not add traps, rotation, medium shaping, defects, grid changes, frequency combinations, active pulses, or broad sweeps yet.
 
 ## Status
 
@@ -216,6 +216,11 @@ Recommended next task: active second-pulse controls remain shelved. The ultra-fi
 - Best ranked row was `sign_flip_cutoff_minus_0p07`: cutoff 17.93, release phase 0.4956 cycles, eleven major peaks, ten refocus peaks, retention 0.316689, outer/shell 0.638587, decay -0.0238625, no shell exit, and global outer false.
 - Neighboring exact-top rows at cutoffs 17.935 and 17.94 also reached 11/10, so the previous single-point result is now a narrow supported needle, not a broad island.
 - The event-threshold sensitivity audit classified the best count as `best_count_threshold_sensitive`: at peak-threshold fraction 0.25 the best row recounts as 12/11, at 0.30 as 11/10, and at 0.35 as 9/8. Treat 11/10 as detector-sensitive until shell-event traces or threshold logic are hardened.
+- Added `--threshold-robust-confirmation`, `cutoff_phase_threshold_robust_score.csv`, and a `threshold-robust refocusing score` report section that ranks rows by conservative cross-threshold score before default-threshold score.
+- Ran the threshold-robust passive confirmation in `runs\cutoff_phase_map_3d_20260619_162240`; classification stayed `cutoff_phase_timing_island_supported`.
+- The top three default rows, cutoffs 17.93, 17.935, and 17.94, still produced 11/10 at peak threshold 0.30 and 12/11 at threshold 0.25, but their strict-threshold minima were 9/8 at thresholds 0.35 and 0.40.
+- Conservative-score ranking kept the same narrow top cluster: `sign_flip_cutoff_minus_0p07`, `sign_flip_cutoff_minus_0p065`, then `sign_flip_cutoff_minus_0p06`. Each had min 9 major peaks, min 8 refocus peaks, no exit, global outer false, retention about 0.314-0.317, outer/shell about 0.631-0.639, shell-energy autocorrelation about 0.9995, spectral concentration about 0.741-0.745, and return timing regularity about 0.847-0.851.
+- Conservative interpretation: the cluster preserves or improves the clean 9/8 refocusing family under stricter detection. Do not claim that 11/10 is threshold-invariant.
 
 ### In Progress
 
@@ -227,7 +232,7 @@ Recommended next task: active second-pulse controls remain shelved. The ultra-fi
 - Do not keep repeating active second-pulse controls; first-refocus and second-refocus travel-time adjustment did not fix the active-pulse disruption.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
 - Treat `sign_flip_cutoff_minus_0p07` as the current best passive row, but describe the 17.93-17.94 pocket as a narrow phase-lock needle, not a broad island.
-- Audit shell-event traces and peak-detection thresholds around cutoffs 17.93, 17.935, and 17.94 before claiming that the 11/10 return count is physically robust.
+- Use the conservative 9/8 threshold-robust result as the floor for the cluster. The default 11/10 count can guide local passive work, but do not present it as threshold-invariant.
 - Rank rows by major shell-window peak count, refocus count, no shell exit, retention, outer/shell below 1.0, decay closest to zero, global outer false, and phase at cutoff.
 - Do not treat frequency 0.94 as additive with cutoff 18.
 - Do not move to trapping, rotation, medium shaping, defects, grid changes, or active reinjection before the passive timing island is mapped more tightly.
@@ -488,3 +493,7 @@ Possible work:
 - 2026-06-19: Ran `python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --phase-lock-needle-map first` in `runs\cutoff_phase_map_3d_20260619_155704`; classification was `cutoff_phase_timing_island_supported`, with `phase-lock needle width` classified as `narrow`.
 - 2026-06-19: `sign_flip_cutoff_minus_0p07` became the current best passive row: cutoff 17.93, phase 0.4956 cycles, eleven major peaks, ten refocus peaks, retention 0.316689, outer/shell 0.638587, decay -0.0238625, no exit, and global outer false.
 - 2026-06-19: The exact-top rows span only cutoff 17.93-17.94, and the event-threshold audit classified the best count as `best_count_threshold_sensitive`; updated the next step to event-trace/threshold robustness work before claiming a broad timing island or robust 11/10 physics.
+- 2026-06-19: Added `--threshold-robust-confirmation`, `cutoff_phase_threshold_robust_score.csv`, and a `threshold-robust refocusing score` report section to `prototype-3d-cutoff-phase-map-control`.
+- 2026-06-19: Ran `python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --threshold-robust-confirmation` in `runs\cutoff_phase_map_3d_20260619_162240`; classification stayed `cutoff_phase_timing_island_supported`.
+- 2026-06-19: The confirmation showed the top cluster is not a single-point fluke, but 11/10 is not threshold-invariant: cutoffs 17.93, 17.935, and 17.94 count as 12/11 at threshold 0.25, 11/10 at 0.30, and 9/8 at thresholds 0.35 and 0.40.
+- 2026-06-19: Updated the conservative claim to: the narrow phase-lock cluster preserves or improves the clean 9/8 refocusing family under stricter detection, while the exact 11/10 count remains threshold-sensitive.

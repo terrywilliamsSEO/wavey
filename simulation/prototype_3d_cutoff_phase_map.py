@@ -103,22 +103,25 @@ def run_3d_cutoff_phase_map_control(
     needle_width = phase_lock_needle_width(rows, options)
     threshold_sensitivity_rows = event_threshold_sensitivity_audit(rows, timeseries_rows, options)
     threshold_sensitivity = summarize_event_threshold_sensitivity(threshold_sensitivity_rows)
+    threshold_robust_rows = threshold_robust_refocusing_scores(rows, timeseries_rows, options)
 
     summary_csv = root / "cutoff_phase_map_summary.csv"
     ranked_csv = root / "cutoff_phase_ranked_summary.csv"
     threshold_sensitivity_csv = root / "cutoff_phase_event_threshold_sensitivity.csv"
+    threshold_robust_csv = root / "cutoff_phase_threshold_robust_score.csv"
     timeseries_csv = root / "cutoff_phase_map_timeseries.csv"
     events_csv = root / "cutoff_phase_map_events.csv"
     report_path = root / "cutoff_phase_map_3d_report.md"
     _write_csv(summary_csv, rows, _summary_fields())
     _write_csv(ranked_csv, ranked_rows, _ranked_fields())
     _write_csv(threshold_sensitivity_csv, threshold_sensitivity_rows, _threshold_sensitivity_fields())
+    _write_csv(threshold_robust_csv, threshold_robust_rows, _threshold_robust_fields())
     _write_csv(timeseries_csv, timeseries_rows, _timeseries_fields())
     _write_csv(events_csv, event_rows, _event_fields())
     _plot_lifecycle(root / "cutoff_phase_shell_energy_plot.png", timeseries_rows, event_rows)
     _plot_radius_width(root / "cutoff_phase_radius_width_plot.png", timeseries_rows)
     _plot_flux(root / "cutoff_phase_flux_balance_plot.png", timeseries_rows)
-    _write_report(report_path, control_id, rows, classification, options, needle_width, threshold_sensitivity, threshold_sensitivity_rows)
+    _write_report(report_path, control_id, rows, classification, options, needle_width, threshold_sensitivity, threshold_sensitivity_rows, threshold_robust_rows)
     save_json(
         root / "cutoff_phase_map_3d_summary.json",
         {
@@ -126,10 +129,12 @@ def run_3d_cutoff_phase_map_control(
             "classification": classification,
             "phase_lock_needle_width": needle_width,
             "event_threshold_sensitivity": threshold_sensitivity,
+            "threshold_robust_refocusing_scores": threshold_robust_rows,
             "variants": rows,
             "summary_csv": str(summary_csv),
             "ranked_csv": str(ranked_csv),
             "threshold_sensitivity_csv": str(threshold_sensitivity_csv),
+            "threshold_robust_csv": str(threshold_robust_csv),
             "timeseries_csv": str(timeseries_csv),
             "events_csv": str(events_csv),
             "report_path": str(report_path),
@@ -142,6 +147,7 @@ def run_3d_cutoff_phase_map_control(
         "summary_csv": str(summary_csv),
         "ranked_csv": str(ranked_csv),
         "threshold_sensitivity_csv": str(threshold_sensitivity_csv),
+        "threshold_robust_csv": str(threshold_robust_csv),
         "timeseries_csv": str(timeseries_csv),
         "events_csv": str(events_csv),
         "report_path": str(report_path),
@@ -683,6 +689,239 @@ def summarize_event_threshold_sensitivity(audit_rows: list[dict[str, Any]]) -> d
     return {"label": label, "reason": reason, "variants": summaries}
 
 
+def threshold_robust_refocusing_scores(
+    rows: list[dict[str, Any]],
+    timeseries_rows: list[dict[str, Any]],
+    options: CutoffPhaseMap3DOptions | None = None,
+) -> list[dict[str, Any]]:
+    """Score rows using conservative peak counts plus threshold-free shell-energy metrics."""
+
+    options = options or CutoffPhaseMap3DOptions()
+    if not rows or not timeseries_rows:
+        return []
+    by_variant: dict[str, list[dict[str, Any]]] = {}
+    for row in timeseries_rows:
+        by_variant.setdefault(str(row.get("variant")), []).append(row)
+    robust_rows: list[dict[str, Any]] = []
+    for row in rows:
+        variant = str(row.get("variant"))
+        series = sorted(by_variant.get(variant, []), key=lambda item: float(item.get("time") or 0.0))
+        if not series:
+            continue
+        times = np.asarray([item["time"] for item in series], dtype=float)
+        shell = np.asarray([item["shell_window_energy"] for item in series], dtype=float)
+        outer = np.asarray([item.get("outer_to_shell_energy", row.get("tail_outer_to_shell_mean") or 0.0) for item in series], dtype=float)
+        cutoff = float(row.get("drive_cutoff_time") or 0.0)
+        post_indices = np.flatnonzero(times > cutoff)
+        threshold_counts = _threshold_count_summary(times, shell, post_indices, options)
+        major_counts = [count["major_shell_peak_count"] for count in threshold_counts]
+        refocus_counts = [count["refocus_peak_count"] for count in threshold_counts]
+        default_counts = _default_threshold_counts(threshold_counts, options.peak_threshold_fraction)
+        post_mask = times > cutoff
+        tail_mask = times >= 50.0
+        shell_area = _area(times[post_mask], shell[post_mask])
+        tail_area = _area(times[tail_mask], shell[tail_mask])
+        autocorrelation = _lag1_autocorrelation(shell[post_mask])
+        spectral = _dominant_spectral_concentration(shell[post_mask])
+        regularity = _return_timing_regularity(times, shell, post_indices, options)
+        retention = float(row.get("tail_shell_retention") or 0.0)
+        outer_median = float(row.get("tail_outer_to_shell_mean") or _median(outer[tail_mask]))
+        decay = float(row.get("post_cutoff_shell_decay_rate") or 0.0)
+        no_exit = not bool(row.get("shell_exit_detected"))
+        global_outer_false = not bool(row.get("global_peak_in_outer_window"))
+        min_major = min(major_counts) if major_counts else 0
+        min_refocus = min(refocus_counts) if refocus_counts else 0
+        median_major = _median(major_counts)
+        median_refocus = _median(refocus_counts)
+        conservative_score = _robust_score(
+            min_major,
+            min_refocus,
+            retention,
+            outer_median,
+            decay,
+            no_exit,
+            global_outer_false,
+            autocorrelation,
+            spectral,
+            regularity,
+        )
+        default_score = _robust_score(
+            default_counts["major_shell_peak_count"],
+            default_counts["refocus_peak_count"],
+            retention,
+            outer_median,
+            decay,
+            no_exit,
+            global_outer_false,
+            autocorrelation,
+            spectral,
+            regularity,
+        )
+        robust_rows.append(
+            {
+                "variant": variant,
+                "drive_cutoff_time": row.get("drive_cutoff_time"),
+                "cutoff_phase_cycles": row.get("cutoff_phase_cycles"),
+                "conservative_score": conservative_score,
+                "default_threshold_score": default_score,
+                "rank": 0,
+                "min_major_peaks_across_thresholds": min_major,
+                "median_major_peaks_across_thresholds": median_major,
+                "min_refocus_peaks_across_thresholds": min_refocus,
+                "median_refocus_peaks_across_thresholds": median_refocus,
+                "default_major_peaks": default_counts["major_shell_peak_count"],
+                "default_refocus_peaks": default_counts["refocus_peak_count"],
+                "major_peaks_at_0p25": _count_at_threshold(threshold_counts, 0.25, "major_shell_peak_count"),
+                "major_peaks_at_0p30": _count_at_threshold(threshold_counts, 0.30, "major_shell_peak_count"),
+                "major_peaks_at_0p35": _count_at_threshold(threshold_counts, 0.35, "major_shell_peak_count"),
+                "major_peaks_at_0p40": _count_at_threshold(threshold_counts, 0.40, "major_shell_peak_count"),
+                "refocus_peaks_at_0p25": _count_at_threshold(threshold_counts, 0.25, "refocus_peak_count"),
+                "refocus_peaks_at_0p30": _count_at_threshold(threshold_counts, 0.30, "refocus_peak_count"),
+                "refocus_peaks_at_0p35": _count_at_threshold(threshold_counts, 0.35, "refocus_peak_count"),
+                "refocus_peaks_at_0p40": _count_at_threshold(threshold_counts, 0.40, "refocus_peak_count"),
+                "retention_median": retention,
+                "outer_shell_median": outer_median,
+                "decay_median": decay,
+                "no_exit_across_all_thresholds": no_exit,
+                "global_outer_false_across_all_thresholds": global_outer_false,
+                "threshold_free_shell_energy_area_after_cutoff": shell_area,
+                "threshold_free_tail_energy_area_after_t50": tail_area,
+                "shell_energy_autocorrelation": autocorrelation,
+                "dominant_spectral_concentration": spectral,
+                "return_timing_regularity": regularity,
+            }
+        )
+    ranked = sorted(robust_rows, key=_threshold_robust_rank_key, reverse=True)
+    for rank, row in enumerate(ranked, start=1):
+        row["rank"] = rank
+    return ranked
+
+
+def _threshold_count_summary(
+    times: np.ndarray,
+    shell: np.ndarray,
+    post_indices: np.ndarray,
+    options: CutoffPhaseMap3DOptions,
+) -> list[dict[str, Any]]:
+    rows = []
+    for peak_threshold in (0.25, 0.30, 0.35, 0.40):
+        threshold_options = replace(options, peak_threshold_fraction=peak_threshold)
+        peaks = _major_peaks(times, shell, post_indices, threshold_options)
+        rows.append(
+            {
+                "peak_threshold_fraction": peak_threshold,
+                "major_shell_peak_count": len(peaks),
+                "refocus_peak_count": _refocus_count(peaks, options.refocus_threshold_fraction),
+            }
+        )
+    return rows
+
+
+def _default_threshold_counts(rows: list[dict[str, Any]], threshold: float) -> dict[str, int]:
+    return next(
+        (
+            {"major_shell_peak_count": int(row["major_shell_peak_count"]), "refocus_peak_count": int(row["refocus_peak_count"])}
+            for row in rows
+            if abs(float(row.get("peak_threshold_fraction") or 0.0) - threshold) <= 1.0e-9
+        ),
+        {"major_shell_peak_count": 0, "refocus_peak_count": 0},
+    )
+
+
+def _count_at_threshold(rows: list[dict[str, Any]], threshold: float, field: str) -> int:
+    match = next((row for row in rows if abs(float(row.get("peak_threshold_fraction") or 0.0) - threshold) <= 1.0e-9), None)
+    return int((match or {}).get(field) or 0)
+
+
+def _robust_score(
+    major: float,
+    refocus: float,
+    retention: float,
+    outer_shell: float,
+    decay: float,
+    no_exit: bool,
+    global_outer_false: bool,
+    autocorrelation: float,
+    spectral: float,
+    regularity: float,
+) -> float:
+    cleanliness = (1.0 if no_exit else 0.0) + (1.0 if global_outer_false else 0.0)
+    outer_bonus = 1.0 / (1.0 + max(0.0, outer_shell))
+    return (
+        1000.0 * float(major)
+        + 100.0 * float(refocus)
+        + 20.0 * cleanliness
+        + 10.0 * float(retention)
+        + 5.0 * outer_bonus
+        + 2.0 * max(-1.0, min(1.0, autocorrelation))
+        + 2.0 * max(0.0, min(1.0, spectral))
+        + 2.0 * max(0.0, min(1.0, regularity))
+        - abs(float(decay))
+    )
+
+
+def _threshold_robust_rank_key(row: dict[str, Any]) -> tuple[float, ...]:
+    return (
+        float(row.get("conservative_score") or 0.0),
+        float(row.get("default_threshold_score") or 0.0),
+        float(row.get("threshold_free_tail_energy_area_after_t50") or 0.0),
+        -float(row.get("outer_shell_median") or 999.0),
+    )
+
+
+def _area(times: np.ndarray, values: np.ndarray) -> float:
+    if times.size < 2 or values.size < 2:
+        return 0.0
+    return float(np.trapezoid(values, times))
+
+
+def _median(values: Any) -> float:
+    parsed = [float(value) for value in values if value is not None] if not isinstance(values, np.ndarray) else values.astype(float)
+    return float(np.median(parsed)) if len(parsed) else 0.0
+
+
+def _lag1_autocorrelation(values: np.ndarray) -> float:
+    if values.size < 3:
+        return 0.0
+    left = values[:-1] - float(np.mean(values[:-1]))
+    right = values[1:] - float(np.mean(values[1:]))
+    denom = float(np.linalg.norm(left) * np.linalg.norm(right))
+    if denom <= EPSILON:
+        return 1.0
+    return float(np.clip(np.dot(left, right) / denom, -1.0, 1.0))
+
+
+def _dominant_spectral_concentration(values: np.ndarray) -> float:
+    if values.size < 4:
+        return 0.0
+    centered = values - float(np.mean(values))
+    power = np.abs(np.fft.rfft(centered)) ** 2
+    if power.size <= 1:
+        return 0.0
+    non_dc = power[1:]
+    total = float(np.sum(non_dc))
+    if total <= EPSILON:
+        return 0.0
+    return float(np.max(non_dc) / total)
+
+
+def _return_timing_regularity(
+    times: np.ndarray,
+    shell: np.ndarray,
+    post_indices: np.ndarray,
+    options: CutoffPhaseMap3DOptions,
+) -> float:
+    peaks = _major_peaks(times, shell, post_indices, options)
+    if len(peaks) < 3:
+        return 0.0
+    intervals = np.diff(np.asarray([peak["time"] for peak in peaks], dtype=float))
+    mean_interval = float(np.mean(intervals))
+    if mean_interval <= EPSILON:
+        return 0.0
+    coefficient = float(np.std(intervals) / mean_interval)
+    return float(np.clip(1.0 - coefficient, 0.0, 1.0))
+
+
 def _threshold_values(center: float, delta: float, *, minimum: float) -> list[float]:
     return _unique_sorted([max(minimum, center - delta), center, center + delta])
 
@@ -866,6 +1105,7 @@ def _write_report(
     needle_width: dict[str, Any] | None = None,
     threshold_sensitivity: dict[str, Any] | None = None,
     threshold_sensitivity_rows: list[dict[str, Any]] | None = None,
+    threshold_robust_rows: list[dict[str, Any]] | None = None,
 ) -> None:
     lines = [
         f"# 3D Cutoff Phase Timing Map: {control_id}",
@@ -947,6 +1187,10 @@ def _write_report(
             "",
             *_threshold_sensitivity_lines(threshold_sensitivity or {}, threshold_sensitivity_rows or []),
             "",
+            "## threshold-robust refocusing score",
+            "",
+            *_threshold_robust_lines(threshold_robust_rows or []),
+            "",
             "## Interpretation",
             "",
             _interpretation(classification, needle_width or {}, threshold_sensitivity or {}),
@@ -956,6 +1200,7 @@ def _write_report(
             "- `cutoff_phase_map_summary.csv`",
             "- `cutoff_phase_ranked_summary.csv`",
             "- `cutoff_phase_event_threshold_sensitivity.csv`",
+            "- `cutoff_phase_threshold_robust_score.csv`",
             "- `cutoff_phase_map_timeseries.csv`",
             "- `cutoff_phase_map_events.csv`",
             "- `cutoff_phase_shell_energy_plot.png`",
@@ -1125,6 +1370,63 @@ def _threshold_sensitivity_lines(
     return lines
 
 
+def _threshold_robust_lines(rows: list[dict[str, Any]]) -> list[str]:
+    if not rows:
+        return ["- Result: `not_computed`", "- Reason: threshold-robust refocusing scores were not computed."]
+    lines = [
+        "Rows are ranked by conservative score first, then default-threshold score.",
+        "Conservative reading: default 11/10 counts are threshold-sensitive; rows whose minimum count stays at least 9/8 preserve or improve the clean refocusing family under stricter detection.",
+        "",
+        "| Rank | Variant | Cutoff | Phase | Min Peaks | Median Peaks | Min Refocus | Median Refocus | Default | Ret Med | Outer Med | Decay Med | No Exit All | Global Outer False All | Area Post-Cutoff | Tail Area t>50 | Autocorr | Spectral | Timing Regularity | Conservative | Default Score |",
+        "| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        lines.append(
+            "| "
+            f"{row.get('rank')} | "
+            f"{row.get('variant')} | "
+            f"{_format(row.get('drive_cutoff_time'))} | "
+            f"{_format(row.get('cutoff_phase_cycles'))} | "
+            f"{_format(row.get('min_major_peaks_across_thresholds'))} | "
+            f"{_format(row.get('median_major_peaks_across_thresholds'))} | "
+            f"{_format(row.get('min_refocus_peaks_across_thresholds'))} | "
+            f"{_format(row.get('median_refocus_peaks_across_thresholds'))} | "
+            f"{row.get('default_major_peaks')}/{row.get('default_refocus_peaks')} | "
+            f"{_format(row.get('retention_median'))} | "
+            f"{_format(row.get('outer_shell_median'))} | "
+            f"{_format(row.get('decay_median'))} | "
+            f"{row.get('no_exit_across_all_thresholds')} | "
+            f"{row.get('global_outer_false_across_all_thresholds')} | "
+            f"{_format(row.get('threshold_free_shell_energy_area_after_cutoff'))} | "
+            f"{_format(row.get('threshold_free_tail_energy_area_after_t50'))} | "
+            f"{_format(row.get('shell_energy_autocorrelation'))} | "
+            f"{_format(row.get('dominant_spectral_concentration'))} | "
+            f"{_format(row.get('return_timing_regularity'))} | "
+            f"{_format(row.get('conservative_score'))} | "
+            f"{_format(row.get('default_threshold_score'))} |"
+        )
+    lines.extend(
+        [
+            "",
+            "Peak/refocus counts by peak threshold:",
+            "",
+            "| Rank | Variant | 0.25 | 0.30 | 0.35 | 0.40 |",
+            "| ---: | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for row in rows:
+        lines.append(
+            "| "
+            f"{row.get('rank')} | "
+            f"{row.get('variant')} | "
+            f"{row.get('major_peaks_at_0p25')}/{row.get('refocus_peaks_at_0p25')} | "
+            f"{row.get('major_peaks_at_0p30')}/{row.get('refocus_peaks_at_0p30')} | "
+            f"{row.get('major_peaks_at_0p35')}/{row.get('refocus_peaks_at_0p35')} | "
+            f"{row.get('major_peaks_at_0p40')}/{row.get('refocus_peaks_at_0p40')} |"
+        )
+    return lines
+
+
 def _format_range(value: Any) -> str:
     if not value or len(value) != 2:
         return "n/a"
@@ -1190,4 +1492,39 @@ def _threshold_sensitivity_fields() -> list[str]:
         "baseline_refocus_peak_count",
         "matches_baseline_counts",
         "within_one_of_baseline",
+    ]
+
+
+def _threshold_robust_fields() -> list[str]:
+    return [
+        "rank",
+        "variant",
+        "drive_cutoff_time",
+        "cutoff_phase_cycles",
+        "conservative_score",
+        "default_threshold_score",
+        "min_major_peaks_across_thresholds",
+        "median_major_peaks_across_thresholds",
+        "min_refocus_peaks_across_thresholds",
+        "median_refocus_peaks_across_thresholds",
+        "default_major_peaks",
+        "default_refocus_peaks",
+        "major_peaks_at_0p25",
+        "major_peaks_at_0p30",
+        "major_peaks_at_0p35",
+        "major_peaks_at_0p40",
+        "refocus_peaks_at_0p25",
+        "refocus_peaks_at_0p30",
+        "refocus_peaks_at_0p35",
+        "refocus_peaks_at_0p40",
+        "retention_median",
+        "outer_shell_median",
+        "decay_median",
+        "no_exit_across_all_thresholds",
+        "global_outer_false_across_all_thresholds",
+        "threshold_free_shell_energy_area_after_cutoff",
+        "threshold_free_tail_energy_area_after_t50",
+        "shell_energy_autocorrelation",
+        "dominant_spectral_concentration",
+        "return_timing_regularity",
     ]

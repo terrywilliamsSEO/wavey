@@ -348,6 +348,14 @@ python main.py prototype-3d-cutoff-phase-map-control --config configs\long_valid
 
 The cutoff-phase report includes `phase-lock needle width` and `event-threshold sensitivity audit` sections, plus `cutoff_phase_event_threshold_sensitivity.csv`, so a stronger peak count can be separated from peak-detector threshold sensitivity.
 
+Run the threshold-robust passive refocusing confirmation with:
+
+```powershell
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --threshold-robust-confirmation
+```
+
+This is sign-flip-only and maps only the narrow phase-lock cluster plus nearby controls at cutoffs `17.920`, `17.925`, `17.930`, `17.935`, `17.940`, `17.945`, and `17.950`. The report adds a `threshold-robust refocusing score` section that evaluates peak thresholds `0.25`, `0.30`, `0.35`, and `0.40`, ranks rows by conservative score first and default-threshold score second, and includes threshold-free shell-energy area, tail area after `t=50`, autocorrelation, spectral concentration, and return timing regularity.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -765,6 +773,7 @@ When `prototype-3d-cutoff-phase-map-control` is used, the control folder include
 - `cutoff_phase_map_summary.csv`
 - `cutoff_phase_ranked_summary.csv`
 - `cutoff_phase_event_threshold_sensitivity.csv`
+- `cutoff_phase_threshold_robust_score.csv`
 - `cutoff_phase_map_3d_summary.json`
 - `cutoff_phase_map_3d_report.md`
 - `cutoff_phase_map_timeseries.csv`
@@ -774,7 +783,7 @@ When `prototype-3d-cutoff-phase-map-control` is used, the control folder include
 - `cutoff_phase_flux_balance_plot.png`
 - one lifecycle run folder per cutoff/phase/polarity timing variant
 
-The cutoff-phase report includes a `release phase island stability` section when stability checks are available. It also reports `phase-lock needle width` and an event-threshold sensitivity audit for the best row and nearest neighbors.
+The cutoff-phase report includes a `release phase island stability` section when stability checks are available. It also reports `phase-lock needle width`, an event-threshold sensitivity audit for the best row and nearest neighbors, and a `threshold-robust refocusing score` section for conservative cross-threshold ranking.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 
