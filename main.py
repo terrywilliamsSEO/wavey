@@ -36,6 +36,10 @@ from simulation.prototype_3d_cubic_focus import (
     CubicFocusControlOptions,
     run_3d_cubic_focus_control,
 )
+from simulation.prototype_3d_cutoff_phase_map import (
+    CutoffPhaseMap3DOptions,
+    run_3d_cutoff_phase_map_control,
+)
 from simulation.prototype_3d_defect_control import (
     DefectControl3DOptions,
     run_3d_defect_control,
@@ -625,6 +629,44 @@ def build_parser() -> argparse.ArgumentParser:
     refocus_map_parser.add_argument("--max-outer-shell-ratio", type=float, default=2.25, help="Maximum tail outer/shell ratio for generally clean variants")
     refocus_map_parser.add_argument("--strict-retention-target", type=float, default=0.30, help="Strict target for a strong constructive combined result")
     refocus_map_parser.add_argument("--strict-outer-shell-target", type=float, default=1.0, help="Strict outer/shell target for a strong constructive combined result")
+
+    cutoff_phase_parser = subparsers.add_parser(
+        "prototype-3d-cutoff-phase-map-control",
+        help="Run a tiny cutoff release-phase map around the clean 3D refocusing packet",
+    )
+    cutoff_phase_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    cutoff_phase_parser.add_argument("--output-root", default="runs", help="Directory for 3D cutoff-phase map outputs")
+    cutoff_phase_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this control is intended for 41^3")
+    cutoff_phase_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    cutoff_phase_parser.add_argument("--physical-duration", type=float, default=96.0, help="Extended physical end time while preserving each variant cutoff")
+    cutoff_phase_parser.add_argument("--sample-every", type=int, default=10, help="Sample interval passed to shared calibration options")
+    cutoff_phase_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense sample interval for lifecycle diagnostics")
+    cutoff_phase_parser.add_argument("--radial-bins", type=int, default=40, help="Number of radial bins for packet radius/width tracking")
+    cutoff_phase_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Inner radius of the measured shell window")
+    cutoff_phase_parser.add_argument("--shell-window-width", type=float, help="Physical width for the measured shell window; defaults to near-shell-width-dx * dx")
+    cutoff_phase_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    cutoff_phase_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    cutoff_phase_parser.add_argument("--phase-offset", type=float, default=0.5 * 3.141592653589793, help="Reference global cubic phase offset in radians")
+    cutoff_phase_parser.add_argument("--cutoff-center", type=float, help="Winning cutoff center; defaults to base cutoff plus cutoff-delta")
+    cutoff_phase_parser.add_argument("--cutoff-delta", type=float, default=2.0, help="Offset from base cutoff used when cutoff-center is omitted")
+    cutoff_phase_parser.add_argument("--cutoff-offsets", type=float, nargs="+", default=[-1.0, -0.5, 0.0, 0.5, 1.0], help="Tiny cutoff offsets around the center")
+    cutoff_phase_parser.add_argument("--phase-offset-deltas", type=float, nargs="+", default=[-3.141592653589793 / 16.0, 0.0, 3.141592653589793 / 16.0], help="Small global phase-offset deltas at the center cutoff")
+    cutoff_phase_parser.add_argument("--no-polarity-family", action="store_true", help="Disable the compact sign-flip/polarity comparison family")
+    cutoff_phase_parser.add_argument("--polarity-cutoff-offsets", type=float, nargs="+", default=[-0.5, 0.0, 0.5], help="Cutoff offsets for the compact sign-flip family")
+    cutoff_phase_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first meaningful shell arrival")
+    cutoff_phase_parser.add_argument("--exit-threshold-fraction", type=float, default=0.12, help="Fraction of shell peak used to mark shell-window exit after the peak")
+    cutoff_phase_parser.add_argument("--exit-hold-samples", type=int, default=10, help="Consecutive below-threshold samples required to mark shell-window exit")
+    cutoff_phase_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Fraction of post-cutoff shell peak required for major lifecycle peaks")
+    cutoff_phase_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Fraction of first major peak required for later refocus peaks")
+    cutoff_phase_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between major lifecycle peaks")
+    cutoff_phase_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
+    cutoff_phase_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
+    cutoff_phase_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
+    cutoff_phase_parser.add_argument("--min-retention-ratio", type=float, default=0.80, help="Minimum retention fraction versus cutoff reference for clean variants")
+    cutoff_phase_parser.add_argument("--max-outer-shell-ratio", type=float, default=2.25, help="Maximum tail outer/shell ratio for clean variants")
+    cutoff_phase_parser.add_argument("--strict-retention-target", type=float, default=0.30, help="Strict retention target for timing-island evidence")
+    cutoff_phase_parser.add_argument("--strict-outer-shell-target", type=float, default=1.0, help="Strict outer/shell target for timing-island evidence")
+    cutoff_phase_parser.add_argument("--timing-cluster-phase-tolerance-cycles", type=float, default=0.12, help="Max circular phase span for a timing-island cluster")
 
     return parser
 
@@ -1248,6 +1290,48 @@ def main() -> None:
             ),
         )
         _print_3d_refocusing_map_summary(result)
+        return
+
+    if args.command == "prototype-3d-cutoff-phase-map-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_cutoff_phase_map_control(
+            config,
+            options=CutoffPhaseMap3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                physical_duration=args.physical_duration,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                phase_offset=args.phase_offset,
+                cutoff_center=args.cutoff_center,
+                cutoff_delta=args.cutoff_delta,
+                cutoff_offsets=tuple(args.cutoff_offsets),
+                phase_offsets=tuple(args.phase_offset_deltas),
+                include_polarity_family=not args.no_polarity_family,
+                polarity_cutoff_offsets=tuple(args.polarity_cutoff_offsets),
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                min_peak_separation_time=args.min_peak_separation_time,
+                min_refocus_count=args.min_refocus_count,
+                min_width_growth_fraction=args.min_width_growth_fraction,
+                min_decay_rate_magnitude=args.min_decay_rate_magnitude,
+                min_retention_ratio=args.min_retention_ratio,
+                max_outer_shell_ratio=args.max_outer_shell_ratio,
+                strict_retention_target=args.strict_retention_target,
+                strict_outer_shell_target=args.strict_outer_shell_target,
+                timing_cluster_phase_tolerance_cycles=args.timing_cluster_phase_tolerance_cycles,
+            ),
+        )
+        _print_3d_cutoff_phase_map_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -2015,6 +2099,36 @@ def _print_3d_refocusing_map_summary(result: dict[str, Any]) -> None:
             f"peaks={row.get('major_shell_peak_count')}, "
             f"refocus={row.get('refocus_peak_count')}, "
             f"ratio={_format_optional(row.get('refocus_peak_ratio_max'))}, "
+            f"exit={exit_label}, "
+            f"ret={_format_optional(row.get('tail_shell_retention'))}, "
+            f"outer/shell={_format_optional(row.get('tail_outer_to_shell_mean'))}, "
+            f"decay={_format_optional(row.get('post_cutoff_shell_decay_rate'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"timeseries CSV: {result['timeseries_csv']}")
+    print(f"events CSV: {result['events_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_cutoff_phase_map_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D cutoff phase timing map complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        exit_label = "no" if not row.get("shell_exit_detected") else _format_optional(row.get("shell_exit_time"))
+        print(
+            f"  - {row['variant']}: "
+            f"family={row.get('family')}, "
+            f"axis={row.get('axis_label')}, "
+            f"cutoff={_format_optional(row.get('drive_cutoff_time'))}, "
+            f"phase={_format_optional(row.get('cutoff_phase_cycles'))}, "
+            f"peaks={row.get('major_shell_peak_count')}, "
+            f"refocus={row.get('refocus_peak_count')}, "
             f"exit={exit_label}, "
             f"ret={_format_optional(row.get('tail_shell_retention'))}, "
             f"outer/shell={_format_optional(row.get('tail_outer_to_shell_mean'))}, "

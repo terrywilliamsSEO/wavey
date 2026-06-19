@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, but the first cutoff-frequency map showed that the best cutoff and frequency knobs do not simply combine additively.
+The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, and the cutoff release-phase map showed cutoff 18 is a sharp timing island.
 
-Recommended next task: run a narrow single-axis refinement, preferably a cutoff-only micro-map around cutoff `18` at frequency `0.92`, with `frequency_high_reference` retained only as a cleanliness comparator. Keep the validated 41^3 neutral-lattice setup fixed: stronger sponge, inner-sponge-edge source placement, matched work per physical source area, radius-5 shell window, and global outer-window guard. Do not run a broad 3D sweep yet.
+Recommended next task: run one narrower cutoff/polarity timing check around cutoff `18`, frequency `0.92`, and the two strongest families (`phase_offset` and `sign_flip`). Try very small cutoff offsets, for example `17.8`, `17.9`, `18.0`, `18.1`, `18.2`, and keep matched work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, radius-5 shell window, and global outer-window guard fixed. Do not add frequency combinations, defects, rotation, medium shaping, or active second pulses yet.
 
 ## Status
 
@@ -183,6 +183,10 @@ Recommended next task: run a narrow single-axis refinement, preferably a cutoff-
 - Ran the cutoff-frequency map in `runs\refocusing_map_3d_20260618_204404`; result classified as `local_map_improved_single_axis`.
 - The combined `cutoff_long + frequency_high` setting did not improve: it dropped to four major shell-window peaks, three refocus peaks, exit at t=70.4, tail retention 0.0993, outer/shell 1.70, and global outer false.
 - `cutoff_long_reference` remains the best return-count/retention row; `frequency_high_reference` remains the cleanest low-outer-residue row.
+- Added `prototype-3d-cutoff-phase-map-control` for a tiny cutoff release-phase map at fixed frequency.
+- Ran the cutoff phase map in `runs\cutoff_phase_map_3d_20260619_085647`; result classified as `cutoff_timing_improved`.
+- Cutoff 18 is sharply better than nearby cutoff offsets: phase-offset cutoff 18 kept nine major peaks, eight refocus peaks, retention 0.269, outer/shell 0.809, and no exit, while +/-0.5 cutoff offsets dropped to three or four refocus peaks.
+- The best row was `sign_flip_cutoff_reference`: cutoff 18, cutoff phase 0.56 cycles, nine major peaks, eight refocus peaks, retention 0.296, outer/shell 0.594, decay -0.0249, no exit, and global outer false. It missed the strict 0.30 retention target by about 0.0043.
 
 ### In Progress
 
@@ -191,10 +195,11 @@ Recommended next task: run a narrow single-axis refinement, preferably a cutoff-
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
-- Run a narrow single-axis refinement rather than another cutoff-frequency combination.
+- Run a narrower cutoff/polarity timing check rather than another cutoff-frequency combination.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
-- Prefer a cutoff-only micro-map around cutoff 18 at frequency 0.92, because cutoff controls the return-count/retention row.
-- Keep `frequency_high_reference` as a cleanliness comparator because it lowered outer/shell residue, but do not treat frequency 0.94 as additive with cutoff 18.
+- Use frequency 0.92 and cutoff values very close to 18 for both `phase_offset` and `sign_flip` families.
+- Do not treat frequency 0.94 as additive with cutoff 18.
+- Do not move to trapping mechanisms until the release-timing pocket is narrowed.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
 - Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-shell peak/work, tail retention, refocus peak count, refocus ratio, exit detection/time, decay rate, inward/outward flux balance, and outer/shell tail ratio as the primary 3D metrics.
@@ -202,7 +207,7 @@ Recommended next task: run a narrow single-axis refinement, preferably a cutoff-
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls or broad 3D sweeps until the cutoff-only timing refinement shows whether the return-count/retention pocket is stable.
+- Do not run neighboring-frequency long controls or broad 3D sweeps until the cutoff/polarity timing refinement shows whether the return-count/retention pocket is stable.
 
 ## Phases
 
@@ -420,3 +425,7 @@ Possible work:
 - 2026-06-18: Ran the cutoff-frequency map in `runs\refocusing_map_3d_20260618_204404`; classification was `local_map_improved_single_axis`.
 - 2026-06-18: The combined `cutoff_long + frequency_high` candidate was not constructive: four major peaks, three refocus peaks, retention 0.0993, outer/shell 1.70, exit at t=70.4, and global outer false.
 - 2026-06-18: Updated the next step to a cutoff-only micro-refinement around cutoff 18 at frequency 0.92, with frequency-high kept as a cleanliness comparator.
+- 2026-06-19: Added `python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json`.
+- 2026-06-19: Ran the cutoff release-phase timing map in `runs\cutoff_phase_map_3d_20260619_085647`; classification was `cutoff_timing_improved`.
+- 2026-06-19: Cutoff 18 was sharply better than nearby +/-0.5 cutoff offsets, and `sign_flip_cutoff_reference` became the best clean row with retention 0.296, outer/shell 0.594, no exit, decay -0.0249, and global outer false.
+- 2026-06-19: Updated the next step to a narrower cutoff/polarity timing check around cutoff 18 before any trapping, rotation, medium-shaping, or active second-pulse controls.

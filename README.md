@@ -310,6 +310,14 @@ python main.py prototype-3d-refocusing-map-control --config configs\long_validat
 
 This is a two-knob local map, not a broad sweep. It keeps the 41^3 neutral-lattice cubic packet setup fixed and compares `cutoff_long`, `frequency_high`, their combined setting, and a few nearby cutoff/frequency neighbors under matched work per physical source area.
 
+Run the tiny 3D cutoff release-phase timing map with:
+
+```powershell
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json
+```
+
+This keeps frequency fixed and asks whether refocusing quality clusters around source release timing. It varies cutoff time near the winning cutoff, small global phase-offset perturbations at the winning cutoff, and a compact sign-flip/polarity family while reporting phase at cutoff.
+
 ## Run one simulation
 
 ```powershell
@@ -689,6 +697,18 @@ When `prototype-3d-refocusing-map-control` is used, the control folder includes:
 - `refocusing_map_radius_width_plot.png`
 - `refocusing_map_flux_balance_plot.png`
 - one lifecycle run folder per cutoff/frequency map variant
+
+When `prototype-3d-cutoff-phase-map-control` is used, the control folder includes:
+
+- `cutoff_phase_map_summary.csv`
+- `cutoff_phase_map_3d_summary.json`
+- `cutoff_phase_map_3d_report.md`
+- `cutoff_phase_map_timeseries.csv`
+- `cutoff_phase_map_events.csv`
+- `cutoff_phase_shell_energy_plot.png`
+- `cutoff_phase_radius_width_plot.png`
+- `cutoff_phase_flux_balance_plot.png`
+- one lifecycle run folder per cutoff/phase/polarity timing variant
 
 ## Metrics
 
