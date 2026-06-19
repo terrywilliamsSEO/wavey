@@ -56,6 +56,10 @@ from simulation.prototype_3d_standing_persistence import (
     StandingPersistence3DOptions,
     run_3d_standing_persistence_control,
 )
+from simulation.prototype_3d_transport_packet import (
+    TransportPacket3DOptions,
+    run_3d_transport_packet_audit,
+)
 from simulation.prototype_3d_radial_window_audit import (
     RadialWindowAudit3DOptions,
     run_3d_radial_window_audit,
@@ -485,6 +489,31 @@ def build_parser() -> argparse.ArgumentParser:
     standing_parser.add_argument("--min-frame-similarity", type=float, default=0.55, help="Minimum frame-to-mean and frame-to-frame shell similarity for a pass")
     standing_parser.add_argument("--min-phase-stability", type=float, default=0.25, help="Minimum settled shell phase stability for a pass")
     standing_parser.add_argument("--min-spectral-concentration", type=float, default=0.20, help="Minimum settled shell-energy spectral concentration for a pass")
+
+    packet_parser = subparsers.add_parser(
+        "prototype-3d-transport-packet-audit",
+        help="Run motion/flux diagnostics for the clean neutral cubic 3D shell-window tail",
+    )
+    packet_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    packet_parser.add_argument("--output-root", default="runs", help="Directory for 3D transport-packet outputs")
+    packet_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this audit is intended for 41^3")
+    packet_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    packet_parser.add_argument("--sample-every", type=int, default=10, help="Sample interval for base 3D metrics")
+    packet_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense sample interval for motion/flux diagnostics")
+    packet_parser.add_argument("--radial-bins", type=int, default=32, help="Number of radial bins for packet tracking")
+    packet_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Inner radius of the measured shell window")
+    packet_parser.add_argument("--shell-window-width", type=float, help="Physical width for the measured shell window; defaults to near-shell-width-dx * dx")
+    packet_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    packet_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    packet_parser.add_argument("--phase-offset", type=float, default=0.5 * 3.141592653589793, help="Global cubic phase offset control in radians")
+    packet_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first meaningful shell arrival")
+    packet_parser.add_argument("--exit-threshold-fraction", type=float, default=0.15, help="Fraction of shell peak used to mark shell-window exit after the peak")
+    packet_parser.add_argument("--exit-hold-samples", type=int, default=5, help="Consecutive below-threshold samples required to mark shell-window exit")
+    packet_parser.add_argument("--max-lag-samples", type=int, default=80, help="Maximum lag count for shell-pattern correlation")
+    packet_parser.add_argument("--min-abs-radial-group-velocity", type=float, default=0.05, help="Minimum radial group velocity magnitude for packet-like classification")
+    packet_parser.add_argument("--min-directional-flux-fraction", type=float, default=0.60, help="Minimum inward or outward flux fraction for packet-like classification")
+    packet_parser.add_argument("--max-stationary-radial-velocity", type=float, default=0.03, help="Maximum radial group velocity magnitude for modal-drift classification")
+    packet_parser.add_argument("--min-phase-or-angular-drift-rate", type=float, default=0.02, help="Minimum phase or angular drift rate for modal-drift classification")
 
     return parser
 
@@ -968,6 +997,35 @@ def main() -> None:
             ),
         )
         _print_3d_standing_persistence_summary(result)
+        return
+
+    if args.command == "prototype-3d-transport-packet-audit":
+        config = _load_sim_config(args.config)
+        result = run_3d_transport_packet_audit(
+            config,
+            options=TransportPacket3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                phase_offset=args.phase_offset,
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                max_lag_samples=args.max_lag_samples,
+                min_abs_radial_group_velocity=args.min_abs_radial_group_velocity,
+                min_directional_flux_fraction=args.min_directional_flux_fraction,
+                max_stationary_radial_velocity=args.max_stationary_radial_velocity,
+                min_phase_or_angular_drift_rate=args.min_phase_or_angular_drift_rate,
+            ),
+        )
+        _print_3d_transport_packet_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1629,6 +1687,35 @@ def _print_3d_standing_persistence_summary(result: dict[str, Any]) -> None:
     print(f"summary CSV: {result['summary_csv']}")
     print(f"timeseries CSV: {result['timeseries_csv']}")
     print(f"autocorrelation CSV: {result['autocorrelation_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_transport_packet_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D transport-packet audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"retention={_format_optional(row.get('near_shell_tail_retention'))}, "
+            f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
+            f"arrival={_format_optional(row.get('first_shell_arrival_time'))}, "
+            f"exit={row.get('shell_exit_detected')}, "
+            f"radial_v={_format_optional(row.get('radial_group_velocity'))}, "
+            f"in_flux={_format_optional(row.get('inward_flux_fraction'))}, "
+            f"out_flux={_format_optional(row.get('outward_flux_fraction'))}, "
+            f"phase_v={_format_optional(row.get('shell_phase_velocity'))}, "
+            f"ang_drift={_format_optional(row.get('mean_angular_drift_rate'))}, "
+            f"f2f={_format_optional(row.get('mean_frame_to_frame_similarity'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"timeseries CSV: {result['timeseries_csv']}")
+    print(f"lag correlation CSV: {result['lag_correlation_csv']}")
     print(f"report: {result['report_path']}")
     print(f"audit report: {result['audit_report_path']}")
 

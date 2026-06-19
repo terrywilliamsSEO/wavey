@@ -49,9 +49,9 @@ Current interpretation:
 - The 3D branch should now pivot from "defect well" language to structured boundary transport modes. Use the neutral lattice as the primary reference for the next 3D mechanism control.
 - The first neutral-lattice interference diagnostic classified as `interference_supported_standing_weak`: random phase controls lost phase coherence and became outer-window flagged, while cubic phase controls stayed organized, but standing-shell persistence did not clear the stricter threshold.
 - The dense two-variant standing-persistence check classified as `coherent_transport_not_standing`: sign-flip and phase-offset cubic variants retained clean shell-window energy and strong temporal/spectral coherence, but settled node/antinode masks, frame-to-mean shell patterns, and radial shell phase did not lock.
-- Current 3D wording should be structured cubic-boundary interference transport through the shell window, not defect-dependent localization and not a confirmed standing-shell mode.
+- The transport-packet audit classified the same clean cubic variants as `moving_transport_packet_supported`: both showed inward radial group velocity, inward-dominated shell flux, fast shell-window arrival, and near-zero angular drift. Current 3D wording should be structured cubic-boundary interference transport through the shell window, not defect-dependent localization and not a confirmed standing-shell mode.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is a tiny coherent-transport packet audit around the same clean 41^3 cubic variants.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is a tiny phase-shaping/refocusing control around the same clean 41^3 cubic packet.
 
 ## Latest Evidence
 
@@ -939,17 +939,49 @@ Interpretation:
 - Treat the result as a coherent structured boundary transport packet through the shell window, not as a confirmed standing-shell mode.
 - Do not use standing-shell language unless a future check passes settled spatial-locking metrics.
 
+### 3D Transport-Packet Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-transport-packet-audit --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\transport_packet_3d_20260618_193704\transport_packet_3d_report.md`
+- Summary CSV: `runs\transport_packet_3d_20260618_193704\transport_packet_summary.csv`
+- Timeseries CSV: `runs\transport_packet_3d_20260618_193704\transport_packet_timeseries.csv`
+- Lag correlation CSV: `runs\transport_packet_3d_20260618_193704\packet_lag_correlation.csv`
+- Classification: `moving_transport_packet_supported`
+
+Important values:
+
+| Variant | Retention | Outer/Near | Arrival | Peak Time | Exit | Radial V | R2 | TOF V | In Flux | Out Flux | Phase V | Angular Drift | F2F |
+| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| neutral_cubic_sign_flip_reference | 0.496 | 1.82 | 9.28 | 31.52 | false | -0.238 | 0.614 | 1.11 | 0.781 | 0.219 | 1.336 | 0.000 | 0.486 |
+| neutral_cubic_phase_offset | 0.674 | 1.49 | 8.48 | 35.04 | false | -0.232 | 0.669 | 1.22 | 0.787 | 0.213 | 1.333 | 0.000 | 0.416 |
+
+Interpretation:
+
+- The shell-window tail is better described as a moving inward transport packet than as a slowly rotating or drifting modal structure.
+- Inward shell flux dominates roughly 78% of the shell radial flux proxy in both variants.
+- Radial group velocity is consistently inward and comparable across the two clean cubic variants.
+- No shell-window exit was detected within the current run window, so the packet either remains/recycles in the measured region or decays without dropping below the exit threshold before the run ends.
+- Angular drift is near zero by the shell-centroid proxy; the important motion is radial transport plus shell-window phase advance.
+- The next useful question is whether boundary phase shaping can slow, redirect, or repeatedly refocus this packet without reintroducing outer-boundary contamination.
+
 ## Current Next Step
 
-Audit coherent transport-packet dynamics without broadening the physics scope:
+Run a tiny phase-shaping / refocusing control without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Run only the clean cubic sign-flip and cubic phase-offset variants unless a read-only comparison to existing random-phase artifacts is enough.
+- Start from the clean cubic sign-flip and cubic phase-offset variants.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
-- Add packet metrics: radial flux/front velocity, time-lagged shell-pattern correlation, shell entry/exit timing, phase-front drift, and recirculation versus one-pass transport.
+- Score whether phase shaping slows the inward radial group velocity, delays or repeats shell-window peaks, lowers outer/near contamination, preserves retention, and avoids global outer-window flags.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.

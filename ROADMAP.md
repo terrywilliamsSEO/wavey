@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Pivot the 3D branch from "defect well" and "standing shell" language to structured boundary-interference transport. The tiny defect-lift sweep found no defect variant that beat the neutral-lattice baseline, the neutral-lattice interference diagnostic supported phase-structured boundary interference, and the dense standing-persistence check found temporal coherence without a locked settled spatial shell pattern.
+Pivot the 3D branch from "defect well" and "standing shell" language to structured boundary-interference transport. The tiny defect-lift sweep found no defect variant that beat the neutral-lattice baseline, the neutral-lattice interference diagnostic supported phase-structured boundary interference, the dense standing-persistence check found temporal coherence without a locked settled spatial shell pattern, and the transport-packet audit classified the clean cubic variants as moving inward packets rather than slow modal drift.
 
-Recommended next task: add a tiny coherent-transport packet audit around the same two clean 41^3 cubic variants. Track radial energy flux/front motion, time-lagged shell-pattern correlation, shell-crossing time, phase-front drift, and whether the coherent packet exits or recirculates. Reuse the stronger-sponge inner-edge source, matched work per physical source area, neutral lattice, and radius-5 shell window. Do not run a broad 3D sweep yet.
+Recommended next task: add a tiny phase-shaping / refocusing control around the same clean 41^3 cubic packet. Try to slow, redirect, or repeatedly refocus the shell-window transport tail with minimal phase-geometry changes, while keeping stronger sponge, inner-sponge-edge source placement, neutral lattice, matched work per physical source area, and the radius-5 shell window fixed. Do not run a broad 3D sweep yet.
 
 ## Status
 
@@ -167,6 +167,10 @@ Recommended next task: add a tiny coherent-transport packet audit around the sam
 - Ran the standing-persistence check in `runs\standing_persistence_3d_20260618_190944`; result classified as `coherent_transport_not_standing`.
 - Both clean cubic variants retained clean shell-window energy and strong shell-energy periodicity, but failed settled spatial-locking criteria: sign-flip standing score 0.446, node/antinode stability 0.306, frame-to-mean similarity 0.250, radial phase stability 0.0066; phase-offset standing score 0.362, node/antinode stability 0.287, frame-to-mean similarity 0.133, radial phase stability 0.0092.
 - The sign-flip and phase-offset variants kept high frame-to-frame similarity, high shell-energy autocorrelation, high spectral concentration, and global outer false. Treat the signal as coherent cubic-boundary transport through the shell window, not a confirmed standing shell.
+- Added `prototype-3d-transport-packet-audit` for shell-window phase velocity, radial group velocity, 3D angular drift, time-of-flight, inward/outward radial flux, centroid displacement, shell exit timing, and lagged shell-pattern correlation.
+- Ran the transport-packet audit in `runs\transport_packet_3d_20260618_193704`; result classified as `moving_transport_packet_supported`.
+- Both clean cubic variants showed inward radial packet motion: sign-flip radial group velocity -0.238, inward flux fraction 0.781, arrival 9.28, no shell exit; phase-offset radial group velocity -0.232, inward flux fraction 0.787, arrival 8.48, no shell exit.
+- Angular drift was near zero in this proxy, and phase velocity was about 1.33 rad/time for both variants. Treat the mechanism as a radially moving coherent transport packet through the shell window.
 
 ### In Progress
 
@@ -176,16 +180,16 @@ Recommended next task: add a tiny coherent-transport packet audit around the sam
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
 - Use the neutral-lattice 41^3 sign-flip setup as the primary 3D reference.
-- Run only a tiny coherent-transport packet audit around neutral cubic sign-flip and neutral cubic phase-offset.
+- Run only a tiny phase-shaping / refocusing control around neutral cubic sign-flip and neutral cubic phase-offset.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, grid size 41^3, and the same shell-window scans.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
 - Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-defect shell-window peak/work, retention, radius range, arrival time, and outer/near tail ratio as the primary 3D metrics.
-- Add packet-dynamics metrics before more physics claims: radial flux/front velocity, time-lagged frame similarity, shell entry/exit timing, phase-front drift, and recirculation versus one-pass transport.
+- Score packet shaping directly: lower inward radial group velocity, delayed shell peak without outer contamination, repeated shell-window refocus peaks, lower outer/near ratio, preserved retention, and no new global outer flag.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls or broad 3D sweeps until the coherent packet dynamics are understood.
+- Do not run neighboring-frequency long controls or broad 3D sweeps until one tiny phase-shaping control tests whether the coherent packet can be slowed, redirected, or refocused.
 
 ## Phases
 
@@ -389,3 +393,6 @@ Possible work:
 - 2026-06-18: Ran the dense two-variant standing-persistence check in `runs\standing_persistence_3d_20260618_190944`; classification was `coherent_transport_not_standing`.
 - 2026-06-18: Both clean cubic variants kept clean retention and temporally coherent shell energy, but failed settled spatial locking: node/antinode stability stayed near 0.29-0.31, frame-to-mean similarity stayed 0.13-0.25, and radial shell phase stability was near zero.
 - 2026-06-18: Updated the next step to a tiny coherent-transport packet audit before any broader 3D sweep or standing-shell wording.
+- 2026-06-18: Added `python main.py prototype-3d-transport-packet-audit --config configs\long_validation_peak_0_92.json`.
+- 2026-06-18: Ran the packet audit in `runs\transport_packet_3d_20260618_193704`; classification was `moving_transport_packet_supported`.
+- 2026-06-18: The clean cubic variants showed inward radial group velocity around -0.23, inward shell flux fraction around 0.78, arrival near t=8.5-9.3, no shell exit within the run, and near-zero angular drift. Updated the next step to a tiny phase-shaping/refocusing control.

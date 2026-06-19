@@ -278,6 +278,14 @@ python main.py prototype-3d-standing-persistence --config configs\long_validatio
 
 This reruns only the two clean cubic variants, sign-flipped cubic and cubic phase-offset, with dense settled post-cutoff shell-window diagnostics. It measures node/antinode stability, radial shell phase stability, shell energy autocorrelation, frame-to-frame and frame-to-mean shell similarity, spectral concentration, and a settled standing score after transients have had time to clear.
 
+Run the tiny neutral-lattice 3D transport-packet audit with:
+
+```powershell
+python main.py prototype-3d-transport-packet-audit --config configs\long_validation_peak_0_92.json
+```
+
+This reruns the same two clean cubic variants and asks whether the shell-window tail is a moving wavefront / transport packet or a slowly drifting modal structure. It exports shell-window phase velocity, radial group velocity, angular drift, time-of-flight, inward/outward radial flux, centroid-displacement motion proxies, shell exit timing, and time-lagged shell-pattern correlations.
+
 ## Run one simulation
 
 ```powershell
@@ -600,6 +608,23 @@ When `prototype-3d-standing-persistence` is used, the control folder includes:
 - `shell_energy_autocorrelation_plot.png`
 - `standing_persistence/<variant>/mean_shell_pattern.png`
 - `standing_persistence/<variant>/antinode_mask.png`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per clean cubic variant
+- `failure_mode_audit/` with the variant-relative shell-window audit artifacts
+
+When `prototype-3d-transport-packet-audit` is used, the control folder includes:
+
+- `transport_packet_summary.csv`
+- `transport_packet_3d_summary.json`
+- `transport_packet_3d_report.md`
+- `transport_packet_timeseries.csv`
+- `packet_lag_correlation.csv`
+- `shell_energy_and_flux_plot.png`
+- `radial_motion_plot.png`
+- `phase_angular_drift_plot.png`
+- `packet_lag_correlation_plot.png`
+- `transport_packet/<variant>/shell_centroid_path.png`
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per clean cubic variant
