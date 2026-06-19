@@ -61,6 +61,8 @@ class Prototype3DConfig:
     drive_location: str
     drive_phase_mode: str
     drive_mode: str = "burst"
+    drive_chirp_start_frequency: float | None = None
+    drive_chirp_end_frequency: float | None = None
     shell_inner_radius: float | None = None
     shell_outer_radius: float | None = None
     boundary_source_inner_distance: float = 0.0
@@ -266,7 +268,7 @@ class Source3D:
         envelope = self.envelope(time)
         if envelope <= 0.0 or self.config.drive_amplitude == 0.0 or not np.any(self.mask):
             return out
-        angle = 2.0 * np.pi * self.config.drive_frequency * time + self.phase_map[self.mask]
+        angle = self._drive_angle(time) + self.phase_map[self.mask]
         out[self.mask] = (
             self.config.drive_amplitude
             * self.normalization_scale
@@ -275,6 +277,17 @@ class Source3D:
             * self.weights[self.mask]
         )
         return out
+
+    def _drive_angle(self, time: float) -> float:
+        if self.config.drive_mode != "chirp":
+            return 2.0 * np.pi * self.config.drive_frequency * time
+        cutoff = max(self.config.drive_cutoff_time, EPSILON)
+        start = self.config.drive_chirp_start_frequency
+        end = self.config.drive_chirp_end_frequency
+        f0 = float(start if start is not None else self.config.drive_frequency)
+        f1 = float(end if end is not None else self.config.drive_frequency)
+        k = (f1 - f0) / cutoff
+        return 2.0 * np.pi * (f0 * time + 0.5 * k * time**2)
 
 
 def run_3d_prototype(
@@ -559,6 +572,9 @@ def _summarize_variant(
         "drive_phase_mode": config.drive_phase_mode,
         "drive_amplitude": config.drive_amplitude,
         "drive_frequency": config.drive_frequency,
+        "drive_mode": config.drive_mode,
+        "drive_chirp_start_frequency": config.drive_chirp_start_frequency,
+        "drive_chirp_end_frequency": config.drive_chirp_end_frequency,
         "drive_cutoff_time": config.drive_cutoff_time,
         "defect_radius": config.defect_radius,
         "nonlinear_strength": config.nonlinear_strength,
@@ -852,6 +868,9 @@ def _summary_fields() -> list[str]:
         "drive_phase_mode",
         "drive_amplitude",
         "drive_frequency",
+        "drive_mode",
+        "drive_chirp_start_frequency",
+        "drive_chirp_end_frequency",
         "drive_cutoff_time",
         "defect_radius",
         "nonlinear_strength",

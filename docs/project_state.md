@@ -51,8 +51,10 @@ Current interpretation:
 - The dense two-variant standing-persistence check classified as `coherent_transport_not_standing`: sign-flip and phase-offset cubic variants retained clean shell-window energy and strong temporal/spectral coherence, but settled node/antinode masks, frame-to-mean shell patterns, and radial shell phase did not lock.
 - The transport-packet audit classified the same clean cubic variants as `moving_transport_packet_supported`: both showed inward radial group velocity, inward-dominated shell flux, fast shell-window arrival, and near-zero angular drift. Current 3D wording should be structured cubic-boundary interference transport through the shell window, not defect-dependent localization and not a confirmed standing-shell mode.
 - The extended packet lifecycle audit classified as `repeated_refocusing_supported`: both clean cubic variants showed multiple post-cutoff shell-window return peaks before eventual exit around `t=75-76`. The phase-offset variant is the current primary refocusing reference.
+- The first refocusing-engineering control classified as `refocusing_improved`: a longer cutoff and a slightly higher frequency both improved refocus count, tail retention, decay rate, and outer/shell contamination without global outer-window flags.
+- `cutoff_long` is the current best local refocusing variant: nine major shell-window peaks, eight refocus peaks, no detected shell exit, tail retention `0.269`, outer/shell `0.809`, decay `-0.0273`, and global outer false.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is a tiny refocusing-engineering control around the same clean 41^3 cubic packet.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is a second tiny local cutoff/frequency refinement around the same clean 41^3 cubic packet.
 
 ## Latest Evidence
 
@@ -1009,17 +1011,59 @@ Interpretation:
 - The phase-offset variant is the current best reference because it produced more major peaks, more refocus peaks, and the stronger refocus ratio.
 - The result remains neutral-lattice and not defect-dependent.
 
+### 3D Refocusing-Engineering Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-refocusing-engineering-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\refocusing_engineering_3d_20260618_202513\refocusing_engineering_3d_report.md`
+- Summary CSV: `runs\refocusing_engineering_3d_20260618_202513\refocusing_engineering_summary.csv`
+- Timeseries CSV: `runs\refocusing_engineering_3d_20260618_202513\refocusing_engineering_timeseries.csv`
+- Events CSV: `runs\refocusing_engineering_3d_20260618_202513\refocusing_engineering_events.csv`
+- Classification: `refocusing_improved`
+- Best variant: `cutoff_long`
+- Setup: `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched work per physical source area `0.105027`, radius-5 shell window, extended duration `t=96`
+
+Important values:
+
+| Variant | Axis | Cutoff | Freq | Peaks | Refocus | Ratio | Exit | Retention | Outer/Shell | Decay | In Flux | Global Outer |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- |
+| sign_flip_reference | sign flip | 16 | 0.92 | 5 | 4 | 1.793 | true, 74.72 | 0.116 | 1.504 | -0.0517 | 0.700 | false |
+| phase_offset_reference | phase ref | 16 | 0.92 | 6 | 5 | 2.006 | true, 76.00 | 0.132 | 1.780 | -0.0541 | 0.701 | false |
+| phase_offset_minus_delta | phase | 16 | 0.92 | 7 | 6 | 1.826 | true, 76.96 | 0.142 | 1.734 | -0.0518 | 0.709 | false |
+| phase_offset_plus_delta | phase | 16 | 0.92 | 5 | 4 | 2.191 | true, 75.20 | 0.121 | 1.814 | -0.0565 | 0.694 | false |
+| cutoff_short | cutoff | 14 | 0.92 | 5 | 4 | 2.423 | false | 0.196 | 0.770 | -0.0314 | 0.771 | false |
+| cutoff_long | cutoff | 18 | 0.92 | 9 | 8 | 2.308 | false | 0.269 | 0.809 | -0.0273 | 0.813 | false |
+| frequency_low | frequency | 16 | 0.90 | 6 | 5 | 2.315 | true, 89.44 | 0.142 | 1.138 | -0.0381 | 0.742 | false |
+| frequency_high | frequency | 16 | 0.94 | 8 | 7 | 2.058 | false | 0.257 | 0.686 | -0.0288 | 0.814 | false |
+| chirp_low_to_high | chirp | 16 | 0.92 | 6 | 5 | 1.668 | true, 75.36 | 0.121 | 1.841 | -0.0563 | 0.704 | false |
+
+Interpretation:
+
+- The result answers the current engineering question positively: small source timing/frequency changes can improve post-cutoff return count and delay or remove shell-window exit under this run horizon.
+- `cutoff_long` is the strongest single-axis result because it adds three refocus peaks over the phase-offset reference, doubles tail retention, cuts the outer/shell ratio by more than half, and slows the fitted decay rate.
+- `frequency_high` is also important because it achieves seven refocus peaks with the lowest outer/shell ratio in this set.
+- Phase offsets around the reference stayed clean, but did not beat the cutoff/frequency winners.
+- The chirp variant did not improve the reference under this simple low-to-high chirp.
+- This remains neutral-lattice structured boundary refocusing, not defect localization and not a confirmed standing-shell mode.
+
 ## Current Next Step
 
-Run a tiny refocusing-engineering control without broadening the physics scope:
+Run a second tiny local refocusing refinement without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Start from the clean cubic phase-offset variant, with sign-flip retained as the companion comparator.
+- Start from the clean `cutoff_long` and `frequency_high` winners, with phase-offset retained as the reference comparator.
 - Keep injected work matched per physical source area.
-- Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
-- Score whether phase shaping increases return-peak count, improves late return-peak ratios, slows decay, preserves retention, lowers outer/shell contamination, and avoids global outer-window flags.
+- Vary only cutoff near `18`, frequency near `0.94`, and maybe one or two combined cutoff/frequency candidates.
+- Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
+- Score whether local source-shaping increases return-peak count, improves late return-peak ratios, slows decay, preserves retention, lowers outer/shell contamination, delays/removes shell exit, and avoids global outer-window flags.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.

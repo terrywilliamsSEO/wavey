@@ -294,6 +294,14 @@ python main.py prototype-3d-packet-lifecycle-audit --config configs\long_validat
 
 This extends the clean cubic packet run while preserving the drive cutoff. It tracks packet radius, radial spread/width, shell-window energy peaks, shell exit timing, inward/outward flux balance, and post-cutoff shell decay to decide whether the packet simply passes through, diffuses, stalls, or repeatedly refocuses near the target shell window.
 
+Run the tiny 3D refocusing-engineering control with:
+
+```powershell
+python main.py prototype-3d-refocusing-engineering-control --config configs\long_validation_peak_0_92.json
+```
+
+This keeps the validated 41^3 neutral-lattice cubic packet setup fixed, matches work per physical source area, and varies only small source-shaping axes: cubic phase offset, cutoff timing, drive frequency, and an optional low-to-high chirp. It scores refocus peak count, refocus ratio, shell exit time, tail retention, shell peak/work, outer/shell residue, global outer-window flags, inward/outward flux balance, and post-cutoff decay.
+
 ## Run one simulation
 
 ```powershell
@@ -649,6 +657,18 @@ When `prototype-3d-packet-lifecycle-audit` is used, the control folder includes:
 - `packet_radius_width_plot.png`
 - `radial_flux_balance_plot.png`
 - one lifecycle timeseries/event CSV pair per clean cubic variant
+
+When `prototype-3d-refocusing-engineering-control` is used, the control folder includes:
+
+- `refocusing_engineering_summary.csv`
+- `refocusing_engineering_3d_summary.json`
+- `refocusing_engineering_3d_report.md`
+- `refocusing_engineering_timeseries.csv`
+- `refocusing_engineering_events.csv`
+- `refocusing_shell_energy_plot.png`
+- `refocusing_radius_width_plot.png`
+- `refocusing_flux_balance_plot.png`
+- one lifecycle run folder per tiny source-shaping variant
 
 ## Metrics
 

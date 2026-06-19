@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or broad 3D sweeps; the next step is a tiny 41^3 refocusing-engineering control around the clean cubic transport packet.
+- Do not run broad long sweeps or broad 3D sweeps; the next step is a second tiny 41^3 local refinement around the clean refocusing winners, especially `cutoff_long` and `frequency_high`.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -44,8 +44,9 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - The dense standing-persistence check classified as `coherent_transport_not_standing` in `runs\standing_persistence_3d_20260618_190944`: sign-flip and phase-offset cubic variants stayed clean and temporally coherent, but settled node/antinode stability, frame-to-mean shell similarity, and radial shell phase stability did not lock.
 - The transport-packet audit classified the same clean cubic variants as `moving_transport_packet_supported` in `runs\transport_packet_3d_20260618_193704`: sign-flip radial group velocity -0.238, inward flux fraction 0.781, arrival 9.28; phase-offset radial group velocity -0.232, inward flux fraction 0.787, arrival 8.48; both had near-zero angular drift and no shell exit detected.
 - The extended lifecycle audit classified the same clean cubic variants as `repeated_refocusing_supported` in `runs\packet_lifecycle_3d_20260618_195923`: sign-flip produced five major post-cutoff shell-window peaks and four refocus peaks before exit at t=74.72; phase-offset produced six major peaks and five refocus peaks before exit at t=76.00.
+- The 3D refocusing-engineering control classified as `refocusing_improved` in `runs\refocusing_engineering_3d_20260618_202513`: `cutoff_long` produced nine major shell-window peaks, eight refocus peaks, tail retention 0.269, outer/shell 0.809, decay -0.0273, no detected shell exit, and no global outer-window flag. `frequency_high` also stayed clean with eight major peaks, seven refocus peaks, retention 0.257, outer/shell 0.686, and no detected shell exit.
 - Do not phrase the 3D candidate as defect-required localization or a confirmed standing-shell mode. Better wording: structured boundary-interference shell-window transport/refocusing at 41^3.
-- The current next physics step is a tiny refocusing-engineering control around the clean phase-offset/sign-flip variants. Score whether phase changes increase return-peak count, improve late return-peak ratios, slow decay, preserve retention, lower outer/shell contamination, and avoid global outer flags. Do not widen into a grid, source-geometry sweep, or more defect-parameter fishing.
+- The current next physics step is a second tiny local refocusing refinement around the winning cutoff/frequency pocket. Vary only cutoff near 18, frequency near 0.94, and possibly a small combined cutoff/frequency adjustment while preserving 41^3, neutral lattice, stronger sponge, inner-sponge-edge source, matched work per physical source area, and radius-5 shell metrics. Do not widen into a grid, source-geometry sweep, or more defect-parameter fishing.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -102,6 +103,7 @@ python main.py prototype-3d-interference-diagnostics --config configs\long_valid
 python main.py prototype-3d-standing-persistence --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-transport-packet-audit --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-packet-lifecycle-audit --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-refocusing-engineering-control --config configs\long_validation_peak_0_92.json
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json
