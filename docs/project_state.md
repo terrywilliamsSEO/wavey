@@ -48,8 +48,10 @@ Current interpretation:
 - The tiny stronger/different-defect lift sweep classified as `no_defect_lift_found`: max retention lift was `1.262`, max peak/work lift was `1.170`, and zero windows lifted both metrics above `1.5`.
 - The 3D branch should now pivot from "defect well" language to structured boundary transport modes. Use the neutral lattice as the primary reference for the next 3D mechanism control.
 - The first neutral-lattice interference diagnostic classified as `interference_supported_standing_weak`: random phase controls lost phase coherence and became outer-window flagged, while cubic phase controls stayed organized, but standing-shell persistence did not clear the stricter threshold.
+- The dense two-variant standing-persistence check classified as `coherent_transport_not_standing`: sign-flip and phase-offset cubic variants retained clean shell-window energy and strong temporal/spectral coherence, but settled node/antinode masks, frame-to-mean shell patterns, and radial shell phase did not lock.
+- Current 3D wording should be structured cubic-boundary interference transport through the shell window, not defect-dependent localization and not a confirmed standing-shell mode.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is one dense two-variant standing-shell persistence confirmation.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is a tiny coherent-transport packet audit around the same clean 41^3 cubic variants.
 
 ## Latest Evidence
 
@@ -904,20 +906,50 @@ Interpretation:
 - Cubic sign-flip and cubic phase-offset variants retain clean shell-window behavior with much higher phase coherence and cubic/modal projection proxies.
 - Uniform same-coverage is borderline: it keeps some retention but exceeds the outer/near cleanliness limit, so it does not isolate a clean retained shell.
 - Standing-shell persistence is below the current threshold (`0.515` and `0.533` versus `0.60`), so the strongest claim should wait.
-- Current best wording: structured boundary-interference is likely central, but standing-shell persistence still needs a denser confirmation.
+- This motivated the denser standing-persistence check below; standing-shell language should wait for settled spatial-locking evidence.
+
+### 3D Standing-Shell Persistence
+
+Command:
+
+```powershell
+python main.py prototype-3d-standing-persistence --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\standing_persistence_3d_20260618_190944\standing_persistence_3d_report.md`
+- Summary CSV: `runs\standing_persistence_3d_20260618_190944\standing_persistence_summary.csv`
+- Timeseries CSV: `runs\standing_persistence_3d_20260618_190944\standing_persistence_timeseries.csv`
+- Autocorrelation CSV: `runs\standing_persistence_3d_20260618_190944\shell_energy_autocorrelation.csv`
+- Classification: `coherent_transport_not_standing`
+
+Important values:
+
+| Variant | Retention | Outer/Near | Global Outer | Standing | Node/Anti | To Mean | F2F | Phase Stability | Spectral | Lag1 AC | Period |
+| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| neutral_cubic_sign_flip_reference | 0.583 | 1.25 | false | 0.446 | 0.306 | 0.250 | 0.802 | 0.0066 | 0.867 | 0.994 | 32.16 |
+| neutral_cubic_phase_offset | 0.758 | 1.07 | false | 0.362 | 0.287 | 0.133 | 0.728 | 0.0092 | 0.652 | 0.977 | 32.16 |
+
+Interpretation:
+
+- Both clean cubic variants still pass the basic retained-shell cleanliness checks: global outer flag false, controlled outer/near tail ratio, and meaningful shell-window retention.
+- The shell-window energy time series is very coherent: lag-1 autocorrelation is high and the dominant spectral fraction is strong.
+- The settled spatial pattern does not lock: node/antinode stability is low, similarity to the settled mean pattern is low, and radial shell phase stability is near zero.
+- Treat the result as a coherent structured boundary transport packet through the shell window, not as a confirmed standing-shell mode.
+- Do not use standing-shell language unless a future check passes settled spatial-locking metrics.
 
 ## Current Next Step
 
-Confirm standing-shell persistence without broadening the physics scope:
+Audit coherent transport-packet dynamics without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Run only two variants: neutral cubic sign-flip repeat and one deterministic random-phase negative control.
-- Use denser post-cutoff diagnostic snapshots than the first interference run.
+- Run only the clean cubic sign-flip and cubic phase-offset variants unless a read-only comparison to existing random-phase artifacts is enough.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
-- Make standing-shell persistence and phase coherence the deciding diagnostics.
+- Add packet metrics: radial flux/front velocity, time-lagged shell-pattern correlation, shell entry/exit timing, phase-front drift, and recirculation versus one-pass transport.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.

@@ -52,6 +52,10 @@ from simulation.prototype_3d_interference_diagnostics import (
     InterferenceDiagnostics3DOptions,
     run_3d_interference_diagnostics,
 )
+from simulation.prototype_3d_standing_persistence import (
+    StandingPersistence3DOptions,
+    run_3d_standing_persistence_control,
+)
 from simulation.prototype_3d_radial_window_audit import (
     RadialWindowAudit3DOptions,
     run_3d_radial_window_audit,
@@ -457,6 +461,30 @@ def build_parser() -> argparse.ArgumentParser:
     interference_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
     interference_parser.add_argument("--phase-offset", type=float, default=0.5 * 3.141592653589793, help="Global cubic phase offset control in radians")
     interference_parser.add_argument("--random-phase-seeds", type=int, nargs="+", default=[31092, 41092], help="Seeds for deterministic per-cell random boundary phase controls")
+
+    standing_parser = subparsers.add_parser(
+        "prototype-3d-standing-persistence",
+        help="Run dense settled shell-pattern diagnostics for the two clean neutral cubic 3D variants",
+    )
+    standing_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    standing_parser.add_argument("--output-root", default="runs", help="Directory for 3D standing-persistence outputs")
+    standing_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this confirmation is intended for 41^3")
+    standing_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    standing_parser.add_argument("--sample-every", type=int, default=10, help="Sample interval for base 3D metrics")
+    standing_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense sample interval for settled shell diagnostics")
+    standing_parser.add_argument("--radial-bins", type=int, default=24, help="Number of radial bins for shell-window profiles")
+    standing_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Inner radius of the measured shell window")
+    standing_parser.add_argument("--shell-window-width", type=float, help="Physical width for the measured shell window; defaults to near-shell-width-dx * dx")
+    standing_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    standing_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    standing_parser.add_argument("--phase-offset", type=float, default=0.5 * 3.141592653589793, help="Global cubic phase offset control in radians")
+    standing_parser.add_argument("--settle-after-cutoff", type=float, default=8.0, help="Delay after drive cutoff before standing metrics begin")
+    standing_parser.add_argument("--node-quantile", type=float, default=0.20, help="Quantile used to identify settled node and antinode shell cells")
+    standing_parser.add_argument("--min-standing-score", type=float, default=0.60, help="Minimum composite standing score for a pass")
+    standing_parser.add_argument("--min-node-antinode-stability", type=float, default=0.55, help="Minimum node/antinode mask stability for a pass")
+    standing_parser.add_argument("--min-frame-similarity", type=float, default=0.55, help="Minimum frame-to-mean and frame-to-frame shell similarity for a pass")
+    standing_parser.add_argument("--min-phase-stability", type=float, default=0.25, help="Minimum settled shell phase stability for a pass")
+    standing_parser.add_argument("--min-spectral-concentration", type=float, default=0.20, help="Minimum settled shell-energy spectral concentration for a pass")
 
     return parser
 
@@ -912,6 +940,34 @@ def main() -> None:
             ),
         )
         _print_3d_interference_diagnostics_summary(result)
+        return
+
+    if args.command == "prototype-3d-standing-persistence":
+        config = _load_sim_config(args.config)
+        result = run_3d_standing_persistence_control(
+            config,
+            options=StandingPersistence3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                phase_offset=args.phase_offset,
+                settle_after_cutoff=args.settle_after_cutoff,
+                node_quantile=args.node_quantile,
+                min_standing_score=args.min_standing_score,
+                min_node_antinode_stability=args.min_node_antinode_stability,
+                min_frame_similarity=args.min_frame_similarity,
+                min_phase_stability=args.min_phase_stability,
+                min_spectral_concentration=args.min_spectral_concentration,
+            ),
+        )
+        _print_3d_standing_persistence_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -1545,6 +1601,34 @@ def _print_3d_interference_diagnostics_summary(result: dict[str, Any]) -> None:
     print(f"phase CSV: {result['phase_csv']}")
     print(f"modal CSV: {result['modal_csv']}")
     print(f"wavefront CSV: {result['wavefront_csv']}")
+    print(f"report: {result['report_path']}")
+    print(f"audit report: {result['audit_report_path']}")
+
+
+def _print_3d_standing_persistence_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D standing-shell persistence control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        print(
+            f"  - {row['variant']}: "
+            f"standing={_format_optional(row.get('standing_score'))}, "
+            f"node/anti={_format_optional(row.get('node_antinode_stability'))}, "
+            f"to_mean={_format_optional(row.get('frame_similarity_to_mean_mean'))}, "
+            f"f2f={_format_optional(row.get('frame_to_frame_similarity_mean'))}, "
+            f"phase={_format_optional(row.get('radial_shell_phase_stability'))}, "
+            f"spectral={_format_optional(row.get('shell_energy_spectral_concentration'))}, "
+            f"retention={_format_optional(row.get('near_shell_tail_retention'))}, "
+            f"outer/near={_format_optional(row.get('outer_to_near_tail_energy_ratio'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"timeseries CSV: {result['timeseries_csv']}")
+    print(f"autocorrelation CSV: {result['autocorrelation_csv']}")
     print(f"report: {result['report_path']}")
     print(f"audit report: {result['audit_report_path']}")
 

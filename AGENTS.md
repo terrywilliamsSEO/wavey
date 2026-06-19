@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or broad 3D sweeps; the next step is one dense 41^3 two-variant standing-shell persistence confirmation.
+- Do not run broad long sweeps or broad 3D sweeps; the next step is a tiny 41^3 coherent-transport packet audit around the clean cubic variants.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -41,8 +41,9 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - No stable scanned shell window showed defect lift above 1.5 for both retention and peak/work.
 - The stronger/different-defect lift sweep classified as `no_defect_lift_found` in `runs\defect_lift_sweep_3d_20260618_163154`: max retention lift was 1.262, max peak/work lift was 1.170, and zero windows lifted both metrics above 1.5.
 - The neutral-lattice interference diagnostic classified as `interference_supported_standing_weak` in `runs\interference_diagnostics_3d_20260618_175806`: cubic sign-flip stayed clean with coherence 0.409 and outer/near 1.25, random phase controls outer-flagged with coherence 0.013-0.018 and outer/near 5.76-6.32, but cubic standing persistence was only 0.515 versus the 0.60 threshold.
-- Do not phrase the 3D candidate as defect-required localization. Better wording: structured boundary-interference shell-window transport at 41^3, with standing-shell persistence still unconfirmed.
-- The current next physics step is one dense 41^3 two-variant standing persistence confirmation: neutral cubic sign-flip repeat plus one deterministic random-phase negative control. Do not widen into a grid, source-geometry sweep, or more defect-parameter fishing.
+- The dense standing-persistence check classified as `coherent_transport_not_standing` in `runs\standing_persistence_3d_20260618_190944`: sign-flip and phase-offset cubic variants stayed clean and temporally coherent, but settled node/antinode stability, frame-to-mean shell similarity, and radial shell phase stability did not lock.
+- Do not phrase the 3D candidate as defect-required localization or a confirmed standing-shell mode. Better wording: structured boundary-interference shell-window transport at 41^3.
+- The current next physics step is a tiny coherent-transport packet audit around the same clean cubic variants. Do not widen into a grid, source-geometry sweep, or more defect-parameter fishing.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -96,6 +97,7 @@ python main.py prototype-3d-defect-control --config configs\long_validation_peak
 python main.py prototype-3d-radial-window-audit --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-defect-lift-sweep --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-interference-diagnostics --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-standing-persistence --config configs\long_validation_peak_0_92.json
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json

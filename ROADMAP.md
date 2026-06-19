@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-Pivot the 3D branch from "defect well" language to structured boundary transport modes. The tiny defect-lift sweep found no defect variant that beat the neutral-lattice baseline, and the first neutral-lattice interference diagnostic supports phase-structured boundary interference with a standing-persistence caveat.
+Pivot the 3D branch from "defect well" and "standing shell" language to structured boundary-interference transport. The tiny defect-lift sweep found no defect variant that beat the neutral-lattice baseline, the neutral-lattice interference diagnostic supported phase-structured boundary interference, and the dense standing-persistence check found temporal coherence without a locked settled spatial shell pattern.
 
-Recommended next task: repeat only the neutral cubic reference and one random-phase negative control at 41^3 with denser post-cutoff snapshots. Keep the stronger-sponge inner-edge source, matched work per physical source area, same shell-window metrics, and focus on standing-shell persistence. Do not run a broad 3D sweep yet.
+Recommended next task: add a tiny coherent-transport packet audit around the same two clean 41^3 cubic variants. Track radial energy flux/front motion, time-lagged shell-pattern correlation, shell-crossing time, phase-front drift, and whether the coherent packet exits or recirculates. Reuse the stronger-sponge inner-edge source, matched work per physical source area, neutral lattice, and radius-5 shell window. Do not run a broad 3D sweep yet.
 
 ## Status
 
@@ -163,6 +163,10 @@ Recommended next task: repeat only the neutral cubic reference and one random-ph
 - Ran the first interference diagnostic in `runs\interference_diagnostics_3d_20260618_175806`; result classified as `interference_supported_standing_weak`.
 - Same-work random phase controls retained energy but became outer-window flagged, with outer/near 5.76-6.32, tail phase coherence 0.013-0.018, and cubic projection about 0.004. The cubic sign-flip reference stayed clean with retention 0.583, outer/near 1.25, phase coherence 0.409, and cubic projection 0.146.
 - Standing-shell persistence was only 0.515 for the cubic reference versus the current 0.60 threshold, so the next step is a dense two-variant persistence confirmation before claiming a standing-shell mode.
+- Added `prototype-3d-standing-persistence` for dense settled post-cutoff shell-window diagnostics on the two clean neutral cubic variants.
+- Ran the standing-persistence check in `runs\standing_persistence_3d_20260618_190944`; result classified as `coherent_transport_not_standing`.
+- Both clean cubic variants retained clean shell-window energy and strong shell-energy periodicity, but failed settled spatial-locking criteria: sign-flip standing score 0.446, node/antinode stability 0.306, frame-to-mean similarity 0.250, radial phase stability 0.0066; phase-offset standing score 0.362, node/antinode stability 0.287, frame-to-mean similarity 0.133, radial phase stability 0.0092.
+- The sign-flip and phase-offset variants kept high frame-to-frame similarity, high shell-energy autocorrelation, high spectral concentration, and global outer false. Treat the signal as coherent cubic-boundary transport through the shell window, not a confirmed standing shell.
 
 ### In Progress
 
@@ -172,15 +176,16 @@ Recommended next task: repeat only the neutral cubic reference and one random-ph
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
 - Use the neutral-lattice 41^3 sign-flip setup as the primary 3D reference.
-- Run only a dense post-cutoff persistence confirmation: neutral cubic sign-flip repeat plus one deterministic random-phase negative control.
+- Run only a tiny coherent-transport packet audit around neutral cubic sign-flip and neutral cubic phase-offset.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, grid size 41^3, and the same shell-window scans.
-- Keep cubic phase structure as the main 3D source hypothesis, but do not call it proven until standing-shell persistence clears the stricter check.
+- Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
 - Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-defect shell-window peak/work, retention, radius range, arrival time, and outer/near tail ratio as the primary 3D metrics.
+- Add packet-dynamics metrics before more physics claims: radial flux/front velocity, time-lagged frame similarity, shell entry/exit timing, phase-front drift, and recirculation versus one-pass transport.
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls or broad 3D sweeps until the denser persistence check says whether the retained shell tail is a stable standing-shell pattern or a weaker phase-organized transport tail.
+- Do not run neighboring-frequency long controls or broad 3D sweeps until the coherent packet dynamics are understood.
 
 ## Phases
 
@@ -380,3 +385,7 @@ Possible work:
 - 2026-06-18: Added deterministic per-cell random phase support and `python main.py prototype-3d-interference-diagnostics --config configs\long_validation_peak_0_92.json`.
 - 2026-06-18: Ran the neutral-lattice interference diagnostic in `runs\interference_diagnostics_3d_20260618_175806`; classification was `interference_supported_standing_weak`.
 - 2026-06-18: Random phase controls outer-flagged and lost phase coherence, while cubic sign-flip and cubic offset controls stayed organized. Standing-shell persistence remained below threshold, so the next step is a dense two-variant persistence confirmation.
+- 2026-06-18: Added `python main.py prototype-3d-standing-persistence --config configs\long_validation_peak_0_92.json`.
+- 2026-06-18: Ran the dense two-variant standing-persistence check in `runs\standing_persistence_3d_20260618_190944`; classification was `coherent_transport_not_standing`.
+- 2026-06-18: Both clean cubic variants kept clean retention and temporally coherent shell energy, but failed settled spatial locking: node/antinode stability stayed near 0.29-0.31, frame-to-mean similarity stayed 0.13-0.25, and radial shell phase stability was near zero.
+- 2026-06-18: Updated the next step to a tiny coherent-transport packet audit before any broader 3D sweep or standing-shell wording.

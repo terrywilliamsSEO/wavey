@@ -270,6 +270,14 @@ python main.py prototype-3d-interference-diagnostics --config configs\long_valid
 
 This keeps the 41^3 neutral-lattice sign-flipped cubic stronger-sponge setup fixed, matches work per physical source area, and compares cubic phase with same-coverage uniform, cubic phase-offset, and deterministic per-cell random phase controls. It exports phase coherence, constructive/destructive alignment, modal projection proxies, wavefront timing, randomization controls, and standing-shell persistence diagnostics.
 
+Run the tiny neutral-lattice 3D standing-shell persistence check with:
+
+```powershell
+python main.py prototype-3d-standing-persistence --config configs\long_validation_peak_0_92.json
+```
+
+This reruns only the two clean cubic variants, sign-flipped cubic and cubic phase-offset, with dense settled post-cutoff shell-window diagnostics. It measures node/antinode stability, radial shell phase stability, shell energy autocorrelation, frame-to-frame and frame-to-mean shell similarity, spectral concentration, and a settled standing score after transients have had time to clear.
+
 ## Run one simulation
 
 ```powershell
@@ -578,6 +586,23 @@ When `prototype-3d-interference-diagnostics` is used, the control folder include
 - `prototype_3d_summary.csv`
 - `prototype_3d_summary.json`
 - one run folder per phase-control variant
+- `failure_mode_audit/` with the variant-relative shell-window audit artifacts
+
+When `prototype-3d-standing-persistence` is used, the control folder includes:
+
+- `standing_persistence_summary.csv`
+- `standing_persistence_3d_summary.json`
+- `standing_persistence_3d_report.md`
+- `standing_persistence_timeseries.csv`
+- `shell_energy_autocorrelation.csv`
+- `shell_pattern_similarity_plot.png`
+- `shell_phase_stability_plot.png`
+- `shell_energy_autocorrelation_plot.png`
+- `standing_persistence/<variant>/mean_shell_pattern.png`
+- `standing_persistence/<variant>/antinode_mask.png`
+- `prototype_3d_summary.csv`
+- `prototype_3d_summary.json`
+- one run folder per clean cubic variant
 - `failure_mode_audit/` with the variant-relative shell-window audit artifacts
 
 ## Metrics
