@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. The latest refocusing-engineering control showed that source timing/frequency can improve repeated shell-window returns without adding outer-window contamination.
+The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, but the first cutoff-frequency map showed that the best cutoff and frequency knobs do not simply combine additively.
 
-Recommended next task: run a second tiny local refinement around the winners from `runs\refocusing_engineering_3d_20260618_202513`, especially `cutoff_long` and `frequency_high`. Keep the validated 41^3 neutral-lattice setup fixed: stronger sponge, inner-sponge-edge source placement, matched work per physical source area, radius-5 shell window, and global outer-window guard. Vary only small cutoff values near 18, small frequencies near 0.94, and possibly one combined cutoff/frequency adjustment. Do not run a broad 3D sweep yet.
+Recommended next task: run a narrow single-axis refinement, preferably a cutoff-only micro-map around cutoff `18` at frequency `0.92`, with `frequency_high_reference` retained only as a cleanliness comparator. Keep the validated 41^3 neutral-lattice setup fixed: stronger sponge, inner-sponge-edge source placement, matched work per physical source area, radius-5 shell window, and global outer-window guard. Do not run a broad 3D sweep yet.
 
 ## Status
 
@@ -179,6 +179,10 @@ Recommended next task: run a second tiny local refinement around the winners fro
 - Ran the refocusing-engineering control in `runs\refocusing_engineering_3d_20260618_202513`; result classified as `refocusing_improved`.
 - `cutoff_long` was the best local variant: nine major shell-window peaks, eight refocus peaks, no detected shell exit, tail retention 0.269, outer/shell 0.809, decay rate -0.0273, and global outer false.
 - `frequency_high` was also clean and improved: eight major peaks, seven refocus peaks, no detected shell exit, tail retention 0.257, outer/shell 0.686, decay rate -0.0288, and global outer false.
+- Added `prototype-3d-refocusing-map-control` for a tiny cutoff-frequency cross-map around `cutoff_long` and `frequency_high`.
+- Ran the cutoff-frequency map in `runs\refocusing_map_3d_20260618_204404`; result classified as `local_map_improved_single_axis`.
+- The combined `cutoff_long + frequency_high` setting did not improve: it dropped to four major shell-window peaks, three refocus peaks, exit at t=70.4, tail retention 0.0993, outer/shell 1.70, and global outer false.
+- `cutoff_long_reference` remains the best return-count/retention row; `frequency_high_reference` remains the cleanest low-outer-residue row.
 
 ### In Progress
 
@@ -187,9 +191,10 @@ Recommended next task: run a second tiny local refinement around the winners fro
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
-- Run a second tiny local refinement around `cutoff_long` and `frequency_high`.
+- Run a narrow single-axis refinement rather than another cutoff-frequency combination.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
-- Vary only cutoff near 18, frequency near 0.94, and possibly one or two combined cutoff/frequency candidates.
+- Prefer a cutoff-only micro-map around cutoff 18 at frequency 0.92, because cutoff controls the return-count/retention row.
+- Keep `frequency_high_reference` as a cleanliness comparator because it lowered outer/shell residue, but do not treat frequency 0.94 as additive with cutoff 18.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
 - Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-shell peak/work, tail retention, refocus peak count, refocus ratio, exit detection/time, decay rate, inward/outward flux balance, and outer/shell tail ratio as the primary 3D metrics.
@@ -197,7 +202,7 @@ Recommended next task: run a second tiny local refinement around the winners fro
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls or broad 3D sweeps until the local cutoff/frequency refinement shows whether the improved refocusing pocket is stable.
+- Do not run neighboring-frequency long controls or broad 3D sweeps until the cutoff-only timing refinement shows whether the return-count/retention pocket is stable.
 
 ## Phases
 
@@ -411,3 +416,7 @@ Possible work:
 - 2026-06-18: Ran the refocusing-engineering control in `runs\refocusing_engineering_3d_20260618_202513`; classification was `refocusing_improved`.
 - 2026-06-18: `cutoff_long` produced the strongest clean improvement with nine major peaks, eight refocus peaks, tail retention 0.269, outer/shell 0.809, no detected shell exit, decay -0.0273, and global outer false.
 - 2026-06-18: Updated the next step to a second tiny local cutoff/frequency refinement around `cutoff_long` and `frequency_high`, not a broad 3D sweep.
+- 2026-06-18: Added `python main.py prototype-3d-refocusing-map-control --config configs\long_validation_peak_0_92.json`.
+- 2026-06-18: Ran the cutoff-frequency map in `runs\refocusing_map_3d_20260618_204404`; classification was `local_map_improved_single_axis`.
+- 2026-06-18: The combined `cutoff_long + frequency_high` candidate was not constructive: four major peaks, three refocus peaks, retention 0.0993, outer/shell 1.70, exit at t=70.4, and global outer false.
+- 2026-06-18: Updated the next step to a cutoff-only micro-refinement around cutoff 18 at frequency 0.92, with frequency-high kept as a cleanliness comparator.

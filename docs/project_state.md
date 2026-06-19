@@ -53,8 +53,10 @@ Current interpretation:
 - The extended packet lifecycle audit classified as `repeated_refocusing_supported`: both clean cubic variants showed multiple post-cutoff shell-window return peaks before eventual exit around `t=75-76`. The phase-offset variant is the current primary refocusing reference.
 - The first refocusing-engineering control classified as `refocusing_improved`: a longer cutoff and a slightly higher frequency both improved refocus count, tail retention, decay rate, and outer/shell contamination without global outer-window flags.
 - `cutoff_long` is the current best local refocusing variant: nine major shell-window peaks, eight refocus peaks, no detected shell exit, tail retention `0.269`, outer/shell `0.809`, decay `-0.0273`, and global outer false.
+- The cutoff-frequency map classified as `local_map_improved_single_axis`: `cutoff_long + frequency_high` did not combine constructively and instead dropped to four major peaks, three refocus peaks, retention `0.0993`, outer/shell `1.70`, and exit at `t=70.4`.
+- Current interpretation: cutoff timing and frequency can tune refocusing, but the two knobs are phase/timing coupled rather than independently additive.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is a second tiny local cutoff/frequency refinement around the same clean 41^3 cubic packet.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is a cutoff-only micro-refinement around cutoff `18` at frequency `0.92`, with `frequency_high` retained only as a cleanliness comparator.
 
 ## Latest Evidence
 
@@ -1052,18 +1054,56 @@ Interpretation:
 - The chirp variant did not improve the reference under this simple low-to-high chirp.
 - This remains neutral-lattice structured boundary refocusing, not defect localization and not a confirmed standing-shell mode.
 
+### 3D Cutoff-Frequency Refocusing Map
+
+Command:
+
+```powershell
+python main.py prototype-3d-refocusing-map-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\refocusing_map_3d_20260618_204404\refocusing_map_3d_report.md`
+- Summary CSV: `runs\refocusing_map_3d_20260618_204404\refocusing_map_summary.csv`
+- Timeseries CSV: `runs\refocusing_map_3d_20260618_204404\refocusing_map_timeseries.csv`
+- Events CSV: `runs\refocusing_map_3d_20260618_204404\refocusing_map_events.csv`
+- Classification: `local_map_improved_single_axis`
+- Setup: `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched work per physical source area `0.105027`, radius-5 shell window, extended duration `t=96`
+
+Important values:
+
+| Variant | Cutoff | Freq | Peaks | Refocus | Ratio | Exit | Retention | Outer/Shell | Decay | In Flux | Global Outer |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- |
+| phase_offset_reference | 16 | 0.92 | 6 | 5 | 2.006 | true, 76.00 | 0.132 | 1.780 | -0.0541 | 0.701 | false |
+| cutoff_long_reference | 18 | 0.92 | 9 | 8 | 2.308 | false | 0.269 | 0.809 | -0.0273 | 0.813 | false |
+| frequency_high_reference | 16 | 0.94 | 8 | 7 | 2.058 | false | 0.257 | 0.686 | -0.0288 | 0.814 | false |
+| combined_cutoff_long_frequency_high | 18 | 0.94 | 4 | 3 | 2.201 | true, 70.40 | 0.0993 | 1.695 | -0.0484 | 0.702 | false |
+| cutoff_low_frequency_high | 17 | 0.94 | 4 | 3 | 1.908 | true, 76.64 | 0.127 | 1.364 | -0.0512 | 0.707 | false |
+| cutoff_high_frequency_high | 19 | 0.94 | 6 | 5 | 2.809 | false | 0.235 | 0.720 | -0.0313 | 0.792 | false |
+| cutoff_long_frequency_low | 18 | 0.93 | 7 | 6 | 2.422 | false | 0.224 | 1.033 | -0.0315 | 0.800 | false |
+| cutoff_long_frequency_higher | 18 | 0.95 | 5 | 4 | 1.718 | true, 71.52 | 0.114 | 2.385 | -0.0546 | 0.701 | false |
+
+Interpretation:
+
+- The obvious combined test failed: `cutoff_long + frequency_high` did not produce more than nine peaks, did not reach retention above `0.3`, did not avoid exit, and did not keep outer/shell below `1`.
+- This argues against treating cutoff and frequency as independent additive knobs.
+- `cutoff_long_reference` remains the best return-count and retention row.
+- `frequency_high_reference` remains the cleanest low-outer-residue row, but adding it to cutoff `18` disrupts the return sequence.
+- The next control should be single-axis and timing-focused rather than another two-knob map.
+
 ## Current Next Step
 
-Run a second tiny local refocusing refinement without broadening the physics scope:
+Run a cutoff-only micro-refinement without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Start from the clean `cutoff_long` and `frequency_high` winners, with phase-offset retained as the reference comparator.
+- Start from `cutoff_long_reference`, with `frequency_high_reference` retained as a cleanliness comparator.
 - Keep injected work matched per physical source area.
-- Vary only cutoff near `18`, frequency near `0.94`, and maybe one or two combined cutoff/frequency candidates.
+- Vary only cutoff near `18` at frequency `0.92`; do not add new frequency combinations yet.
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
-- Score whether local source-shaping increases return-peak count, improves late return-peak ratios, slows decay, preserves retention, lowers outer/shell contamination, delays/removes shell exit, and avoids global outer-window flags.
+- Score whether cutoff timing increases return-peak count above nine, improves late return-peak ratios, slows decay, raises retention above `0.3`, keeps outer/shell near or below `1`, delays/removes shell exit, and avoids global outer-window flags.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.

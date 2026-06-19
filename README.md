@@ -302,6 +302,14 @@ python main.py prototype-3d-refocusing-engineering-control --config configs\long
 
 This keeps the validated 41^3 neutral-lattice cubic packet setup fixed, matches work per physical source area, and varies only small source-shaping axes: cubic phase offset, cutoff timing, drive frequency, and an optional low-to-high chirp. It scores refocus peak count, refocus ratio, shell exit time, tail retention, shell peak/work, outer/shell residue, global outer-window flags, inward/outward flux balance, and post-cutoff decay.
 
+Run the tiny 3D cutoff-frequency refocusing map with:
+
+```powershell
+python main.py prototype-3d-refocusing-map-control --config configs\long_validation_peak_0_92.json
+```
+
+This is a two-knob local map, not a broad sweep. It keeps the 41^3 neutral-lattice cubic packet setup fixed and compares `cutoff_long`, `frequency_high`, their combined setting, and a few nearby cutoff/frequency neighbors under matched work per physical source area.
+
 ## Run one simulation
 
 ```powershell
@@ -669,6 +677,18 @@ When `prototype-3d-refocusing-engineering-control` is used, the control folder i
 - `refocusing_radius_width_plot.png`
 - `refocusing_flux_balance_plot.png`
 - one lifecycle run folder per tiny source-shaping variant
+
+When `prototype-3d-refocusing-map-control` is used, the control folder includes:
+
+- `refocusing_map_summary.csv`
+- `refocusing_map_3d_summary.json`
+- `refocusing_map_3d_report.md`
+- `refocusing_map_timeseries.csv`
+- `refocusing_map_events.csv`
+- `refocusing_map_shell_energy_plot.png`
+- `refocusing_map_radius_width_plot.png`
+- `refocusing_map_flux_balance_plot.png`
+- one lifecycle run folder per cutoff/frequency map variant
 
 ## Metrics
 
