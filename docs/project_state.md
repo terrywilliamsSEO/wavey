@@ -55,10 +55,10 @@ Current interpretation:
 - `cutoff_long` is the current best local refocusing variant: nine major shell-window peaks, eight refocus peaks, no detected shell exit, tail retention `0.269`, outer/shell `0.809`, decay `-0.0273`, and global outer false.
 - The cutoff-frequency map classified as `local_map_improved_single_axis`: `cutoff_long + frequency_high` did not combine constructively and instead dropped to four major peaks, three refocus peaks, retention `0.0993`, outer/shell `1.70`, and exit at `t=70.4`.
 - Current interpretation: cutoff timing and frequency can tune refocusing, but the two knobs are phase/timing coupled rather than independently additive.
-- The cutoff release-phase map classified as `cutoff_timing_improved`: cutoff `18` is sharply better than nearby `+/-0.5` offsets, and the sign-flip family at cutoff `18` is currently the cleanest timing row.
-- `sign_flip_cutoff_reference` at cutoff `18` reached nine major peaks, eight refocus peaks, retention `0.296`, outer/shell `0.594`, decay `-0.0249`, no exit, and no global outer flag. This narrowly misses the strict retention target of `0.30`.
+- The first cutoff release-phase map classified as `cutoff_timing_improved`: cutoff `18` was sharply better than nearby `+/-0.5` offsets.
+- The tighter cutoff/polarity timing map classified as `cutoff_phase_timing_island_supported`: `sign_flip_cutoff_minus_0p1` at cutoff `17.9` and cutoff phase `0.468` cycles reached nine major peaks, eight refocus peaks, retention `0.322`, outer/shell `0.660`, decay `-0.0237`, no exit, and no global outer flag.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is a narrower cutoff/polarity timing check around cutoff `18` at frequency `0.92`.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is a tiny timed second-pulse control from the best release phase, not traps, rotation, medium shaping, defects, or grid changes.
 
 ## Latest Evidence
 
@@ -1099,59 +1099,59 @@ Interpretation:
 Command:
 
 ```powershell
-python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --cutoff-offsets -0.2 -0.1 0 0.1 0.2 --phase-offset-deltas 0 --polarity-cutoff-offsets -0.2 -0.1 0 0.1 0.2
 ```
 
 Latest summarized run:
 
-- Local report: `runs\cutoff_phase_map_3d_20260619_085647\cutoff_phase_map_3d_report.md`
-- Summary CSV: `runs\cutoff_phase_map_3d_20260619_085647\cutoff_phase_map_summary.csv`
-- Timeseries CSV: `runs\cutoff_phase_map_3d_20260619_085647\cutoff_phase_map_timeseries.csv`
-- Events CSV: `runs\cutoff_phase_map_3d_20260619_085647\cutoff_phase_map_events.csv`
-- Classification: `cutoff_timing_improved`
-- Best variant: `sign_flip_cutoff_reference`
+- Local report: `runs\cutoff_phase_map_3d_20260619_104211\cutoff_phase_map_3d_report.md`
+- Summary CSV: `runs\cutoff_phase_map_3d_20260619_104211\cutoff_phase_map_summary.csv`
+- Ranked CSV: `runs\cutoff_phase_map_3d_20260619_104211\cutoff_phase_ranked_summary.csv`
+- Timeseries CSV: `runs\cutoff_phase_map_3d_20260619_104211\cutoff_phase_map_timeseries.csv`
+- Events CSV: `runs\cutoff_phase_map_3d_20260619_104211\cutoff_phase_map_events.csv`
+- Classification: `cutoff_phase_timing_island_supported`
+- Best variant: `sign_flip_cutoff_minus_0p1`
 - Setup: `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched work per physical source area `0.105027`, frequency `0.92`, radius-5 shell window, extended duration `t=96`
 
 Important values:
 
 | Variant | Family | Cutoff | Phase At Cutoff | Peaks | Refocus | Exit | Retention | Outer/Shell | Decay | In Flux | Global Outer |
 | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- |
-| phase_offset_cutoff_minus_1p0 | phase_offset | 17.0 | 0.890 | 4 | 3 | true, 90.08 | 0.138 | 2.012 | -0.0421 | 0.744 | false |
-| phase_offset_cutoff_minus_0p5 | phase_offset | 17.5 | 0.350 | 5 | 4 | true, 88.64 | 0.176 | 1.375 | -0.0434 | 0.739 | false |
+| phase_offset_cutoff_minus_0p2 | phase_offset | 17.8 | 0.626 | 8 | 7 | false | 0.237 | 0.640 | -0.0331 | 0.799 | false |
+| phase_offset_cutoff_minus_0p1 | phase_offset | 17.9 | 0.718 | 9 | 8 | false | 0.251 | 0.676 | -0.0299 | 0.808 | false |
 | phase_offset_cutoff_reference | phase_offset | 18.0 | 0.810 | 9 | 8 | false | 0.269 | 0.809 | -0.0273 | 0.813 | false |
-| phase_offset_cutoff_plus_0p5 | phase_offset | 18.5 | 0.270 | 4 | 3 | true, 76.96 | 0.119 | 1.870 | -0.0468 | 0.709 | false |
-| phase_offset_cutoff_plus_1p0 | phase_offset | 19.0 | 0.730 | 5 | 4 | false | 0.175 | 1.085 | -0.0387 | 0.753 | false |
-| phase_offset_delta_minus_0p0625 | phase_offset | 18.0 | 0.779 | 8 | 7 | false | 0.256 | 0.775 | -0.0286 | 0.806 | false |
-| phase_offset_delta_plus_0p0625 | phase_offset | 18.0 | 0.841 | 9 | 8 | false | 0.284 | 0.818 | -0.0259 | 0.818 | false |
-| sign_flip_cutoff_minus_0p5 | sign_flip | 17.5 | 0.100 | 4 | 3 | true, 79.20 | 0.141 | 1.056 | -0.0459 | 0.724 | false |
+| phase_offset_cutoff_plus_0p1 | phase_offset | 18.1 | 0.902 | 9 | 8 | false | 0.269 | 0.901 | -0.0274 | 0.812 | false |
+| phase_offset_cutoff_plus_0p2 | phase_offset | 18.2 | 0.994 | 8 | 7 | false | 0.243 | 0.914 | -0.0299 | 0.799 | false |
+| sign_flip_cutoff_minus_0p2 | sign_flip | 17.8 | 0.376 | 9 | 8 | false | 0.317 | 0.714 | -0.0243 | 0.811 | false |
+| sign_flip_cutoff_minus_0p1 | sign_flip | 17.9 | 0.468 | 9 | 8 | false | 0.322 | 0.660 | -0.0237 | 0.810 | false |
 | sign_flip_cutoff_reference | sign_flip | 18.0 | 0.560 | 9 | 8 | false | 0.296 | 0.594 | -0.0249 | 0.811 | false |
-| sign_flip_cutoff_plus_0p5 | sign_flip | 18.5 | 0.020 | 5 | 4 | true, 72.64 | 0.111 | 1.770 | -0.0491 | 0.704 | false |
+| sign_flip_cutoff_plus_0p1 | sign_flip | 18.1 | 0.652 | 7 | 6 | false | 0.255 | 0.606 | -0.0275 | 0.784 | false |
+| sign_flip_cutoff_plus_0p2 | sign_flip | 18.2 | 0.744 | 7 | 6 | true, 93.76 | 0.214 | 0.815 | -0.0316 | 0.755 | false |
 
 Interpretation:
 
-- Cutoff `18` is a strong timing island relative to `17.5` and `18.5`. The half-step timing changes collapse the phase-offset and sign-flip families to three or four refocus peaks.
-- The sign-flip family at cutoff `18` is now the best clean row: it preserves nine peaks and eight refocus peaks while lowering outer/shell from `0.809` to `0.594` and raising retention from `0.269` to `0.296`.
-- The strict phase-island label did not trigger because retention stayed just under the current `0.30` target, but the result is close enough to justify one narrower timing check.
-- The phase-at-cutoff values differ by family: phase-offset performs best around `0.81-0.84` cycles, while sign-flip performs best at `0.56` cycles. That supports the idea that polarity changes the effective release phase.
-- This is still passive boundary-interference refocusing, not a trap yet. Do not add defects, rotation, medium gradients, or second pulses until the release timing pocket is narrowed.
+- The tighter map upgraded the release-timing result to `cutoff_phase_timing_island_supported`.
+- The best rows are in the sign-flip family. The strongest cluster is cutoff phases `0.376-0.468` cycles, with retention above `0.30`, outer/shell below `1.0`, no exit, and no global outer flag.
+- `phase_offset` is also clean around cutoff `18`, but it remains below the strict retention target and ranks below the sign-flip rows.
+- The result supports a phase-release mechanism: cubic boundary drive plus the correct cutoff/release phase produces repeated post-cutoff refocusing and delayed shell-window exit.
+- This is still passive boundary-interference refocusing, not a trap yet. The next experiment should be a timed second pulse, not defects, rotation, medium gradients, or grid expansion.
 
 ## Current Next Step
 
-Run a narrower cutoff/polarity timing check without broadening the physics scope:
+Run a tiny timed second-pulse control without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Start from `sign_flip_cutoff_reference` and `phase_offset_cutoff_reference`.
+- Start from `sign_flip_cutoff_minus_0p1`: cutoff `17.9`, cutoff phase `0.468` cycles, frequency `0.92`.
 - Keep injected work matched per physical source area.
-- Vary only cutoff very near `18`, for example `17.8`, `17.9`, `18.0`, `18.1`, `18.2`, at frequency `0.92`.
-- Keep both phase-offset and sign-flip/polarity families in the map.
+- Fire a second cubic sign-flip pulse at one or two observed return/refocus times from the events CSV.
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
-- Score whether cutoff timing increases return-peak count above nine, improves late return-peak ratios, slows decay, raises retention above `0.3`, keeps outer/shell near or below `1`, delays/removes shell exit, and avoids global outer-window flags.
+- Score whether the second pulse increases return/refocus count, improves late return-peak ratios, slows decay, raises retention, keeps outer/shell near or below `1`, delays/removes shell exit, and avoids global outer-window flags.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
-- Do not add rotation, medium shaping, or active second pulses yet.
+- Do not add traps, rotation, medium shaping, defects, or grid changes yet.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

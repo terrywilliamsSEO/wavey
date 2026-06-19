@@ -4,9 +4,9 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 ## Current Next Step
 
-The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, and the cutoff release-phase map showed cutoff 18 is a sharp timing island.
+The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, and the tighter cutoff/polarity release-phase map found a supported timing island.
 
-Recommended next task: run one narrower cutoff/polarity timing check around cutoff `18`, frequency `0.92`, and the two strongest families (`phase_offset` and `sign_flip`). Try very small cutoff offsets, for example `17.8`, `17.9`, `18.0`, `18.1`, `18.2`, and keep matched work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, radius-5 shell window, and global outer-window guard fixed. Do not add frequency combinations, defects, rotation, medium shaping, or active second pulses yet.
+Recommended next task: run a tiny timed second-pulse control from the best release phase, `sign_flip_cutoff_minus_0p1` at cutoff `17.9` and cutoff phase `0.468` cycles. Keep frequency `0.92`, matched work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size `41^3`, radius-5 shell window, and global outer-window guard fixed. Do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet.
 
 ## Status
 
@@ -187,6 +187,9 @@ Recommended next task: run one narrower cutoff/polarity timing check around cuto
 - Ran the cutoff phase map in `runs\cutoff_phase_map_3d_20260619_085647`; result classified as `cutoff_timing_improved`.
 - Cutoff 18 is sharply better than nearby cutoff offsets: phase-offset cutoff 18 kept nine major peaks, eight refocus peaks, retention 0.269, outer/shell 0.809, and no exit, while +/-0.5 cutoff offsets dropped to three or four refocus peaks.
 - The best row was `sign_flip_cutoff_reference`: cutoff 18, cutoff phase 0.56 cycles, nine major peaks, eight refocus peaks, retention 0.296, outer/shell 0.594, decay -0.0249, no exit, and global outer false. It missed the strict 0.30 retention target by about 0.0043.
+- Added ranked cutoff-phase reporting and `cutoff_phase_ranked_summary.csv`, ordered by refocus peaks, no shell exit, retention, outer/shell below 1.0, decay closest to zero, and global outer false.
+- Ran the tighter cutoff/polarity timing check in `runs\cutoff_phase_map_3d_20260619_104211`; result classified as `cutoff_phase_timing_island_supported`.
+- The best ranked row was `sign_flip_cutoff_minus_0p1`: cutoff 17.9, cutoff phase 0.468 cycles, nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no exit, and global outer false.
 
 ### In Progress
 
@@ -195,11 +198,11 @@ Recommended next task: run one narrower cutoff/polarity timing check around cuto
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
-- Run a narrower cutoff/polarity timing check rather than another cutoff-frequency combination.
+- Run a tiny timed second-pulse control rather than another cutoff-frequency combination.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
-- Use frequency 0.92 and cutoff values very close to 18 for both `phase_offset` and `sign_flip` families.
+- Use `sign_flip_cutoff_minus_0p1` as the reference release phase: cutoff 17.9, cutoff phase 0.468 cycles, frequency 0.92.
 - Do not treat frequency 0.94 as additive with cutoff 18.
-- Do not move to trapping mechanisms until the release-timing pocket is narrowed.
+- Do not move to trapping, rotation, medium shaping, defects, or grid changes before the second-pulse check.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
 - Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-shell peak/work, tail retention, refocus peak count, refocus ratio, exit detection/time, decay rate, inward/outward flux balance, and outer/shell tail ratio as the primary 3D metrics.
@@ -429,3 +432,7 @@ Possible work:
 - 2026-06-19: Ran the cutoff release-phase timing map in `runs\cutoff_phase_map_3d_20260619_085647`; classification was `cutoff_timing_improved`.
 - 2026-06-19: Cutoff 18 was sharply better than nearby +/-0.5 cutoff offsets, and `sign_flip_cutoff_reference` became the best clean row with retention 0.296, outer/shell 0.594, no exit, decay -0.0249, and global outer false.
 - 2026-06-19: Updated the next step to a narrower cutoff/polarity timing check around cutoff 18 before any trapping, rotation, medium-shaping, or active second-pulse controls.
+- 2026-06-19: Added ranked cutoff-phase report output and `cutoff_phase_ranked_summary.csv`.
+- 2026-06-19: Ran the tighter cutoff/polarity timing map in `runs\cutoff_phase_map_3d_20260619_104211`; classification was `cutoff_phase_timing_island_supported`.
+- 2026-06-19: Best ranked row was `sign_flip_cutoff_minus_0p1`: cutoff 17.9, cutoff phase 0.468 cycles, nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no exit, and global outer false.
+- 2026-06-19: Updated the next step to a tiny timed second-pulse control from the best release phase before traps, rotation, medium shaping, defects, or grid changes.

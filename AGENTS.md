@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or broad 3D sweeps; the next step is a narrower cutoff/polarity timing check around cutoff 18 after the first release-phase map showed sharp timing sensitivity.
+- Do not run broad long sweeps or broad 3D sweeps; the next step is a tiny timed second-pulse control from the best cutoff-release phase.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -46,9 +46,10 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - The extended lifecycle audit classified the same clean cubic variants as `repeated_refocusing_supported` in `runs\packet_lifecycle_3d_20260618_195923`: sign-flip produced five major post-cutoff shell-window peaks and four refocus peaks before exit at t=74.72; phase-offset produced six major peaks and five refocus peaks before exit at t=76.00.
 - The 3D refocusing-engineering control classified as `refocusing_improved` in `runs\refocusing_engineering_3d_20260618_202513`: `cutoff_long` produced nine major shell-window peaks, eight refocus peaks, tail retention 0.269, outer/shell 0.809, decay -0.0273, no detected shell exit, and no global outer-window flag. `frequency_high` also stayed clean with eight major peaks, seven refocus peaks, retention 0.257, outer/shell 0.686, and no detected shell exit.
 - The tiny cutoff-frequency map classified as `local_map_improved_single_axis` in `runs\refocusing_map_3d_20260618_204404`: `combined_cutoff_long_frequency_high` did not combine constructively. It dropped to four major peaks, three refocus peaks, retention 0.0993, outer/shell 1.70, and exit at t=70.4. `cutoff_long_reference` remains the best return-count/retention row; `frequency_high_reference` remains the cleanest low-outer row.
-- The cutoff release-phase map classified as `cutoff_timing_improved` in `runs\cutoff_phase_map_3d_20260619_085647`: cutoff 18 is a sharp timing island. Phase-offset cutoff 18 kept nine peaks/eight refocus peaks, retention 0.269, outer/shell 0.809, and no exit; ±0.5 cutoff degraded to 3-4 refocus peaks. The best row was `sign_flip_cutoff_reference` at cutoff 18 with retention 0.296, outer/shell 0.594, decay -0.0249, no exit, and no global outer flag. Strict timing-island classification did not trigger because retention stayed just below 0.30.
+- The first cutoff release-phase map classified as `cutoff_timing_improved` in `runs\cutoff_phase_map_3d_20260619_085647`: cutoff 18 was sharply better than +/-0.5 offsets, but strict timing-island classification did not trigger because retention stayed just below 0.30.
+- The tighter cutoff/polarity timing map classified as `cutoff_phase_timing_island_supported` in `runs\cutoff_phase_map_3d_20260619_104211`: sign-flip cutoff 17.9 was the best ranked row with cutoff phase 0.468 cycles, nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no shell exit, and no global outer flag. The sign-flip strong rows clustered at cutoff phases 0.376-0.468 cycles.
 - Do not phrase the 3D candidate as defect-required localization or a confirmed standing-shell mode. Better wording: structured boundary-interference shell-window transport/refocusing at 41^3.
-- The current next physics step is a narrower cutoff/polarity timing map around cutoff 18. Keep 41^3, neutral lattice, stronger sponge, inner-sponge-edge source, matched work per physical source area, frequency 0.92, and radius-5 shell metrics fixed. Try very small cutoff offsets around 18 for both phase-offset and sign-flip families; do not add frequency combinations, grid changes, defects, rotation, or active second pulses yet.
+- The current next physics step is a tiny timed second-pulse control. Start from `sign_flip_cutoff_minus_0p1` / cutoff 17.9 / cutoff phase 0.468 cycles, keep 41^3, neutral lattice, stronger sponge, inner-sponge-edge source, matched work per physical source area, frequency 0.92, and radius-5 shell metrics fixed. Do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -108,6 +109,7 @@ python main.py prototype-3d-packet-lifecycle-audit --config configs\long_validat
 python main.py prototype-3d-refocusing-engineering-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-refocusing-map-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --cutoff-offsets -0.2 -0.1 0 0.1 0.2 --phase-offset-deltas 0 --polarity-cutoff-offsets -0.2 -0.1 0 0.1 0.2
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json

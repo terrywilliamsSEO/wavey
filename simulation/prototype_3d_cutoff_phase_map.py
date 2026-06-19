@@ -27,7 +27,6 @@ from .prototype_3d_refocusing_engineering import (
     _comparison_fields,
     _format,
     _lifecycle_options,
-    _score,
     _summary_fields as _engineering_summary_fields,
 )
 from .prototype_3d_source_sponge import _effective_source_area, _write_csv
@@ -97,11 +96,15 @@ def run_3d_cutoff_phase_map_control(
         row.update(_comparison_fields(row, reference))
         row["cutoff_phase_map_classification"] = classification["label"]
 
+    ranked_rows = _ranked_rows(rows)
+
     summary_csv = root / "cutoff_phase_map_summary.csv"
+    ranked_csv = root / "cutoff_phase_ranked_summary.csv"
     timeseries_csv = root / "cutoff_phase_map_timeseries.csv"
     events_csv = root / "cutoff_phase_map_events.csv"
     report_path = root / "cutoff_phase_map_3d_report.md"
     _write_csv(summary_csv, rows, _summary_fields())
+    _write_csv(ranked_csv, ranked_rows, _ranked_fields())
     _write_csv(timeseries_csv, timeseries_rows, _timeseries_fields())
     _write_csv(events_csv, event_rows, _event_fields())
     _plot_lifecycle(root / "cutoff_phase_shell_energy_plot.png", timeseries_rows, event_rows)
@@ -115,6 +118,7 @@ def run_3d_cutoff_phase_map_control(
             "classification": classification,
             "variants": rows,
             "summary_csv": str(summary_csv),
+            "ranked_csv": str(ranked_csv),
             "timeseries_csv": str(timeseries_csv),
             "events_csv": str(events_csv),
             "report_path": str(report_path),
@@ -125,6 +129,7 @@ def run_3d_cutoff_phase_map_control(
         "classification": classification,
         "variants": rows,
         "summary_csv": str(summary_csv),
+        "ranked_csv": str(ranked_csv),
         "timeseries_csv": str(timeseries_csv),
         "events_csv": str(events_csv),
         "report_path": str(report_path),
@@ -402,7 +407,32 @@ def _circular_span(values: list[float], start: float) -> float:
 def _best_variant(rows: list[dict[str, Any]]) -> str:
     if not rows:
         return "n/a"
-    return str(max(rows, key=_score).get("variant", "n/a"))
+    return str(_ranked_rows(rows)[0].get("variant", "n/a"))
+
+
+def _ranked_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    ranked: list[dict[str, Any]] = []
+    for rank, row in enumerate(sorted(rows, key=_rank_key, reverse=True), start=1):
+        ranked.append(
+            {
+                "rank": rank,
+                "outer_shell_below_1": float(row.get("tail_outer_to_shell_mean") or 999.0) < 1.0,
+                **row,
+            }
+        )
+    return ranked
+
+
+def _rank_key(row: dict[str, Any]) -> tuple[float, ...]:
+    decay = float(row.get("post_cutoff_shell_decay_rate") or 0.0)
+    return (
+        float(row.get("refocus_peak_count") or 0.0),
+        0.0 if bool(row.get("shell_exit_detected")) else 1.0,
+        float(row.get("tail_shell_retention") or 0.0),
+        1.0 if float(row.get("tail_outer_to_shell_mean") or 999.0) < 1.0 else 0.0,
+        -abs(decay),
+        0.0 if bool(row.get("global_peak_in_outer_window")) else 1.0,
+    )
 
 
 def _cutoff_phase_cycles(config: Prototype3DConfig) -> float:
@@ -449,11 +479,39 @@ def _write_report(
         f"- Reason: {classification['reason']}",
         f"- Best variant: `{classification.get('best_variant', 'n/a')}`",
         "",
+        "## Ranked Results",
+        "",
+        "Ranking priority: refocus peaks, no shell exit, retention, outer/shell below 1.0, decay rate closest to zero, global outer flag false.",
+        "",
+        "| Rank | Variant | Family | Cutoff | Phase At Cutoff | Refocus | Exit | Ret | Outer/Shell | <1.0 | Decay | Global Outer |",
+        "| ---: | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | --- | ---: | --- |",
+    ]
+    for row in _ranked_rows(rows):
+        exit_label = "false" if not bool(row.get("shell_exit_detected")) else _format(row.get("shell_exit_time"))
+        lines.append(
+            "| "
+            f"{row['rank']} | "
+            f"{row['variant']} | "
+            f"{row.get('family')} | "
+            f"{_format(row.get('drive_cutoff_time'))} | "
+            f"{_format(row.get('cutoff_phase_cycles'))} | "
+            f"{row.get('refocus_peak_count')} | "
+            f"{exit_label} | "
+            f"{_format(row.get('tail_shell_retention'))} | "
+            f"{_format(row.get('tail_outer_to_shell_mean'))} | "
+            f"{row.get('outer_shell_below_1')} | "
+            f"{_format(row.get('post_cutoff_shell_decay_rate'))} | "
+            f"{row.get('global_peak_in_outer_window')} |"
+        )
+    lines.extend(
+        [
+            "",
         "## Variant Summary",
         "",
         "| Variant | Family | Axis | Cutoff | Phase At Cutoff | Phase Offset | Peaks | Refocus | Exit | Ret | Outer/Shell | Decay | Global Outer |",
         "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | --- |",
-    ]
+        ]
+    )
     for row in rows:
         exit_label = "false" if not bool(row.get("shell_exit_detected")) else _format(row.get("shell_exit_time"))
         lines.append(
@@ -482,6 +540,7 @@ def _write_report(
             "## Files",
             "",
             "- `cutoff_phase_map_summary.csv`",
+            "- `cutoff_phase_ranked_summary.csv`",
             "- `cutoff_phase_map_timeseries.csv`",
             "- `cutoff_phase_map_events.csv`",
             "- `cutoff_phase_shell_energy_plot.png`",
@@ -512,7 +571,7 @@ def _interpretation(classification: dict[str, Any]) -> str:
 def _next_step(classification: dict[str, Any]) -> str:
     label = classification["label"]
     if label == "cutoff_phase_timing_island_supported":
-        return "Repeat the best release phase with half-dt or a tiny active second-pulse timing check."
+        return "Use the best release phase as the reference for a tiny active second-pulse timing check before adding traps, rotation, or medium shaping."
     if label == "cutoff_timing_improved":
         return "Run one narrower cutoff-only map around the best timing row."
     if label == "polarity_family_sensitive":
@@ -539,4 +598,27 @@ def _summary_fields() -> list[str]:
         "cutoff_phase_radians",
         "cutoff_phase_label",
         *base_fields,
+    ]
+
+
+def _ranked_fields() -> list[str]:
+    return [
+        "rank",
+        "variant",
+        "family",
+        "axis_label",
+        "drive_cutoff_time",
+        "cutoff_phase_cycles",
+        "cutoff_phase_radians",
+        "phase_offset_label",
+        "major_shell_peak_count",
+        "refocus_peak_count",
+        "shell_exit_detected",
+        "shell_exit_time",
+        "tail_shell_retention",
+        "tail_outer_to_shell_mean",
+        "outer_shell_below_1",
+        "post_cutoff_shell_decay_rate",
+        "global_peak_in_outer_window",
+        "cutoff_phase_map_classification",
     ]

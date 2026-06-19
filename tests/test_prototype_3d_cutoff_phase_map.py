@@ -9,6 +9,7 @@ from simulation.config import SimulationConfig
 from simulation.prototype_3d_cutoff_phase_map import (
     CutoffPhaseMap3DOptions,
     _cutoff_phase_cycles,
+    _ranked_rows,
     _variant_plan,
     classify_cutoff_phase_map,
 )
@@ -83,6 +84,21 @@ class Prototype3DCutoffPhaseMapTests(unittest.TestCase):
         result = classify_cutoff_phase_map(rows, CutoffPhaseMap3DOptions())
 
         self.assertEqual(result["label"], "cutoff_phase_tolerant_no_improvement")
+
+    def test_ranked_rows_use_cutoff_phase_decision_priority(self) -> None:
+        rows = [
+            _row("lower_refocus", peaks=9, refocus=7, retention=0.40, outer=0.50, phase=0.2),
+            _row("exits", peaks=10, refocus=8, retention=0.50, outer=0.60, phase=0.3, exit_detected=True),
+            _row("best", peaks=10, refocus=8, retention=0.45, outer=0.70, phase=0.4),
+            _row("outer_above_one", peaks=10, refocus=8, retention=0.42, outer=1.20, phase=0.5),
+        ]
+
+        ranked = _ranked_rows(rows)
+
+        self.assertEqual([row["variant"] for row in ranked], ["best", "outer_above_one", "exits", "lower_refocus"])
+        self.assertEqual([row["rank"] for row in ranked], [1, 2, 3, 4])
+        self.assertTrue(ranked[0]["outer_shell_below_1"])
+        self.assertFalse(ranked[1]["outer_shell_below_1"])
 
 
 def _row(

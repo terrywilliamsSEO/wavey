@@ -318,6 +318,14 @@ python main.py prototype-3d-cutoff-phase-map-control --config configs\long_valid
 
 This keeps frequency fixed and asks whether refocusing quality clusters around source release timing. It varies cutoff time near the winning cutoff, small global phase-offset perturbations at the winning cutoff, and a compact sign-flip/polarity family while reporting phase at cutoff.
 
+Run the tighter cutoff/polarity timing check with:
+
+```powershell
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --cutoff-offsets -0.2 -0.1 0 0.1 0.2 --phase-offset-deltas 0 --polarity-cutoff-offsets -0.2 -0.1 0 0.1 0.2
+```
+
+This compares cutoff times `17.8`, `17.9`, `18.0`, `18.1`, and `18.2` for both `phase_offset` and `sign_flip` families. The report ranks rows by refocus peaks, no shell exit, retention, outer/shell below `1.0`, decay rate closest to zero, and global outer false.
+
 ## Run one simulation
 
 ```powershell
@@ -701,6 +709,7 @@ When `prototype-3d-refocusing-map-control` is used, the control folder includes:
 When `prototype-3d-cutoff-phase-map-control` is used, the control folder includes:
 
 - `cutoff_phase_map_summary.csv`
+- `cutoff_phase_ranked_summary.csv`
 - `cutoff_phase_map_3d_summary.json`
 - `cutoff_phase_map_3d_report.md`
 - `cutoff_phase_map_timeseries.csv`
