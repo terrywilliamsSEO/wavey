@@ -286,6 +286,14 @@ python main.py prototype-3d-transport-packet-audit --config configs\long_validat
 
 This reruns the same two clean cubic variants and asks whether the shell-window tail is a moving wavefront / transport packet or a slowly drifting modal structure. It exports shell-window phase velocity, radial group velocity, angular drift, time-of-flight, inward/outward radial flux, centroid-displacement motion proxies, shell exit timing, and time-lagged shell-pattern correlations.
 
+Run the extended 3D packet lifecycle audit with:
+
+```powershell
+python main.py prototype-3d-packet-lifecycle-audit --config configs\long_validation_peak_0_92.json
+```
+
+This extends the clean cubic packet run while preserving the drive cutoff. It tracks packet radius, radial spread/width, shell-window energy peaks, shell exit timing, inward/outward flux balance, and post-cutoff shell decay to decide whether the packet simply passes through, diffuses, stalls, or repeatedly refocuses near the target shell window.
+
 ## Run one simulation
 
 ```powershell
@@ -629,6 +637,18 @@ When `prototype-3d-transport-packet-audit` is used, the control folder includes:
 - `prototype_3d_summary.json`
 - one run folder per clean cubic variant
 - `failure_mode_audit/` with the variant-relative shell-window audit artifacts
+
+When `prototype-3d-packet-lifecycle-audit` is used, the control folder includes:
+
+- `packet_lifecycle_summary.csv`
+- `packet_lifecycle_3d_summary.json`
+- `packet_lifecycle_3d_report.md`
+- `packet_lifecycle_timeseries.csv`
+- `packet_lifecycle_events.csv`
+- `shell_energy_lifecycle_plot.png`
+- `packet_radius_width_plot.png`
+- `radial_flux_balance_plot.png`
+- one lifecycle timeseries/event CSV pair per clean cubic variant
 
 ## Metrics
 

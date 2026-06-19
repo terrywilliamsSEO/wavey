@@ -50,8 +50,9 @@ Current interpretation:
 - The first neutral-lattice interference diagnostic classified as `interference_supported_standing_weak`: random phase controls lost phase coherence and became outer-window flagged, while cubic phase controls stayed organized, but standing-shell persistence did not clear the stricter threshold.
 - The dense two-variant standing-persistence check classified as `coherent_transport_not_standing`: sign-flip and phase-offset cubic variants retained clean shell-window energy and strong temporal/spectral coherence, but settled node/antinode masks, frame-to-mean shell patterns, and radial shell phase did not lock.
 - The transport-packet audit classified the same clean cubic variants as `moving_transport_packet_supported`: both showed inward radial group velocity, inward-dominated shell flux, fast shell-window arrival, and near-zero angular drift. Current 3D wording should be structured cubic-boundary interference transport through the shell window, not defect-dependent localization and not a confirmed standing-shell mode.
+- The extended packet lifecycle audit classified as `repeated_refocusing_supported`: both clean cubic variants showed multiple post-cutoff shell-window return peaks before eventual exit around `t=75-76`. The phase-offset variant is the current primary refocusing reference.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is a tiny phase-shaping/refocusing control around the same clean 41^3 cubic packet.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is a tiny refocusing-engineering control around the same clean 41^3 cubic packet.
 
 ## Latest Evidence
 
@@ -971,17 +972,54 @@ Interpretation:
 - Angular drift is near zero by the shell-centroid proxy; the important motion is radial transport plus shell-window phase advance.
 - The next useful question is whether boundary phase shaping can slow, redirect, or repeatedly refocus this packet without reintroducing outer-boundary contamination.
 
+### 3D Packet Lifecycle Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-packet-lifecycle-audit --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\packet_lifecycle_3d_20260618_195923\packet_lifecycle_3d_report.md`
+- Summary CSV: `runs\packet_lifecycle_3d_20260618_195923\packet_lifecycle_summary.csv`
+- Timeseries CSV: `runs\packet_lifecycle_3d_20260618_195923\packet_lifecycle_timeseries.csv`
+- Events CSV: `runs\packet_lifecycle_3d_20260618_195923\packet_lifecycle_events.csv`
+- Classification: `repeated_refocusing_supported`
+- Extended duration: `t=96`, with drive cutoff still at `t=16`
+
+Important values:
+
+| Variant | Peaks | Refocus | Retention | Outer/Shell | Arrival | Exit | Decay | Radius V | Width Growth | In Flux |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: |
+| neutral_cubic_sign_flip_reference | 5 | 4 | 0.116 | 1.50 | 9.28 | true, 74.72 | -0.0517 | -0.0142 | -0.114 | 0.700 |
+| neutral_cubic_phase_offset | 6 | 5 | 0.132 | 1.78 | 8.48 | true, 76.00 | -0.0541 | -0.0174 | -0.004 | 0.701 |
+
+Event highlights:
+
+- Sign-flip shell-window peaks at `t=20.80`, `31.52`, `37.76`, `43.20`, and `51.36`.
+- Phase-offset shell-window peaks at `t=16.48`, `21.92`, `29.28`, `35.04`, `45.28`, and `52.00`.
+- Later return peaks can exceed the first post-cutoff peak; phase-offset has the strongest max refocus ratio, about `2.01`.
+
+Interpretation:
+
+- The cubic phase does not merely create a one-pass shell-window transit. It creates repeated shell-window returns before the packet finally exits/decays below threshold.
+- This moves the 3D branch from generic transport steering toward retention/refocusing engineering.
+- The phase-offset variant is the current best reference because it produced more major peaks, more refocus peaks, and the stronger refocus ratio.
+- The result remains neutral-lattice and not defect-dependent.
+
 ## Current Next Step
 
-Run a tiny phase-shaping / refocusing control without broadening the physics scope:
+Run a tiny refocusing-engineering control without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Start from the clean cubic sign-flip and cubic phase-offset variants.
+- Start from the clean cubic phase-offset variant, with sign-flip retained as the companion comparator.
 - Keep injected work matched per physical source area.
 - Make near-defect shell-window arrival, retention, and radial stability primary 3D metrics.
-- Score whether phase shaping slows the inward radial group velocity, delays or repeats shell-window peaks, lowers outer/near contamination, preserves retention, and avoids global outer-window flags.
+- Score whether phase shaping increases return-peak count, improves late return-peak ratios, slows decay, preserves retention, lowers outer/shell contamination, and avoids global outer-window flags.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny until this failure mode is understood.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
