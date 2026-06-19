@@ -656,6 +656,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Use the tight passive cutoff/polarity preset around sign_flip_cutoff_minus_0p1",
     )
+    cutoff_phase_parser.add_argument(
+        "--phase-lock-needle-map",
+        choices=("first", "tight"),
+        help="Use the sign-flip-only ultra-fine cutoff preset around the provisional 17.94 needle",
+    )
+    cutoff_phase_parser.add_argument("--sign-flip-only", action="store_true", help="Run only the sign-flip/polarity cutoff family")
     cutoff_phase_parser.add_argument("--reference-variant", help="Variant used as the comparison reference for classification")
     cutoff_phase_parser.add_argument("--cutoff-center", type=float, help="Winning cutoff center; defaults to base cutoff plus cutoff-delta")
     cutoff_phase_parser.add_argument("--cutoff-delta", type=float, default=2.0, help="Offset from base cutoff used when cutoff-center is omitted")
@@ -1359,11 +1365,22 @@ def main() -> None:
         phase_offsets = tuple(args.phase_offset_deltas)
         polarity_cutoff_offsets = tuple(args.polarity_cutoff_offsets)
         reference_variant = args.reference_variant or "phase_offset_cutoff_reference"
+        include_phase_offset_family = not args.sign_flip_only
         if args.release_phase_island_refinement:
             cutoff_offsets = refinement_offsets
             phase_offsets = (0.0,)
             polarity_cutoff_offsets = refinement_offsets
             reference_variant = args.reference_variant or "sign_flip_cutoff_minus_0p1"
+        if args.phase_lock_needle_map:
+            needle_offsets = {
+                "first": (-0.075, -0.070, -0.065, -0.060, -0.055, -0.050, -0.045),
+                "tight": (-0.066, -0.064, -0.062, -0.060, -0.058, -0.056, -0.054),
+            }[args.phase_lock_needle_map]
+            cutoff_offsets = ()
+            phase_offsets = (0.0,)
+            polarity_cutoff_offsets = needle_offsets
+            include_phase_offset_family = False
+            reference_variant = args.reference_variant or "sign_flip_cutoff_minus_0p06"
         result = run_3d_cutoff_phase_map_control(
             config,
             options=CutoffPhaseMap3DOptions(
@@ -1384,6 +1401,7 @@ def main() -> None:
                 cutoff_delta=args.cutoff_delta,
                 cutoff_offsets=cutoff_offsets,
                 phase_offsets=phase_offsets,
+                include_phase_offset_family=include_phase_offset_family,
                 include_polarity_family=not args.no_polarity_family,
                 polarity_cutoff_offsets=polarity_cutoff_offsets,
                 arrival_threshold_fraction=args.arrival_threshold_fraction,

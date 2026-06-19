@@ -334,6 +334,20 @@ python main.py prototype-3d-cutoff-phase-map-control --config configs\long_valid
 
 This keeps frequency fixed at `0.92`, uses `sign_flip_cutoff_minus_0p1` as the comparison reference, and maps cutoff offsets `-0.16`, `-0.14`, `-0.12`, `-0.10`, `-0.08`, `-0.06`, and `-0.04` for both the phase-offset and sign-flip/polarity families. The ranked report now orders rows by major shell-window peaks first, then refocus peaks, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, and global outer false. It also includes a `release phase island stability` section that distinguishes a neighboring timing cluster from a single isolated best point.
 
+Run the ultra-fine passive phase-lock needle map around cutoff `17.94` with:
+
+```powershell
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --phase-lock-needle-map first
+```
+
+This is sign-flip-only and keeps the 41^3 neutral-lattice, stronger-sponge, inner-sponge-edge source, frequency `0.92`, matched-work, radius-5 shell-window setup fixed. The first preset maps cutoff offsets `-0.075`, `-0.070`, `-0.065`, `-0.060`, `-0.055`, `-0.050`, and `-0.045` around the same cutoff center. If a future first-pass result is isolated, use the tighter preset:
+
+```powershell
+python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --phase-lock-needle-map tight
+```
+
+The cutoff-phase report includes `phase-lock needle width` and `event-threshold sensitivity audit` sections, plus `cutoff_phase_event_threshold_sensitivity.csv`, so a stronger peak count can be separated from peak-detector threshold sensitivity.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -750,6 +764,7 @@ When `prototype-3d-cutoff-phase-map-control` is used, the control folder include
 
 - `cutoff_phase_map_summary.csv`
 - `cutoff_phase_ranked_summary.csv`
+- `cutoff_phase_event_threshold_sensitivity.csv`
 - `cutoff_phase_map_3d_summary.json`
 - `cutoff_phase_map_3d_report.md`
 - `cutoff_phase_map_timeseries.csv`
@@ -759,7 +774,7 @@ When `prototype-3d-cutoff-phase-map-control` is used, the control folder include
 - `cutoff_phase_flux_balance_plot.png`
 - one lifecycle run folder per cutoff/phase/polarity timing variant
 
-The cutoff-phase report includes a `release phase island stability` section when stability checks are available.
+The cutoff-phase report includes a `release phase island stability` section when stability checks are available. It also reports `phase-lock needle width` and an event-threshold sensitivity audit for the best row and nearest neighbors.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 

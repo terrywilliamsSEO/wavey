@@ -12,7 +12,10 @@ from simulation.prototype_3d_cutoff_phase_map import (
     _ranked_rows,
     _variant_plan,
     classify_cutoff_phase_map,
+    event_threshold_sensitivity_audit,
+    phase_lock_needle_width,
     release_phase_island_stability,
+    summarize_event_threshold_sensitivity,
 )
 
 
@@ -64,6 +67,28 @@ class Prototype3DCutoffPhaseMapTests(unittest.TestCase):
         phase = _cutoff_phase_cycles(variant)
 
         self.assertAlmostEqual(phase, (0.92 * 18.0 + 0.25) % 1.0)
+
+    def test_variant_plan_can_run_sign_flip_only_needle_offsets(self) -> None:
+        base = SimulationConfig()
+        base.driver.frequency = 0.92
+        base.driver.drive_cutoff_time = 16.0
+        options = CutoffPhaseMap3DOptions(
+            include_phase_offset_family=False,
+            polarity_cutoff_offsets=(-0.075, -0.070, -0.065, -0.060, -0.055, -0.050, -0.045),
+        )
+
+        variants = _variant_plan(base, options)
+
+        self.assertEqual([variant.name for variant in variants], [
+            "sign_flip_cutoff_minus_0p075",
+            "sign_flip_cutoff_minus_0p07",
+            "sign_flip_cutoff_minus_0p065",
+            "sign_flip_cutoff_minus_0p06",
+            "sign_flip_cutoff_minus_0p055",
+            "sign_flip_cutoff_minus_0p05",
+            "sign_flip_cutoff_minus_0p045",
+        ])
+        self.assertTrue(all(variant.boundary_phase_offset == 0.0 for variant in variants))
 
     def test_classification_detects_strong_timing_island(self) -> None:
         rows = [
@@ -174,6 +199,36 @@ class Prototype3DCutoffPhaseMapTests(unittest.TestCase):
         self.assertEqual(stability["label"], "single_point_best")
         self.assertFalse(stability["is_stable"])
 
+    def test_phase_lock_needle_width_reports_narrow_when_neighbors_are_close(self) -> None:
+        rows = [
+            _row("sign_flip_cutoff_minus_0p065", family="sign_flip", axis="polarity_cutoff", cutoff_offset=-0.065, peaks=10, refocus=9, retention=0.30, outer=0.70, phase=0.50, cutoff=17.935),
+            _row("sign_flip_cutoff_minus_0p06", family="sign_flip", axis="polarity_cutoff", cutoff_offset=-0.060, peaks=11, refocus=10, retention=0.314, outer=0.63, phase=0.505, cutoff=17.94),
+            _row("sign_flip_cutoff_minus_0p055", family="sign_flip", axis="polarity_cutoff", cutoff_offset=-0.055, peaks=10, refocus=9, retention=0.31, outer=0.62, phase=0.51, cutoff=17.945),
+        ]
+
+        width = phase_lock_needle_width(rows, CutoffPhaseMap3DOptions())
+
+        self.assertEqual(width["label"], "narrow")
+        self.assertEqual(width["best_cutoff"], 17.94)
+        self.assertEqual(len(width["neighboring_within_one_peak_refocus"]), 2)
+
+    def test_event_threshold_sensitivity_recounts_best_and_neighbors(self) -> None:
+        rows = [
+            _row("sign_flip_cutoff_minus_0p065", family="sign_flip", axis="polarity_cutoff", cutoff_offset=-0.065, peaks=2, refocus=1, retention=0.30, outer=0.70, phase=0.50, cutoff=17.935),
+            _row("sign_flip_cutoff_minus_0p06", family="sign_flip", axis="polarity_cutoff", cutoff_offset=-0.060, peaks=2, refocus=1, retention=0.314, outer=0.63, phase=0.505, cutoff=17.94),
+            _row("sign_flip_cutoff_minus_0p055", family="sign_flip", axis="polarity_cutoff", cutoff_offset=-0.055, peaks=2, refocus=1, retention=0.31, outer=0.62, phase=0.51, cutoff=17.945),
+        ]
+        timeseries = []
+        for row in rows:
+            timeseries.extend(_timeseries(row["variant"], row["drive_cutoff_time"]))
+
+        audit = event_threshold_sensitivity_audit(rows, timeseries, CutoffPhaseMap3DOptions())
+        summary = summarize_event_threshold_sensitivity(audit)
+
+        self.assertEqual(len(audit), 27)
+        self.assertEqual(summary["label"], "best_count_threshold_robust")
+        self.assertEqual([row["relation_to_best"] for row in summary["variants"]], ["lower_neighbor", "best", "upper_neighbor"])
+
 
 def _row(
     variant: str,
@@ -188,10 +243,12 @@ def _row(
     cutoff_offset: float = 0.0,
     exit_detected: bool = False,
     global_outer: bool = False,
+    cutoff: float = 18.0,
 ) -> dict:
     return {
         "variant": variant,
         "family": family,
+        "drive_cutoff_time": cutoff,
         "major_shell_peak_count": peaks,
         "refocus_peak_count": refocus,
         "refocus_peak_ratio_max": 2.0,
@@ -205,6 +262,20 @@ def _row(
         "axis_label": axis,
         "cutoff_offset_from_center": cutoff_offset,
     }
+
+
+def _timeseries(variant: str, cutoff: float) -> list[dict]:
+    rows = []
+    for time, energy in [
+        (cutoff + 1.0, 1.0),
+        (cutoff + 2.0, 3.0),
+        (cutoff + 3.0, 1.0),
+        (cutoff + 8.0, 0.8),
+        (cutoff + 9.0, 2.0),
+        (cutoff + 10.0, 0.7),
+    ]:
+        rows.append({"variant": variant, "time": time, "shell_window_energy": energy})
+    return rows
 
 
 if __name__ == "__main__":
