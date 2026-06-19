@@ -76,6 +76,10 @@ from simulation.prototype_3d_refocusing_map import (
     RefocusingMap3DOptions,
     run_3d_refocusing_map_control,
 )
+from simulation.prototype_3d_second_pulse import (
+    SecondPulse3DOptions,
+    run_3d_second_pulse_control,
+)
 from simulation.prototype_3d_radial_window_audit import (
     RadialWindowAudit3DOptions,
     run_3d_radial_window_audit,
@@ -667,6 +671,43 @@ def build_parser() -> argparse.ArgumentParser:
     cutoff_phase_parser.add_argument("--strict-retention-target", type=float, default=0.30, help="Strict retention target for timing-island evidence")
     cutoff_phase_parser.add_argument("--strict-outer-shell-target", type=float, default=1.0, help="Strict outer/shell target for timing-island evidence")
     cutoff_phase_parser.add_argument("--timing-cluster-phase-tolerance-cycles", type=float, default=0.12, help="Max circular phase span for a timing-island cluster")
+
+    second_pulse_parser = subparsers.add_parser(
+        "prototype-3d-second-pulse-control",
+        help="Run a tiny timed second-pulse control from the best 3D release phase",
+    )
+    second_pulse_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    second_pulse_parser.add_argument("--output-root", default="runs", help="Directory for 3D second-pulse outputs")
+    second_pulse_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this control is intended for 41^3")
+    second_pulse_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    second_pulse_parser.add_argument("--physical-duration", type=float, default=96.0, help="Extended physical end time")
+    second_pulse_parser.add_argument("--sample-every", type=int, default=10, help="Sample interval passed to shared calibration options")
+    second_pulse_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense sample interval for lifecycle diagnostics")
+    second_pulse_parser.add_argument("--radial-bins", type=int, default=40, help="Number of radial bins for packet radius/width tracking")
+    second_pulse_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Inner radius of the measured shell window")
+    second_pulse_parser.add_argument("--shell-window-width", type=float, help="Physical width for the measured shell window; defaults to near-shell-width-dx * dx")
+    second_pulse_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    second_pulse_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    second_pulse_parser.add_argument("--reference-variant", default="sign_flip_cutoff_minus_0p1", help="Variant name to read from the cutoff-phase events CSV")
+    second_pulse_parser.add_argument("--reference-events-csv", default="runs/cutoff_phase_map_3d_20260619_104211/cutoff_phase_map_events.csv", help="Cutoff-phase events CSV used to choose refocus timing")
+    second_pulse_parser.add_argument("--reference-cutoff-time", type=float, default=17.9, help="Best first-pulse release cutoff")
+    second_pulse_parser.add_argument("--reference-release-phase-cycles", type=float, default=0.468, help="Best first-pulse release phase in cycles")
+    second_pulse_parser.add_argument("--second-pulse-duration", type=float, default=2.0, help="Duration of each second pulse")
+    second_pulse_parser.add_argument("--second-pulse-amplitude-scale", type=float, default=1.0, help="Amplitude scale applied only to second-pulse variants")
+    second_pulse_parser.add_argument("--preload-time", type=float, default=1.0, help="How far before first refocus to center the preload pulse")
+    second_pulse_parser.add_argument("--phase-offset-control", type=float, default=0.5 * 3.141592653589793, help="Global phase offset for the phase-offset second-pulse control")
+    second_pulse_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first meaningful shell arrival")
+    second_pulse_parser.add_argument("--exit-threshold-fraction", type=float, default=0.12, help="Fraction of shell peak used to mark shell-window exit after the peak")
+    second_pulse_parser.add_argument("--exit-hold-samples", type=int, default=10, help="Consecutive below-threshold samples required to mark shell-window exit")
+    second_pulse_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Fraction of post-cutoff shell peak required for major lifecycle peaks")
+    second_pulse_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Fraction of first major peak required for later refocus peaks")
+    second_pulse_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between major lifecycle peaks")
+    second_pulse_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
+    second_pulse_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
+    second_pulse_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
+    second_pulse_parser.add_argument("--max-outer-shell-ratio", type=float, default=1.0, help="Maximum outer/shell tail ratio for a clean second-pulse variant")
+    second_pulse_parser.add_argument("--min-retention-gain", type=float, default=0.0, help="Minimum retention gain over the no-pulse reference")
+    second_pulse_parser.add_argument("--min-refocus-gain", type=int, default=1, help="Minimum refocus-count gain over the no-pulse reference")
 
     return parser
 
@@ -1332,6 +1373,47 @@ def main() -> None:
             ),
         )
         _print_3d_cutoff_phase_map_summary(result)
+        return
+
+    if args.command == "prototype-3d-second-pulse-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_second_pulse_control(
+            config,
+            options=SecondPulse3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                physical_duration=args.physical_duration,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                reference_variant=args.reference_variant,
+                reference_events_csv=args.reference_events_csv,
+                reference_cutoff_time=args.reference_cutoff_time,
+                reference_release_phase_cycles=args.reference_release_phase_cycles,
+                second_pulse_duration=args.second_pulse_duration,
+                second_pulse_amplitude_scale=args.second_pulse_amplitude_scale,
+                preload_time=args.preload_time,
+                phase_offset_control=args.phase_offset_control,
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                min_peak_separation_time=args.min_peak_separation_time,
+                min_refocus_count=args.min_refocus_count,
+                min_width_growth_fraction=args.min_width_growth_fraction,
+                min_decay_rate_magnitude=args.min_decay_rate_magnitude,
+                max_outer_shell_target=args.max_outer_shell_ratio,
+                min_retention_gain=args.min_retention_gain,
+                min_refocus_gain=args.min_refocus_gain,
+            ),
+        )
+        _print_3d_second_pulse_summary(result)
         return
 
     parser.error(f"Unknown command: {args.command}")
@@ -2136,6 +2218,38 @@ def _print_3d_cutoff_phase_map_summary(result: dict[str, Any]) -> None:
             f"global_outer={row.get('global_peak_in_outer_window')}"
         )
     print(f"summary CSV: {result['summary_csv']}")
+    print(f"timeseries CSV: {result['timeseries_csv']}")
+    print(f"events CSV: {result['events_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_second_pulse_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D second pulse control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("variants:")
+    for row in result["variants"]:
+        exit_label = "no" if not row.get("shell_exit_detected") else _format_optional(row.get("shell_exit_time"))
+        print(
+            f"  - {row['variant']}: "
+            f"role={row.get('second_pulse_role')}, "
+            f"center={_format_optional(row.get('second_pulse_center_time'))}, "
+            f"phase={_format_optional(row.get('second_pulse_phase_at_center_cycles'))}, "
+            f"peaks={row.get('major_shell_peak_count')}, "
+            f"refocus={row.get('refocus_peak_count')}, "
+            f"exit={exit_label}, "
+            f"ret={_format_optional(row.get('tail_shell_retention'))}, "
+            f"eff={_format_optional(row.get('refocus_efficiency_total_work'))}, "
+            f"gain/work={_format_optional(row.get('return_gain_per_added_work'))}, "
+            f"outer/shell={_format_optional(row.get('tail_outer_to_shell_mean'))}, "
+            f"decay={_format_optional(row.get('post_cutoff_shell_decay_rate'))}, "
+            f"global_outer={row.get('global_peak_in_outer_window')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"ranked CSV: {result['ranked_csv']}")
     print(f"timeseries CSV: {result['timeseries_csv']}")
     print(f"events CSV: {result['events_csv']}")
     print(f"report: {result['report_path']}")

@@ -326,6 +326,14 @@ python main.py prototype-3d-cutoff-phase-map-control --config configs\long_valid
 
 This compares cutoff times `17.8`, `17.9`, `18.0`, `18.1`, and `18.2` for both `phase_offset` and `sign_flip` families. The report ranks rows by refocus peaks, no shell exit, retention, outer/shell below `1.0`, decay rate closest to zero, and global outer false.
 
+Run the tiny 3D second-pulse control with:
+
+```powershell
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json
+```
+
+This starts from the best sign-flip release phase, reads refocus times from the cutoff-phase events CSV, and compares no second pulse, first-refocus timing, preload timing, second-refocus timing, opposite-polarity, phase-matched, phase-offset, and passive-extension variants. Use `--second-pulse-amplitude-scale` or `--second-pulse-duration` for reduced-work follow-ups.
+
 ## Run one simulation
 
 ```powershell
@@ -718,6 +726,19 @@ When `prototype-3d-cutoff-phase-map-control` is used, the control folder include
 - `cutoff_phase_radius_width_plot.png`
 - `cutoff_phase_flux_balance_plot.png`
 - one lifecycle run folder per cutoff/phase/polarity timing variant
+
+When `prototype-3d-second-pulse-control` is used, the control folder includes:
+
+- `second_pulse_summary.csv`
+- `second_pulse_ranked_summary.csv`
+- `second_pulse_3d_summary.json`
+- `second_pulse_report.md`
+- `second_pulse_timeseries.csv`
+- `second_pulse_events.csv`
+- `second_pulse_shell_energy_plot.png`
+- `second_pulse_radius_width_plot.png`
+- `second_pulse_flux_balance_plot.png`
+- one lifecycle run folder per second-pulse timing/phase variant
 
 ## Metrics
 

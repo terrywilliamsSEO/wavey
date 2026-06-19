@@ -57,8 +57,9 @@ Current interpretation:
 - Current interpretation: cutoff timing and frequency can tune refocusing, but the two knobs are phase/timing coupled rather than independently additive.
 - The first cutoff release-phase map classified as `cutoff_timing_improved`: cutoff `18` was sharply better than nearby `+/-0.5` offsets.
 - The tighter cutoff/polarity timing map classified as `cutoff_phase_timing_island_supported`: `sign_flip_cutoff_minus_0p1` at cutoff `17.9` and cutoff phase `0.468` cycles reached nine major peaks, eight refocus peaks, retention `0.322`, outer/shell `0.660`, decay `-0.0237`, no exit, and no global outer flag.
+- The first timed second-pulse control classified as `second_pulse_contaminated_or_inconclusive`: full-amplitude second pulses increased raw retention but reduced refocus count, worsened decay, and pushed outer/shell above `1.0`.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is a tiny timed second-pulse control from the best release phase, not traps, rotation, medium shaping, defects, or grid changes.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is a reduced-work second-pulse check, not traps, rotation, medium shaping, defects, or grid changes.
 
 ## Latest Evidence
 
@@ -1134,18 +1135,57 @@ Interpretation:
 - The best rows are in the sign-flip family. The strongest cluster is cutoff phases `0.376-0.468` cycles, with retention above `0.30`, outer/shell below `1.0`, no exit, and no global outer flag.
 - `phase_offset` is also clean around cutoff `18`, but it remains below the strict retention target and ranks below the sign-flip rows.
 - The result supports a phase-release mechanism: cubic boundary drive plus the correct cutoff/release phase produces repeated post-cutoff refocusing and delayed shell-window exit.
-- This is still passive boundary-interference refocusing, not a trap yet. The next experiment should be a timed second pulse, not defects, rotation, medium gradients, or grid expansion.
+- This was still passive boundary-interference refocusing, not a trap. It motivated the timed second-pulse control below rather than defects, rotation, medium gradients, or grid expansion.
+
+### 3D Second-Pulse Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\second_pulse_3d_20260619_112731\second_pulse_report.md`
+- Summary CSV: `runs\second_pulse_3d_20260619_112731\second_pulse_summary.csv`
+- Ranked CSV: `runs\second_pulse_3d_20260619_112731\second_pulse_ranked_summary.csv`
+- Timeseries CSV: `runs\second_pulse_3d_20260619_112731\second_pulse_timeseries.csv`
+- Events CSV: `runs\second_pulse_3d_20260619_112731\second_pulse_events.csv`
+- Classification: `second_pulse_contaminated_or_inconclusive`
+- Reference: `no_second_pulse`, equivalent to `sign_flip_cutoff_minus_0p1` with cutoff `17.9`, cutoff phase `0.468` cycles, and no active second pulse.
+
+Important values:
+
+| Variant | Role | Center | Phase At Center | Peaks | Refocus | Exit | Retention | Efficiency | Added Work | Gain/Added Work | Outer/Shell | Decay | Global Outer |
+| --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| no_second_pulse | reference | n/a | n/a | 9 | 8 | false | 0.322 | 5.16e-8 | 0.0 | n/a | 0.660 | -0.0237 | false |
+| phase_matched_second | phase_matched | 35.84 | 0.468 | 6 | 5 | false | 0.561 | 0.00288 | 108.24 | 0.0154 | 1.213 | -0.0460 | false |
+| opposite_polarity_second | opposite_polarity | 35.84 | 0.473 | 6 | 5 | false | 0.560 | 0.00289 | 107.83 | 0.0154 | 1.204 | -0.0460 | false |
+| second_at_second_refocus | second_refocus | 41.12 | 0.830 | 6 | 4 | false | 0.674 | 0.00305 | 117.29 | 0.0153 | 1.260 | -0.0733 | false |
+| second_at_first_refocus | first_refocus | 35.84 | 0.973 | 6 | 4 | false | 0.558 | 0.00288 | 107.91 | 0.0154 | 1.206 | -0.0460 | false |
+| phase_offset_second | phase_offset_control | 35.84 | 0.223 | 5 | 3 | false | 0.535 | 0.00254 | 113.09 | 0.0131 | 1.024 | -0.0426 | false |
+| second_before_first_refocus | preload_first_refocus | 34.84 | 0.053 | 4 | 2 | false | 0.517 | 0.00275 | 106.08 | 0.0149 | 1.061 | -0.0457 | false |
+| extended_first_pulse_same_duration | passive_extension | n/a | n/a | 5 | 4 | true, 80.0 | 0.160 | 1.18e-8 | 51.85 | -3.48e-7 | 1.479 | -0.0443 | true |
+
+Interpretation:
+
+- Full-amplitude second pulses are not a clean active-retention win.
+- The phase-matched and opposite-polarity pulses injected roughly `108` extra positive-work units and raised raw retention, but they reduced the clean sequence from nine/eight peaks to six/five peaks.
+- Every active second-pulse variant missed at least one strict success criterion: no variant produced more than nine major peaks, more than eight refocus peaks, slower decay than `-0.0237`, and outer/shell below `1.0`.
+- The passive extension comparator was worse: it exited, global-outer flagged, and had negative return gain per added work.
+- The next test should reduce second-pulse work rather than add traps or new media: use smaller `--second-pulse-amplitude-scale` and/or shorter `--second-pulse-duration`.
 
 ## Current Next Step
 
-Run a tiny timed second-pulse control without broadening the physics scope:
+Run a reduced-work second-pulse control without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Start from `sign_flip_cutoff_minus_0p1`: cutoff `17.9`, cutoff phase `0.468` cycles, frequency `0.92`.
-- Keep injected work matched per physical source area.
-- Fire a second cubic sign-flip pulse at one or two observed return/refocus times from the events CSV.
+- Keep primary injected work matched per physical source area.
+- Fire smaller second cubic sign-flip pulses at the same observed return/refocus times from the events CSV, starting with a lower amplitude scale or shorter duration.
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
 - Score whether the second pulse increases return/refocus count, improves late return-peak ratios, slows decay, raises retention, keeps outer/shell near or below `1`, delays/removes shell exit, and avoids global outer-window flags.
 - Keep global radial peak as an artifact/boundary-residue check.

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .config import SimulationConfig, save_json
-from .prototype_3d import EPSILON, Lattice3D, Prototype3DConfig, _calibrate_amplitude
+from .prototype_3d import EPSILON, Lattice3D, Prototype3DConfig, _calibrate_amplitude, _primary_drive_active, _second_pulse_active
 from .prototype_3d_grid_confirmation import _base_dx
 from .prototype_3d_interference_diagnostics import _shell_width, _threshold_like_options
 from .prototype_3d_source_sponge import _effective_source_area, _format, _write_csv
@@ -222,6 +222,8 @@ def _run_lifecycle_variant(
     centers = 0.5 * (bins[:-1] + bins[1:])
     timeseries: list[dict[str, Any]] = []
     cumulative_positive_work = 0.0
+    primary_positive_work = 0.0
+    second_pulse_positive_work = 0.0
     cumulative_inward_flux = 0.0
     cumulative_outward_flux = 0.0
 
@@ -232,8 +234,12 @@ def _run_lifecycle_variant(
         lattice.step(time, config.dt)
         velocity_mid = 0.5 * (velocity_before + lattice.v)
         power = float(np.sum(force * velocity_mid) * config.cell_volume)
-        if time <= config.drive_cutoff_time:
-            cumulative_positive_work += max(0.0, power) * config.dt
+        positive_work = max(0.0, power) * config.dt
+        cumulative_positive_work += positive_work
+        if _primary_drive_active(config, time):
+            primary_positive_work += positive_work
+        elif _second_pulse_active(config, time):
+            second_pulse_positive_work += positive_work
         if step % max(1, options.diagnostic_sample_every) != 0 and step != config.steps - 1:
             continue
 
@@ -269,10 +275,21 @@ def _run_lifecycle_variant(
                 "shell_outward_flux": max(0.0, shell_flux),
                 "cumulative_inward_flux": cumulative_inward_flux,
                 "cumulative_outward_flux": cumulative_outward_flux,
+                "cumulative_positive_work": cumulative_positive_work,
+                "primary_positive_work": primary_positive_work,
+                "second_pulse_positive_work": second_pulse_positive_work,
             }
         )
 
-    summary, events = _summarize_lifecycle(config, timeseries, cumulative_positive_work, shell_width, options)
+    summary, events = _summarize_lifecycle(
+        config,
+        timeseries,
+        primary_positive_work,
+        shell_width,
+        options,
+        total_positive_work=cumulative_positive_work,
+        second_pulse_positive_work=second_pulse_positive_work,
+    )
     _write_csv(run_dir / "packet_lifecycle_timeseries.csv", timeseries, _timeseries_fields())
     _write_csv(run_dir / "packet_lifecycle_events.csv", events, _event_fields())
     return {"summary": summary, "timeseries": timeseries, "events": events}
@@ -284,6 +301,9 @@ def _summarize_lifecycle(
     positive_work_before_cutoff: float,
     shell_width: float,
     options: PacketLifecycle3DOptions,
+    *,
+    total_positive_work: float | None = None,
+    second_pulse_positive_work: float = 0.0,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if not rows:
         return {"variant": config.name}, []
@@ -318,6 +338,9 @@ def _summarize_lifecycle(
         for peak in later_peaks
         if peak["energy"] >= options.refocus_threshold_fraction * max(first_peak["energy"] if first_peak else peak_shell, EPSILON)
     ]
+    total_work = float(total_positive_work if total_positive_work is not None else positive_work_before_cutoff + second_pulse_positive_work)
+    source_area = max(_effective_source_area(config), EPSILON)
+    tail_shell_energy_mean = _mean(shell[tail_start:].tolist())
     summary = {
         "variant": config.name,
         "grid_size": config.grid_size,
@@ -329,13 +352,21 @@ def _summarize_lifecycle(
         "boundary_phase_offset": config.boundary_phase_offset,
         "boundary_cubic_phase_sign": config.boundary_cubic_phase_sign,
         "positive_work_before_cutoff": positive_work_before_cutoff,
-        "work_per_source_area": positive_work_before_cutoff / max(_effective_source_area(config), EPSILON),
+        "primary_positive_work": positive_work_before_cutoff,
+        "second_pulse_positive_work": second_pulse_positive_work,
+        "total_positive_work": total_work,
+        "added_positive_work": max(0.0, total_work - positive_work_before_cutoff),
+        "work_per_source_area": positive_work_before_cutoff / source_area,
+        "primary_work_per_source_area": positive_work_before_cutoff / source_area,
+        "second_pulse_work_per_source_area": second_pulse_positive_work / source_area,
+        "total_work_per_source_area": total_work / source_area,
         "shell_window_radius": options.shell_window_radius,
         "shell_window_width": shell_width,
         "first_shell_arrival_time": float(times[arrival_idx]) if arrival_idx is not None else None,
         "shell_peak_time": float(times[peak_idx]),
         "shell_peak_energy": peak_shell,
         "shell_peak_fraction_of_work": peak_shell / (positive_work_before_cutoff + EPSILON),
+        "shell_peak_fraction_of_total_work": peak_shell / (total_work + EPSILON),
         "shell_exit_time": float(times[exit_idx]) if exit_idx is not None else None,
         "shell_exit_detected": exit_idx is not None,
         "shell_dwell_time": float(times[exit_idx] - times[arrival_idx]) if exit_idx is not None and arrival_idx is not None else None,
@@ -359,7 +390,9 @@ def _summarize_lifecycle(
         "post_cutoff_width_velocity_r2": width_r2,
         "post_cutoff_shell_decay_rate": shell_decay_rate,
         "post_cutoff_shell_decay_r2": shell_decay_r2,
-        "tail_shell_retention": _mean(shell[tail_start:].tolist()) / (peak_shell + EPSILON),
+        "tail_shell_energy_mean": tail_shell_energy_mean,
+        "tail_shell_retention": tail_shell_energy_mean / (peak_shell + EPSILON),
+        "refocus_efficiency_total_work": tail_shell_energy_mean / (total_work + EPSILON),
         "tail_outer_to_shell_mean": _mean([row["outer_to_shell_energy"] for row in rows[tail_start:]]),
         "cumulative_inward_flux": flux_in,
         "cumulative_outward_flux": flux_out,
@@ -684,13 +717,21 @@ def _summary_fields() -> list[str]:
         "boundary_phase_offset",
         "boundary_cubic_phase_sign",
         "positive_work_before_cutoff",
+        "primary_positive_work",
+        "second_pulse_positive_work",
+        "total_positive_work",
+        "added_positive_work",
         "work_per_source_area",
+        "primary_work_per_source_area",
+        "second_pulse_work_per_source_area",
+        "total_work_per_source_area",
         "shell_window_radius",
         "shell_window_width",
         "first_shell_arrival_time",
         "shell_peak_time",
         "shell_peak_energy",
         "shell_peak_fraction_of_work",
+        "shell_peak_fraction_of_total_work",
         "shell_exit_time",
         "shell_exit_detected",
         "shell_dwell_time",
@@ -714,7 +755,9 @@ def _summary_fields() -> list[str]:
         "post_cutoff_width_velocity_r2",
         "post_cutoff_shell_decay_rate",
         "post_cutoff_shell_decay_r2",
+        "tail_shell_energy_mean",
         "tail_shell_retention",
+        "refocus_efficiency_total_work",
         "tail_outer_to_shell_mean",
         "cumulative_inward_flux",
         "cumulative_outward_flux",
@@ -740,6 +783,9 @@ def _timeseries_fields() -> list[str]:
         "shell_outward_flux",
         "cumulative_inward_flux",
         "cumulative_outward_flux",
+        "cumulative_positive_work",
+        "primary_positive_work",
+        "second_pulse_positive_work",
     ]
 
 

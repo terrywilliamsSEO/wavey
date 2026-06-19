@@ -76,6 +76,10 @@ class Prototype3DConfig:
     boundary_random_phase_seed: int | None = None
     defect_inner_radius: float | None = None
     defect_nonlinear_strength: float | None = None
+    second_pulse_center_time: float | None = None
+    second_pulse_duration: float = 0.0
+    second_pulse_amplitude_scale: float = 1.0
+    second_pulse_phase_offset: float = 0.0
 
     @property
     def dx(self) -> float:
@@ -254,7 +258,7 @@ class Source3D:
             return 0.0
         return float(len(_normalize_boundary_faces(self.config.boundary_faces))) * self.config.domain_size**2
 
-    def envelope(self, time: float) -> float:
+    def primary_envelope(self, time: float) -> float:
         cutoff = self.config.drive_cutoff_time
         if time > cutoff:
             return 0.0
@@ -263,20 +267,48 @@ class Source3D:
         phase = np.clip(time / max(cutoff, EPSILON), 0.0, 1.0)
         return float(np.sin(np.pi * phase) ** 2)
 
+    def second_pulse_envelope(self, time: float) -> float:
+        center = self.config.second_pulse_center_time
+        duration = self.config.second_pulse_duration
+        if center is None or duration <= EPSILON:
+            return 0.0
+        start = float(center) - 0.5 * float(duration)
+        end = float(center) + 0.5 * float(duration)
+        if time < start or time > end:
+            return 0.0
+        phase = np.clip((time - start) / max(duration, EPSILON), 0.0, 1.0)
+        return float(np.sin(np.pi * phase) ** 2)
+
+    def envelope(self, time: float) -> float:
+        return self.primary_envelope(time) + self.config.second_pulse_amplitude_scale * self.second_pulse_envelope(time)
+
     def force(self, time: float) -> np.ndarray:
         out = np.zeros_like(self.weights)
-        envelope = self.envelope(time)
-        if envelope <= 0.0 or self.config.drive_amplitude == 0.0 or not np.any(self.mask):
+        if self.config.drive_amplitude == 0.0 or not np.any(self.mask):
             return out
-        angle = self._drive_angle(time) + self.phase_map[self.mask]
-        out[self.mask] = (
+        primary = self.primary_envelope(time)
+        if primary > 0.0:
+            out[self.mask] += self._force_values(time, primary, 1.0, 0.0)
+        second = self.second_pulse_envelope(time)
+        if second > 0.0:
+            out[self.mask] += self._force_values(
+                time,
+                second,
+                self.config.second_pulse_amplitude_scale,
+                self.config.second_pulse_phase_offset,
+            )
+        return out
+
+    def _force_values(self, time: float, envelope: float, amplitude_scale: float, phase_offset: float) -> np.ndarray:
+        angle = self._drive_angle(time) + self.phase_map[self.mask] + phase_offset
+        return (
             self.config.drive_amplitude
+            * amplitude_scale
             * self.normalization_scale
             * envelope
             * np.sin(angle)
             * self.weights[self.mask]
         )
-        return out
 
     def _drive_angle(self, time: float) -> float:
         if self.config.drive_mode != "chirp":
@@ -288,6 +320,26 @@ class Source3D:
         f1 = float(end if end is not None else self.config.drive_frequency)
         k = (f1 - f0) / cutoff
         return 2.0 * np.pi * (f0 * time + 0.5 * k * time**2)
+
+
+def _second_pulse_bounds(config: Prototype3DConfig) -> tuple[float, float] | None:
+    if config.second_pulse_center_time is None or config.second_pulse_duration <= EPSILON:
+        return None
+    center = float(config.second_pulse_center_time)
+    half = 0.5 * float(config.second_pulse_duration)
+    return center - half, center + half
+
+
+def _second_pulse_active(config: Prototype3DConfig, time: float) -> bool:
+    bounds = _second_pulse_bounds(config)
+    if bounds is None:
+        return False
+    start, end = bounds
+    return start <= time <= end
+
+
+def _primary_drive_active(config: Prototype3DConfig, time: float) -> bool:
+    return time <= config.drive_cutoff_time
 
 
 def run_3d_prototype(

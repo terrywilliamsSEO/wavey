@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or broad 3D sweeps; the next step is a tiny timed second-pulse control from the best cutoff-release phase.
+- Do not run broad long sweeps or broad 3D sweeps; the next step is a reduced-work second-pulse control, not traps, rotation, medium shaping, defects, grid changes, or broad sweeps.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -49,7 +49,8 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - The first cutoff release-phase map classified as `cutoff_timing_improved` in `runs\cutoff_phase_map_3d_20260619_085647`: cutoff 18 was sharply better than +/-0.5 offsets, but strict timing-island classification did not trigger because retention stayed just below 0.30.
 - The tighter cutoff/polarity timing map classified as `cutoff_phase_timing_island_supported` in `runs\cutoff_phase_map_3d_20260619_104211`: sign-flip cutoff 17.9 was the best ranked row with cutoff phase 0.468 cycles, nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no shell exit, and no global outer flag. The sign-flip strong rows clustered at cutoff phases 0.376-0.468 cycles.
 - Do not phrase the 3D candidate as defect-required localization or a confirmed standing-shell mode. Better wording: structured boundary-interference shell-window transport/refocusing at 41^3.
-- The current next physics step is a tiny timed second-pulse control. Start from `sign_flip_cutoff_minus_0p1` / cutoff 17.9 / cutoff phase 0.468 cycles, keep 41^3, neutral lattice, stronger sponge, inner-sponge-edge source, matched work per physical source area, frequency 0.92, and radius-5 shell metrics fixed. Do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet.
+- The first active second-pulse control classified as `second_pulse_contaminated_or_inconclusive` in `runs\second_pulse_3d_20260619_112731`: all full-amplitude second-pulse variants reduced the clean refocus count below the 9/8 reference, worsened decay, and pushed outer/shell above 1.0. Phase-matched/opposite-polarity pulses raised raw retention to about 0.56 but injected about 108 extra positive-work units and did not extend the clean sequence.
+- The current next physics step is a reduced-work second-pulse check from `sign_flip_cutoff_minus_0p1` / cutoff 17.9 / cutoff phase 0.468 cycles. Keep 41^3, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency 0.92, and radius-5 shell metrics fixed. Try smaller `--second-pulse-amplitude-scale` or shorter `--second-pulse-duration` before any new mechanism.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -110,6 +111,8 @@ python main.py prototype-3d-refocusing-engineering-control --config configs\long
 python main.py prototype-3d-refocusing-map-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --cutoff-offsets -0.2 -0.1 0 0.1 0.2 --phase-offset-deltas 0 --polarity-cutoff-offsets -0.2 -0.1 0 0.1 0.2
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-amplitude-scale 0.5
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json

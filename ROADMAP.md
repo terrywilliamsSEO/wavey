@@ -6,7 +6,7 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, and the tighter cutoff/polarity release-phase map found a supported timing island.
 
-Recommended next task: run a tiny timed second-pulse control from the best release phase, `sign_flip_cutoff_minus_0p1` at cutoff `17.9` and cutoff phase `0.468` cycles. Keep frequency `0.92`, matched work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size `41^3`, radius-5 shell window, and global outer-window guard fixed. Do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet.
+Recommended next task: run a reduced-work second-pulse check from the same release phase, `sign_flip_cutoff_minus_0p1` at cutoff `17.9` and cutoff phase `0.468` cycles. Keep frequency `0.92`, matched primary work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size `41^3`, radius-5 shell window, and global outer-window guard fixed. Try lower `--second-pulse-amplitude-scale` or shorter `--second-pulse-duration`; do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet.
 
 ## Status
 
@@ -190,6 +190,10 @@ Recommended next task: run a tiny timed second-pulse control from the best relea
 - Added ranked cutoff-phase reporting and `cutoff_phase_ranked_summary.csv`, ordered by refocus peaks, no shell exit, retention, outer/shell below 1.0, decay closest to zero, and global outer false.
 - Ran the tighter cutoff/polarity timing check in `runs\cutoff_phase_map_3d_20260619_104211`; result classified as `cutoff_phase_timing_island_supported`.
 - The best ranked row was `sign_flip_cutoff_minus_0p1`: cutoff 17.9, cutoff phase 0.468 cycles, nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no exit, and global outer false.
+- Added optional second-pulse source support in the 3D prototype engine and work accounting for primary, second-pulse, total positive work, and refocus efficiency per total work.
+- Added `prototype-3d-second-pulse-control` with no-pulse, first-refocus, preload, second-refocus, opposite-polarity, phase-matched, phase-offset, and passive-extension variants.
+- Ran the first second-pulse control in `runs\second_pulse_3d_20260619_112731`; result classified as `second_pulse_contaminated_or_inconclusive`.
+- Full-amplitude second pulses raised raw tail retention but reduced refocus count below the no-pulse reference, worsened decay, and pushed outer/shell above 1.0. The no-pulse reference remained the only row meeting the clean success criteria.
 
 ### In Progress
 
@@ -198,11 +202,12 @@ Recommended next task: run a tiny timed second-pulse control from the best relea
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
-- Run a tiny timed second-pulse control rather than another cutoff-frequency combination.
+- Run a reduced-work second-pulse control rather than another cutoff-frequency combination.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
 - Use `sign_flip_cutoff_minus_0p1` as the reference release phase: cutoff 17.9, cutoff phase 0.468 cycles, frequency 0.92.
+- Try lower second-pulse amplitude scale and/or shorter duration because the first full-amplitude second pulse injected too much work into an already moving lattice.
 - Do not treat frequency 0.94 as additive with cutoff 18.
-- Do not move to trapping, rotation, medium shaping, defects, or grid changes before the second-pulse check.
+- Do not move to trapping, rotation, medium shaping, defects, or grid changes before the reduced-work second-pulse check.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
 - Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-shell peak/work, tail retention, refocus peak count, refocus ratio, exit detection/time, decay rate, inward/outward flux balance, and outer/shell tail ratio as the primary 3D metrics.
@@ -436,3 +441,8 @@ Possible work:
 - 2026-06-19: Ran the tighter cutoff/polarity timing map in `runs\cutoff_phase_map_3d_20260619_104211`; classification was `cutoff_phase_timing_island_supported`.
 - 2026-06-19: Best ranked row was `sign_flip_cutoff_minus_0p1`: cutoff 17.9, cutoff phase 0.468 cycles, nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no exit, and global outer false.
 - 2026-06-19: Updated the next step to a tiny timed second-pulse control from the best release phase before traps, rotation, medium shaping, defects, or grid changes.
+- 2026-06-19: Added optional second-pulse forcing to the 3D prototype path plus primary/second/total positive-work accounting and total-work refocus-efficiency metrics.
+- 2026-06-19: Added `python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json`.
+- 2026-06-19: Ran the first timed second-pulse control in `runs\second_pulse_3d_20260619_112731`; classification was `second_pulse_contaminated_or_inconclusive`.
+- 2026-06-19: Full-amplitude second pulses did not improve clean refocusing: phase-matched/opposite-polarity variants raised retention to about 0.56 but dropped to six major peaks/five refocus peaks, outer/shell around 1.20, and decay around -0.046. The no-pulse reference remained nine/eight peaks, retention 0.322, outer/shell 0.660, and decay -0.0237.
+- 2026-06-19: Updated the next step to a reduced-work second-pulse check using lower amplitude scale or shorter duration before any new mechanism.
