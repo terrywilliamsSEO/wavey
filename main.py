@@ -694,6 +694,14 @@ def build_parser() -> argparse.ArgumentParser:
     second_pulse_parser.add_argument("--reference-release-phase-cycles", type=float, default=0.468, help="Best first-pulse release phase in cycles")
     second_pulse_parser.add_argument("--second-pulse-duration", type=float, default=2.0, help="Duration of each second pulse")
     second_pulse_parser.add_argument("--second-pulse-amplitude-scale", type=float, default=1.0, help="Amplitude scale applied only to second-pulse variants")
+    second_pulse_parser.add_argument("--second-pulse-amplitude-scales", type=float, nargs="+", help="Run a reduced-work map over multiple second-pulse amplitude scales")
+    second_pulse_parser.add_argument("--second-pulse-durations", type=float, nargs="+", help="Run a reduced-work map over multiple second-pulse durations")
+    second_pulse_parser.add_argument(
+        "--second-pulse-roles",
+        nargs="+",
+        default=["first_refocus", "preload_first_refocus", "second_refocus", "opposite_polarity", "phase_matched", "phase_offset_control"],
+        help="Second-pulse roles to include in reduced-work maps",
+    )
     second_pulse_parser.add_argument("--preload-time", type=float, default=1.0, help="How far before first refocus to center the preload pulse")
     second_pulse_parser.add_argument("--phase-offset-control", type=float, default=0.5 * 3.141592653589793, help="Global phase offset for the phase-offset second-pulse control")
     second_pulse_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first meaningful shell arrival")
@@ -1397,6 +1405,9 @@ def main() -> None:
                 reference_release_phase_cycles=args.reference_release_phase_cycles,
                 second_pulse_duration=args.second_pulse_duration,
                 second_pulse_amplitude_scale=args.second_pulse_amplitude_scale,
+                second_pulse_amplitude_scales=tuple(args.second_pulse_amplitude_scales) if args.second_pulse_amplitude_scales else None,
+                second_pulse_durations=tuple(args.second_pulse_durations) if args.second_pulse_durations else None,
+                second_pulse_roles=tuple(args.second_pulse_roles),
                 preload_time=args.preload_time,
                 phase_offset_control=args.phase_offset_control,
                 arrival_threshold_fraction=args.arrival_threshold_fraction,
@@ -2243,6 +2254,7 @@ def _print_3d_second_pulse_summary(result: dict[str, Any]) -> None:
             f"exit={exit_label}, "
             f"ret={_format_optional(row.get('tail_shell_retention'))}, "
             f"eff={_format_optional(row.get('refocus_efficiency_total_work'))}, "
+            f"added_work_eff={_format_optional(row.get('added_work_efficiency'))}, "
             f"gain/work={_format_optional(row.get('return_gain_per_added_work'))}, "
             f"outer/shell={_format_optional(row.get('tail_outer_to_shell_mean'))}, "
             f"decay={_format_optional(row.get('post_cutoff_shell_decay_rate'))}, "

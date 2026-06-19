@@ -6,7 +6,7 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, and the tighter cutoff/polarity release-phase map found a supported timing island.
 
-Recommended next task: run a reduced-work second-pulse check from the same release phase, `sign_flip_cutoff_minus_0p1` at cutoff `17.9` and cutoff phase `0.468` cycles. Keep frequency `0.92`, matched primary work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size `41^3`, radius-5 shell window, and global outer-window guard fixed. Try lower `--second-pulse-amplitude-scale` or shorter `--second-pulse-duration`; do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet.
+Recommended next task: do a second-pulse timing/phase trace audit before adding new mechanisms. The reduced-work phase-matched check from `sign_flip_cutoff_minus_0p1` at cutoff `17.9` / cutoff phase `0.468` cycles did not beat the no-pulse reference: even 0.1x-0.5x pulses reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`. Keep frequency `0.92`, matched primary work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size `41^3`, radius-5 shell window, and global outer-window guard fixed. If active reinjection continues, make it a tiny timing/phase micro-map around the first refocus pulse center, not more amplitude-only testing. Do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet.
 
 ## Status
 
@@ -194,6 +194,9 @@ Recommended next task: run a reduced-work second-pulse check from the same relea
 - Added `prototype-3d-second-pulse-control` with no-pulse, first-refocus, preload, second-refocus, opposite-polarity, phase-matched, phase-offset, and passive-extension variants.
 - Ran the first second-pulse control in `runs\second_pulse_3d_20260619_112731`; result classified as `second_pulse_contaminated_or_inconclusive`.
 - Full-amplitude second pulses raised raw tail retention but reduced refocus count below the no-pulse reference, worsened decay, and pushed outer/shell above 1.0. The no-pulse reference remained the only row meeting the clean success criteria.
+- Added reduced-work second-pulse maps with multiple second-pulse amplitude scales, multiple pulse durations, role selection, `clean_refocus_score`, and `added_work_efficiency`.
+- Ran a reduced-work phase-matched second-pulse check in `runs\second_pulse_3d_20260619_115332`; result classified as `second_pulse_contaminated_or_inconclusive`.
+- The no-pulse reference still ranked first. Reduced phase-matched pulses at 0.1x, 0.2x, 0.35x, and 0.5x with 2.0 and 1.0 duration all lowered the clean return sequence to five or six major peaks, four or five refocus peaks, outer/shell above 1.20, decay around -0.043 to -0.046, and negative `added_work_efficiency`.
 
 ### In Progress
 
@@ -202,12 +205,13 @@ Recommended next task: run a reduced-work second-pulse check from the same relea
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
-- Run a reduced-work second-pulse control rather than another cutoff-frequency combination.
+- Do a second-pulse timing/phase trace audit before more active-pulse controls.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
 - Use `sign_flip_cutoff_minus_0p1` as the reference release phase: cutoff 17.9, cutoff phase 0.468 cycles, frequency 0.92.
-- Try lower second-pulse amplitude scale and/or shorter duration because the first full-amplitude second pulse injected too much work into an already moving lattice.
+- Do not keep testing amplitude-only second pulses at the same center; reduced work did not fix the dephasing/cleanup problem.
+- If active reinjection continues, make the next control a tiny timing/phase micro-map around the first-refocus center and judge it by `added_work_efficiency`, refocus count, outer/shell, decay, and no-exit criteria.
 - Do not treat frequency 0.94 as additive with cutoff 18.
-- Do not move to trapping, rotation, medium shaping, defects, or grid changes before the reduced-work second-pulse check.
+- Do not move to trapping, rotation, medium shaping, defects, or grid changes before the second-pulse timing failure mode is understood or deliberately shelved.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
 - Treat the 41^3 result as not defect-dependent unless a future specifically motivated defect design creates defect_lift above roughly 1.5-2.0 at a stable shell radius.
 - Keep near-shell peak/work, tail retention, refocus peak count, refocus ratio, exit detection/time, decay rate, inward/outward flux balance, and outer/shell tail ratio as the primary 3D metrics.
@@ -215,7 +219,7 @@ Recommended next task: run a reduced-work second-pulse check from the same relea
 - Treat 2D `annulus_radial_peak` as a possible separate short-period response; do not carry it into 3D as the main target yet.
 - Keep the source-normalized 63/81 refined radial convergence as the current cleaner fixed-domain interpretation, with raw subpeak-overcounting flags noted separately from envelope periods.
 - Keep the angular/rotating-tail claim provisional because coherent phase trend is sponge-sensitive and direct core excitation did not reproduce the reference m=4 tail.
-- Do not run neighboring-frequency long controls or broad 3D sweeps until the cutoff/polarity timing refinement shows whether the return-count/retention pocket is stable.
+- Do not run neighboring-frequency long controls or broad 3D sweeps while this active-pulse timing question is unresolved.
 
 ## Phases
 
@@ -446,3 +450,7 @@ Possible work:
 - 2026-06-19: Ran the first timed second-pulse control in `runs\second_pulse_3d_20260619_112731`; classification was `second_pulse_contaminated_or_inconclusive`.
 - 2026-06-19: Full-amplitude second pulses did not improve clean refocusing: phase-matched/opposite-polarity variants raised retention to about 0.56 but dropped to six major peaks/five refocus peaks, outer/shell around 1.20, and decay around -0.046. The no-pulse reference remained nine/eight peaks, retention 0.322, outer/shell 0.660, and decay -0.0237.
 - 2026-06-19: Updated the next step to a reduced-work second-pulse check using lower amplitude scale or shorter duration before any new mechanism.
+- 2026-06-19: Added reduced-work second-pulse map options: `--second-pulse-amplitude-scales`, `--second-pulse-durations`, and `--second-pulse-roles`, plus `clean_refocus_score` and `added_work_efficiency`.
+- 2026-06-19: Ran the reduced-work phase-matched second-pulse check in `runs\second_pulse_3d_20260619_115332`; classification stayed `second_pulse_contaminated_or_inconclusive`.
+- 2026-06-19: Reduced phase-matched second pulses did not improve the clean cycle: the no-pulse reference ranked first, all active rows had negative `added_work_efficiency`, and active rows dropped to five or six major peaks with outer/shell above 1.20 and worse decay.
+- 2026-06-19: Updated the next step to inspect second-pulse timing/phase traces or run a tiny timing micro-map before adding new mechanisms.

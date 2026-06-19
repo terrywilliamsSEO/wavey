@@ -38,6 +38,16 @@ class SecondPulse3DOptions(PacketLifecycle3DOptions):
     reference_release_phase_cycles: float = 0.468
     second_pulse_duration: float = 2.0
     second_pulse_amplitude_scale: float = 1.0
+    second_pulse_amplitude_scales: tuple[float, ...] | None = None
+    second_pulse_durations: tuple[float, ...] | None = None
+    second_pulse_roles: tuple[str, ...] = (
+        "first_refocus",
+        "preload_first_refocus",
+        "second_refocus",
+        "opposite_polarity",
+        "phase_matched",
+        "phase_offset_control",
+    )
     preload_time: float = 1.0
     phase_offset_control: float = 0.5 * float(np.pi)
     max_outer_shell_target: float = 1.0
@@ -203,6 +213,36 @@ def _variant_plan(
         first_refocus,
         options.reference_release_phase_cycles,
     )
+    if options.second_pulse_amplitude_scales or options.second_pulse_durations:
+        scales = options.second_pulse_amplitude_scales or (options.second_pulse_amplitude_scale,)
+        durations = options.second_pulse_durations or (options.second_pulse_duration,)
+        variants = [_reference_config(base, options, source_width)]
+        for duration in durations:
+            variants.append(_passive_extension_config(base, options, source_width, duration=duration))
+            for role in options.second_pulse_roles:
+                for scale in scales:
+                    prefix, center, phase_offset = _pulse_spec(
+                        role,
+                        first_refocus=first_refocus,
+                        second_refocus=second_refocus,
+                        before_first=before_first,
+                        phase_match_offset=phase_match_offset,
+                        phase_offset_control=options.phase_offset_control,
+                    )
+                    variants.append(
+                        _pulse_config(
+                            _map_variant_name(prefix, scale, duration),
+                            base,
+                            options,
+                            source_width,
+                            center,
+                            phase_offset,
+                            role,
+                            amplitude_scale=scale,
+                            duration=duration,
+                        )
+                    )
+        return variants
     variants = [
         _reference_config(base, options, source_width),
         _pulse_config("second_at_first_refocus", base, options, source_width, first_refocus, 0.0, "first_refocus"),
@@ -230,19 +270,29 @@ def _pulse_config(
     center: float,
     phase_offset: float,
     role: str,
+    amplitude_scale: float | None = None,
+    duration: float | None = None,
 ) -> Prototype3DConfig:
     config = _base_boundary_config(name, base, options, source_width)
     config.second_pulse_center_time = center
-    config.second_pulse_duration = options.second_pulse_duration
-    config.second_pulse_amplitude_scale = options.second_pulse_amplitude_scale
+    config.second_pulse_duration = options.second_pulse_duration if duration is None else duration
+    config.second_pulse_amplitude_scale = options.second_pulse_amplitude_scale if amplitude_scale is None else amplitude_scale
     config.second_pulse_phase_offset = phase_offset
     setattr(config, "_second_pulse_role", role)
     return config
 
 
-def _passive_extension_config(base: SimulationConfig, options: SecondPulse3DOptions, source_width: float) -> Prototype3DConfig:
-    config = _base_boundary_config("extended_first_pulse_same_duration", base, options, source_width)
-    config.drive_cutoff_time = options.reference_cutoff_time + options.second_pulse_duration
+def _passive_extension_config(
+    base: SimulationConfig,
+    options: SecondPulse3DOptions,
+    source_width: float,
+    *,
+    duration: float | None = None,
+) -> Prototype3DConfig:
+    extension_duration = options.second_pulse_duration if duration is None else duration
+    name = "extended_first_pulse_same_duration" if duration is None else f"extended_first_pulse_duration_{_safe_float(extension_duration)}"
+    config = _base_boundary_config(name, base, options, source_width)
+    config.drive_cutoff_time = options.reference_cutoff_time + extension_duration
     setattr(config, "_second_pulse_role", "passive_extension")
     return config
 
@@ -309,6 +359,9 @@ def _comparison_fields(
         "refocus_efficiency_delta": _delta(row.get("refocus_efficiency_total_work"), (reference or {}).get("refocus_efficiency_total_work")),
         "added_work_vs_reference": _delta(row.get("total_positive_work"), (reference or {}).get("total_positive_work")),
         "return_gain_per_added_work": _return_gain_per_added_work(row, reference),
+        "clean_refocus_score": _clean_refocus_score(row, reference),
+        "clean_refocus_score_delta": _delta(_clean_refocus_score(row, reference), _clean_refocus_score(reference, reference)),
+        "added_work_efficiency": _added_work_efficiency(row, reference),
         "return_gain_per_added_work_vs_extension": _delta(
             _return_gain_per_added_work(row, reference),
             _return_gain_per_added_work(extension, reference),
@@ -359,30 +412,44 @@ def _beats_reference(
         and float(row.get("tail_shell_retention") or 0.0) > float(reference.get("tail_shell_retention") or 0.0) + options.min_retention_gain
         and float(row.get("post_cutoff_shell_decay_rate") or -999.0) > float(reference.get("post_cutoff_shell_decay_rate") or -999.0)
         and float(row.get("refocus_efficiency_total_work") or 0.0) > float(reference.get("refocus_efficiency_total_work") or 0.0)
+        and (_added_work_efficiency(row, reference) or 0.0) > 0.0
     )
 
 
 def _ranked_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    reference = _reference_row(rows)
     ranked = []
-    for rank, row in enumerate(sorted(rows, key=_rank_key, reverse=True), start=1):
+    for rank, row in enumerate(sorted(rows, key=lambda item: _rank_key(item, reference), reverse=True), start=1):
         ranked.append(
             {
                 "rank": rank,
                 "outer_shell_below_1": float(row.get("tail_outer_to_shell_mean") or 999.0) < 1.0,
+                "clean_refocus_score": _clean_refocus_score(row, reference),
+                "clean_refocus_score_delta": _delta(_clean_refocus_score(row, reference), _clean_refocus_score(reference, reference)),
+                "added_work_efficiency": _added_work_efficiency(row, reference),
                 **row,
             }
         )
     return ranked
 
 
-def _rank_key(row: dict[str, Any]) -> tuple[float, ...]:
+def _rank_key(row: dict[str, Any], reference: dict[str, Any] | None) -> tuple[float, ...]:
     decay = float(row.get("post_cutoff_shell_decay_rate") or 0.0)
+    ref_major = int((reference or {}).get("major_shell_peak_count") or 0)
+    ref_refocus = int((reference or {}).get("refocus_peak_count") or 0)
+    ref_retention = float((reference or {}).get("tail_shell_retention") or 0.0)
+    ref_decay = float((reference or {}).get("post_cutoff_shell_decay_rate") or -999.0)
     return (
-        float(row.get("refocus_peak_count") or 0.0),
-        0.0 if bool(row.get("shell_exit_detected")) else 1.0,
-        float(row.get("tail_shell_retention") or 0.0),
-        float(row.get("refocus_efficiency_total_work") or 0.0),
+        1.0 if int(row.get("refocus_peak_count") or 0) > ref_refocus else 0.0,
+        1.0 if int(row.get("major_shell_peak_count") or 0) > ref_major else 0.0,
         1.0 if float(row.get("tail_outer_to_shell_mean") or 999.0) < 1.0 else 0.0,
+        0.0 if bool(row.get("shell_exit_detected")) else 1.0,
+        1.0 if decay > ref_decay else 0.0,
+        1.0 if float(row.get("tail_shell_retention") or 0.0) > ref_retention else 0.0,
+        float(_added_work_efficiency(row, reference) or -999.0),
+        float(row.get("refocus_peak_count") or 0.0),
+        float(row.get("major_shell_peak_count") or 0.0),
+        float(row.get("tail_shell_retention") or 0.0),
         -abs(decay),
         0.0 if bool(row.get("global_peak_in_outer_window")) else 1.0,
     )
@@ -410,6 +477,41 @@ def _return_gain_per_added_work(row: dict[str, Any] | None, reference: dict[str,
         return None
     tail_gain = float(row.get("tail_shell_energy_mean") or 0.0) - float(reference.get("tail_shell_energy_mean") or 0.0)
     return tail_gain / added
+
+
+def _clean_refocus_score(row: dict[str, Any] | None, reference: dict[str, Any] | None) -> float | None:
+    if row is None:
+        return None
+    ref_retention = float((reference or {}).get("tail_shell_retention") or 0.0)
+    ref_decay = float((reference or {}).get("post_cutoff_shell_decay_rate") or 0.0)
+    retention = float(row.get("tail_shell_retention") or 0.0)
+    decay = float(row.get("post_cutoff_shell_decay_rate") or 0.0)
+    retention_term = retention / (ref_retention + EPSILON) if ref_retention > EPSILON else retention
+    decay_term = (decay - ref_decay) / (abs(ref_decay) + EPSILON) if abs(ref_decay) > EPSILON else 0.0
+    return (
+        float(row.get("refocus_peak_count") or 0.0)
+        + 0.5 * float(row.get("major_shell_peak_count") or 0.0)
+        + (1.0 if not bool(row.get("shell_exit_detected")) else -1.0)
+        + (1.0 if float(row.get("tail_outer_to_shell_mean") or 999.0) < 1.0 else -1.0)
+        + (1.0 if not bool(row.get("global_peak_in_outer_window")) else -1.0)
+        + retention_term
+        + max(-2.0, min(2.0, decay_term))
+    )
+
+
+def _added_work_efficiency(row: dict[str, Any] | None, reference: dict[str, Any] | None) -> float | None:
+    if row is None or reference is None:
+        return None
+    added_work = float(row.get("second_pulse_positive_work") or 0.0)
+    if added_work <= EPSILON:
+        added_work = float(row.get("total_positive_work") or 0.0) - float(reference.get("total_positive_work") or 0.0)
+    if added_work <= EPSILON:
+        return None
+    score = _clean_refocus_score(row, reference)
+    reference_score = _clean_refocus_score(reference, reference)
+    if score is None or reference_score is None:
+        return None
+    return (score - reference_score) / added_work
 
 
 def _reference_event_times(options: SecondPulse3DOptions) -> dict[str, float]:
@@ -441,6 +543,38 @@ def _phase_offset_to_release(frequency: float, center_time: float, release_phase
     current = (float(frequency) * float(center_time)) % 1.0
     delta_cycles = (float(release_phase_cycles) - current + 0.5) % 1.0 - 0.5
     return 2.0 * math.pi * delta_cycles
+
+
+def _pulse_spec(
+    role: str,
+    *,
+    first_refocus: float,
+    second_refocus: float,
+    before_first: float,
+    phase_match_offset: float,
+    phase_offset_control: float,
+) -> tuple[str, float, float]:
+    if role == "first_refocus":
+        return "second_at_first_refocus", first_refocus, 0.0
+    if role == "preload_first_refocus":
+        return "second_before_first_refocus", before_first, 0.0
+    if role == "second_refocus":
+        return "second_at_second_refocus", second_refocus, 0.0
+    if role == "opposite_polarity":
+        return "opposite_polarity_second", first_refocus, math.pi
+    if role == "phase_matched":
+        return "phase_matched_second", first_refocus, phase_match_offset
+    if role == "phase_offset_control":
+        return "phase_offset_second", first_refocus, phase_offset_control
+    raise ValueError(f"Unsupported second-pulse role: {role}")
+
+
+def _map_variant_name(prefix: str, scale: float, duration: float) -> str:
+    return f"{prefix}_scale_{_safe_float(scale)}_duration_{_safe_float(duration)}"
+
+
+def _safe_float(value: float) -> str:
+    return str(float(value)).replace("-", "minus_").replace(".", "p")
 
 
 def _phase_cycles(frequency: float, time: float | None, phase_offset: float = 0.0) -> float | None:
@@ -513,10 +647,10 @@ def _write_report(
         "",
         "## Ranked Results",
         "",
-        "Ranking priority: refocus peaks, no exit, retention, refocus efficiency per total work, outer/shell below 1.0, decay closest to zero, global outer false.",
+        "Ranking priority: refocus peaks > reference, major peaks > reference, outer/shell below 1.0, no exit, decay better than reference, retention above reference, and added-work efficiency.",
         "",
-        "| Rank | Variant | Role | Center | Phase At Center | Peaks | Refocus | Exit | Ret | Efficiency | Added Work | Return Gain/Added Work | Outer/Shell | Decay | Global Outer |",
-        "| ---: | --- | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+        "| Rank | Variant | Role | Scale | Duration | Center | Phase At Center | Peaks | Refocus | Exit | Ret | Added Work Eff | Added Work | Outer/Shell | Decay | Global Outer |",
+        "| ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for row in _ranked_rows(rows):
         exit_label = "false" if not bool(row.get("shell_exit_detected")) else _format(row.get("shell_exit_time"))
@@ -525,15 +659,16 @@ def _write_report(
             f"{row['rank']} | "
             f"{row['variant']} | "
             f"{row.get('second_pulse_role')} | "
+            f"{_format(row.get('second_pulse_amplitude_scale'))} | "
+            f"{_format(row.get('second_pulse_duration'))} | "
             f"{_format(row.get('second_pulse_center_time'))} | "
             f"{_format(row.get('second_pulse_phase_at_center_cycles'))} | "
             f"{row.get('major_shell_peak_count')} | "
             f"{row.get('refocus_peak_count')} | "
             f"{exit_label} | "
             f"{_format(row.get('tail_shell_retention'))} | "
-            f"{_format(row.get('refocus_efficiency_total_work'))} | "
+            f"{_format(row.get('added_work_efficiency'))} | "
             f"{_format(row.get('added_work_vs_reference'))} | "
-            f"{_format(row.get('return_gain_per_added_work'))} | "
             f"{_format(row.get('tail_outer_to_shell_mean'))} | "
             f"{_format(row.get('post_cutoff_shell_decay_rate'))} | "
             f"{row.get('global_peak_in_outer_window')} |"
@@ -612,6 +747,9 @@ def _summary_fields() -> list[str]:
         "total_positive_work",
         "added_work_vs_reference",
         "refocus_efficiency_total_work",
+        "clean_refocus_score",
+        "clean_refocus_score_delta",
+        "added_work_efficiency",
         "return_gain_per_added_work",
         "return_gain_per_added_work_vs_extension",
         "shell_peak_energy",

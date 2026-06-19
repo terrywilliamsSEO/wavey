@@ -78,8 +78,36 @@ class Prototype3DSecondPulseTests(unittest.TestCase):
 
         ranked = _ranked_rows(rows)
 
-        self.assertEqual(ranked[0]["variant"], "higher_retention_lower_efficiency")
-        self.assertGreater(ranked[2]["refocus_efficiency_total_work"], ranked[0]["refocus_efficiency_total_work"])
+        self.assertEqual(ranked[0]["variant"], "lower_retention_higher_efficiency")
+        self.assertGreater(ranked[0]["added_work_efficiency"], ranked[1]["added_work_efficiency"])
+
+    def test_variant_plan_can_make_reduced_work_map(self) -> None:
+        base = SimulationConfig()
+        base.driver.frequency = 0.92
+        options = SecondPulse3DOptions(
+            reference_events_csv=None,
+            second_pulse_amplitude_scales=(0.1, 0.2),
+            second_pulse_durations=(2.0, 1.0),
+            second_pulse_roles=("phase_matched",),
+        )
+
+        variants = _variant_plan(base, options, source_width=1.0, event_times=_reference_event_times(options))
+        names = [variant.name for variant in variants]
+
+        self.assertEqual(
+            names,
+            [
+                "no_second_pulse",
+                "extended_first_pulse_duration_2p0",
+                "phase_matched_second_scale_0p1_duration_2p0",
+                "phase_matched_second_scale_0p2_duration_2p0",
+                "extended_first_pulse_duration_1p0",
+                "phase_matched_second_scale_0p1_duration_1p0",
+                "phase_matched_second_scale_0p2_duration_1p0",
+            ],
+        )
+        self.assertAlmostEqual(variants[2].second_pulse_amplitude_scale, 0.1)
+        self.assertAlmostEqual(variants[5].second_pulse_duration, 1.0)
 
 
 def _row(

@@ -58,8 +58,9 @@ Current interpretation:
 - The first cutoff release-phase map classified as `cutoff_timing_improved`: cutoff `18` was sharply better than nearby `+/-0.5` offsets.
 - The tighter cutoff/polarity timing map classified as `cutoff_phase_timing_island_supported`: `sign_flip_cutoff_minus_0p1` at cutoff `17.9` and cutoff phase `0.468` cycles reached nine major peaks, eight refocus peaks, retention `0.322`, outer/shell `0.660`, decay `-0.0237`, no exit, and no global outer flag.
 - The first timed second-pulse control classified as `second_pulse_contaminated_or_inconclusive`: full-amplitude second pulses increased raw retention but reduced refocus count, worsened decay, and pushed outer/shell above `1.0`.
+- The reduced-work phase-matched second-pulse check also classified as `second_pulse_contaminated_or_inconclusive`: 0.1x-0.5x pulses and shorter 1.0-duration pulses still reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is a reduced-work second-pulse check, not traps, rotation, medium shaping, defects, or grid changes.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is a second-pulse timing/phase trace audit or a tiny timing micro-map, not traps, rotation, medium shaping, defects, grid changes, or more amplitude-only pulse tests.
 
 ## Latest Evidence
 
@@ -1176,16 +1177,58 @@ Interpretation:
 - The passive extension comparator was worse: it exited, global-outer flagged, and had negative return gain per added work.
 - The next test should reduce second-pulse work rather than add traps or new media: use smaller `--second-pulse-amplitude-scale` and/or shorter `--second-pulse-duration`.
 
+### 3D Reduced-Work Second-Pulse Check
+
+Command:
+
+```powershell
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-amplitude-scales 0.1 0.2 0.35 0.5 --second-pulse-durations 2.0 1.0 --second-pulse-roles phase_matched
+```
+
+Latest summarized run:
+
+- Local report: `runs\second_pulse_3d_20260619_115332\second_pulse_report.md`
+- Summary CSV: `runs\second_pulse_3d_20260619_115332\second_pulse_summary.csv`
+- Ranked CSV: `runs\second_pulse_3d_20260619_115332\second_pulse_ranked_summary.csv`
+- Timeseries CSV: `runs\second_pulse_3d_20260619_115332\second_pulse_timeseries.csv`
+- Events CSV: `runs\second_pulse_3d_20260619_115332\second_pulse_events.csv`
+- Classification: `second_pulse_contaminated_or_inconclusive`
+- Best ranked row: `no_second_pulse`
+
+Important values:
+
+| Variant | Scale | Duration | Peaks | Refocus | Exit | Retention | Added Work | Added Work Eff | Outer/Shell | Decay | Global Outer |
+| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| no_second_pulse | 1.0 | 0.0 | 9 | 8 | false | 0.322 | 0.00 | n/a | 0.660 | -0.0237 | false |
+| phase_matched_second_scale_0p5_duration_2p0 | 0.5 | 2.0 | 6 | 5 | false | 0.562 | 27.05 | -0.248 | 1.213 | -0.0460 | false |
+| phase_matched_second_scale_0p35_duration_2p0 | 0.35 | 2.0 | 6 | 5 | false | 0.563 | 13.25 | -0.506 | 1.212 | -0.0460 | false |
+| phase_matched_second_scale_0p1_duration_2p0 | 0.1 | 2.0 | 6 | 5 | false | 0.569 | 1.08 | -6.189 | 1.207 | -0.0459 | false |
+| phase_matched_second_scale_0p5_duration_1p0 | 0.5 | 1.0 | 5 | 4 | false | 0.388 | 14.70 | -0.587 | 1.248 | -0.0435 | false |
+| phase_matched_second_scale_0p1_duration_1p0 | 0.1 | 1.0 | 5 | 4 | false | 0.393 | 0.59 | -14.637 | 1.248 | -0.0435 | false |
+| extended_first_pulse_duration_1p0 | n/a | 1.0 | 6 | 5 | false | 0.238 | 25.92 | -0.275 | 1.249 | -0.0323 | false |
+| extended_first_pulse_duration_2p0 | n/a | 2.0 | 5 | 4 | true, 80.0 | 0.160 | 51.85 | -0.258 | 1.479 | -0.0443 | true |
+
+Interpretation:
+
+- Reduced second-pulse work did not repair the active-pulse problem.
+- Raw retention can rise above the no-pulse reference, but every active reduced-work row loses clean refocus count and keeps outer/shell above `1.0`.
+- `added_work_efficiency` is negative for every active reduced-work row; smaller pulses are not simply gentler wins because they still disturb the return sequence.
+- Shortening the pulse from duration `2.0` to `1.0` lowers the return count further, so the failure is not just "pulse too long."
+- The current evidence points to a timing/phase interaction: a pulse centered at the first refocus peak disrupts the clean release-phase cycle even at low added work.
+- Next active-pulse work should inspect timeseries/phase traces or run a tiny center/phase-offset micro-map before adding any new trapping, medium, rotation, defect, or grid mechanism.
+
 ## Current Next Step
 
-Run a reduced-work second-pulse control without broadening the physics scope:
+Do a second-pulse timing/phase trace audit without broadening the physics scope:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Start from `sign_flip_cutoff_minus_0p1`: cutoff `17.9`, cutoff phase `0.468` cycles, frequency `0.92`.
 - Keep primary injected work matched per physical source area.
-- Fire smaller second cubic sign-flip pulses at the same observed return/refocus times from the events CSV, starting with a lower amplitude scale or shorter duration.
+- Do not keep testing amplitude-only second pulses at the same first-refocus center; reduced-work phase-matched pulses still disturbed the clean cycle.
+- Inspect the second-pulse shell-energy, radius/width, and flux traces around `t=35.84`.
+- If active reinjection continues, make it a tiny center/phase-offset micro-map around the first refocus timing, judged by `added_work_efficiency`.
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
 - Score whether the second pulse increases return/refocus count, improves late return-peak ratios, slows decay, raises retention, keeps outer/shell near or below `1`, delays/removes shell exit, and avoids global outer-window flags.
 - Keep global radial peak as an artifact/boundary-residue check.

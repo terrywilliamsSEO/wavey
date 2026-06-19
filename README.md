@@ -332,7 +332,15 @@ Run the tiny 3D second-pulse control with:
 python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json
 ```
 
-This starts from the best sign-flip release phase, reads refocus times from the cutoff-phase events CSV, and compares no second pulse, first-refocus timing, preload timing, second-refocus timing, opposite-polarity, phase-matched, phase-offset, and passive-extension variants. Use `--second-pulse-amplitude-scale` or `--second-pulse-duration` for reduced-work follow-ups.
+This starts from the best sign-flip release phase, reads refocus times from the cutoff-phase events CSV, and compares no second pulse, first-refocus timing, preload timing, second-refocus timing, opposite-polarity, phase-matched, phase-offset, and passive-extension variants. Use `--second-pulse-amplitude-scale` or `--second-pulse-duration` for a single reduced-work follow-up.
+
+Run a reduced-work second-pulse map with:
+
+```powershell
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-amplitude-scales 0.1 0.2 0.35 0.5 --second-pulse-durations 2.0 1.0 --second-pulse-roles phase_matched
+```
+
+The multi-value options create a compact map over selected second-pulse roles, amplitudes, and durations. The ranked report includes `clean_refocus_score` and `added_work_efficiency`, where added-work efficiency measures the clean-score improvement per unit of second-pulse work.
 
 ## Run one simulation
 
@@ -739,6 +747,8 @@ When `prototype-3d-second-pulse-control` is used, the control folder includes:
 - `second_pulse_radius_width_plot.png`
 - `second_pulse_flux_balance_plot.png`
 - one lifecycle run folder per second-pulse timing/phase variant
+
+The second-pulse summary and ranked CSV include active-pulse work accounting plus `clean_refocus_score`, `clean_refocus_score_delta`, and `added_work_efficiency` for comparing second pulses against the no-pulse reference without rewarding extra injected work by itself.
 
 ## Metrics
 
