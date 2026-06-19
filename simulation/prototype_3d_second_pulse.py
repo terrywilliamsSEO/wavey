@@ -48,6 +48,11 @@ class SecondPulse3DOptions(PacketLifecycle3DOptions):
         "phase_matched",
         "phase_offset_control",
     )
+    second_pulse_micro_map: bool = False
+    micro_map_targets: tuple[str, ...] = ("first_refocus",)
+    launch_time_offsets: tuple[float, ...] = (-0.8, -0.4, 0.0, 0.4, 0.8)
+    second_pulse_phase_modes: tuple[str, ...] = ("matched", "opposite", "plus_pi_4", "minus_pi_4")
+    boundary_to_shell_travel_time: float | None = None
     preload_time: float = 1.0
     phase_offset_control: float = 0.5 * float(np.pi)
     max_outer_shell_target: float = 1.0
@@ -87,7 +92,7 @@ def run_3d_second_pulse_control(
     _calibrate_amplitude(calibration_config, target_work)
 
     event_times = _reference_event_times(options)
-    variants = _variant_plan(base_config, options, source_width, event_times)
+    variants = [_reference_config(base_config, options, source_width)] if options.second_pulse_micro_map else _variant_plan(base_config, options, source_width, event_times)
     rows: list[dict[str, Any]] = []
     timeseries_rows: list[dict[str, Any]] = []
     event_rows: list[dict[str, Any]] = []
@@ -101,6 +106,18 @@ def run_3d_second_pulse_control(
         timeseries_rows.extend(result["timeseries"])
         event_rows.extend(result["events"])
 
+    timing_audit = _timing_phase_audit(timeseries_rows, event_rows, rows, options)
+    if options.second_pulse_micro_map:
+        for config in _micro_map_variant_plan(base_config, options, source_width, timing_audit, event_times):
+            config.drive_amplitude = calibration_config.drive_amplitude
+            config.steps = max(config.steps, int(round(options.physical_duration / max(config.dt, EPSILON))))
+            result = _run_lifecycle_variant(config, root, lifecycle_options)
+            summary = result["summary"]
+            _add_control_fields(summary, config, options, target_work_per_area)
+            rows.append(summary)
+            timeseries_rows.extend(result["timeseries"])
+            event_rows.extend(result["events"])
+
     classification = classify_second_pulse_control(rows, options)
     reference = _reference_row(rows)
     extension = _extension_row(rows)
@@ -113,15 +130,17 @@ def run_3d_second_pulse_control(
     ranked_csv = root / "second_pulse_ranked_summary.csv"
     timeseries_csv = root / "second_pulse_timeseries.csv"
     events_csv = root / "second_pulse_events.csv"
+    timing_audit_csv = root / "second_pulse_timing_audit.csv"
     report_path = root / "second_pulse_report.md"
     _write_csv(summary_csv, rows, _summary_fields())
     _write_csv(ranked_csv, ranked_rows, _ranked_fields())
     _write_csv(timeseries_csv, timeseries_rows, _timeseries_fields())
     _write_csv(events_csv, event_rows, _event_fields())
+    _write_csv(timing_audit_csv, timing_audit, _timing_audit_fields())
     _plot_lifecycle(root / "second_pulse_shell_energy_plot.png", timeseries_rows, event_rows)
     _plot_radius_width(root / "second_pulse_radius_width_plot.png", timeseries_rows)
     _plot_flux(root / "second_pulse_flux_balance_plot.png", timeseries_rows)
-    _write_report(report_path, control_id, rows, classification, options, event_times)
+    _write_report(report_path, control_id, rows, classification, options, event_times, timing_audit)
     save_json(
         root / "second_pulse_3d_summary.json",
         {
@@ -133,6 +152,7 @@ def run_3d_second_pulse_control(
             "ranked_csv": str(ranked_csv),
             "timeseries_csv": str(timeseries_csv),
             "events_csv": str(events_csv),
+            "timing_audit_csv": str(timing_audit_csv),
             "report_path": str(report_path),
         },
     )
@@ -145,6 +165,7 @@ def run_3d_second_pulse_control(
         "ranked_csv": str(ranked_csv),
         "timeseries_csv": str(timeseries_csv),
         "events_csv": str(events_csv),
+        "timing_audit_csv": str(timing_audit_csv),
         "report_path": str(report_path),
         "path": str(root),
     }
@@ -256,6 +277,86 @@ def _variant_plan(
     return variants
 
 
+def _micro_map_variant_plan(
+    base: SimulationConfig,
+    options: SecondPulse3DOptions,
+    source_width: float,
+    timing_audit: list[dict[str, Any]],
+    event_times: dict[str, float],
+) -> list[Prototype3DConfig]:
+    """Build a tiny travel-time-adjusted launch micro-map."""
+
+    scales = options.second_pulse_amplitude_scales or (0.1, 0.2)
+    target_times = _micro_map_target_times(timing_audit, event_times)
+    variants: list[Prototype3DConfig] = []
+    for target in options.micro_map_targets:
+        target_time = target_times.get(target)
+        if target_time is None:
+            continue
+        travel_time = _estimated_travel_time(timing_audit, options)
+        ideal_launch_time = max(options.reference_cutoff_time + 0.5 * options.second_pulse_duration, target_time - travel_time)
+        for offset in options.launch_time_offsets:
+            center = ideal_launch_time + offset
+            for phase_mode in options.second_pulse_phase_modes:
+                phase_offset = _phase_offset_for_mode(base.driver.frequency, center, options.reference_release_phase_cycles, phase_mode)
+                for scale in scales:
+                    config = _pulse_config(
+                        _micro_map_variant_name(target, offset, phase_mode, scale),
+                        base,
+                        options,
+                        source_width,
+                        center,
+                        phase_offset,
+                        f"micro_{target}_{phase_mode}",
+                        amplitude_scale=scale,
+                    )
+                    setattr(config, "_second_pulse_target", target)
+                    setattr(config, "_second_pulse_launch_offset", offset)
+                    setattr(config, "_second_pulse_phase_mode", phase_mode)
+                    setattr(config, "_target_shell_peak_time", target_time)
+                    setattr(config, "_estimated_travel_time", travel_time)
+                    setattr(config, "_ideal_launch_time", ideal_launch_time)
+                    variants.append(config)
+    return variants
+
+
+def _micro_map_target_times(timing_audit: list[dict[str, Any]], event_times: dict[str, float]) -> dict[str, float | None]:
+    peak_rows = [row for row in timing_audit if row.get("event") == "shell_peak"]
+    by_rank = {int(row.get("peak_rank") or 0): float(row["peak_time"]) for row in peak_rows if row.get("peak_time") is not None}
+    return {
+        "first_peak": by_rank.get(1, event_times.get("first_peak_time")),
+        "first_refocus": by_rank.get(2, event_times.get("first_refocus_time")),
+        "second_refocus": by_rank.get(3, event_times.get("second_refocus_time")),
+    }
+
+
+def _estimated_travel_time(timing_audit: list[dict[str, Any]], options: SecondPulse3DOptions) -> float:
+    if options.boundary_to_shell_travel_time is not None:
+        return max(0.0, float(options.boundary_to_shell_travel_time))
+    for row in timing_audit:
+        value = row.get("estimated_boundary_to_shell_travel_time")
+        if value is not None:
+            return max(0.0, float(value))
+    return max(0.0, float(options.reference_cutoff_time) * 0.5)
+
+
+def _phase_offset_for_mode(frequency: float, center_time: float, release_phase_cycles: float, phase_mode: str) -> float:
+    matched = _phase_offset_to_release(frequency, center_time, release_phase_cycles)
+    if phase_mode == "matched":
+        return matched
+    if phase_mode == "opposite":
+        return matched + math.pi
+    if phase_mode == "plus_pi_4":
+        return matched + 0.25 * math.pi
+    if phase_mode == "minus_pi_4":
+        return matched - 0.25 * math.pi
+    raise ValueError(f"Unsupported second-pulse phase mode: {phase_mode}")
+
+
+def _micro_map_variant_name(target: str, offset: float, phase_mode: str, scale: float) -> str:
+    return f"micro_{target}_launch_{_safe_float(offset)}_{phase_mode}_scale_{_safe_float(scale)}"
+
+
 def _reference_config(base: SimulationConfig, options: SecondPulse3DOptions, source_width: float) -> Prototype3DConfig:
     config = _base_boundary_config("no_second_pulse", base, options, source_width)
     setattr(config, "_second_pulse_role", "reference")
@@ -338,11 +439,129 @@ def _add_control_fields(
     row["second_pulse_amplitude_scale"] = config.second_pulse_amplitude_scale
     row["second_pulse_phase_offset"] = config.second_pulse_phase_offset
     row["second_pulse_phase_offset_cycles"] = config.second_pulse_phase_offset / (2.0 * math.pi)
+    row["second_pulse_target"] = getattr(config, "_second_pulse_target", None)
+    row["second_pulse_launch_offset"] = getattr(config, "_second_pulse_launch_offset", None)
+    row["second_pulse_phase_mode"] = getattr(config, "_second_pulse_phase_mode", None)
+    row["target_shell_peak_time"] = getattr(config, "_target_shell_peak_time", None)
+    row["estimated_boundary_to_shell_travel_time"] = getattr(config, "_estimated_travel_time", None)
+    row["ideal_launch_time"] = getattr(config, "_ideal_launch_time", None)
     row["second_pulse_phase_at_center_cycles"] = (
         _phase_cycles(config.drive_frequency, center, config.boundary_phase_offset + config.second_pulse_phase_offset)
         if center is not None
         else None
     )
+
+
+def _timing_phase_audit(
+    timeseries_rows: list[dict[str, Any]],
+    event_rows: list[dict[str, Any]],
+    summary_rows: list[dict[str, Any]],
+    options: SecondPulse3DOptions,
+) -> list[dict[str, Any]]:
+    reference = _reference_row(summary_rows) or {}
+    variant = str(reference.get("variant") or "no_second_pulse")
+    series = sorted((row for row in timeseries_rows if row.get("variant") == variant), key=lambda row: float(row.get("time") or 0.0))
+    peak_events = sorted(
+        (row for row in event_rows if row.get("variant") == variant and row.get("event") == "shell_peak"),
+        key=lambda row: float(row.get("time") or 0.0),
+    )
+    if not series or not peak_events:
+        return []
+    times = np.asarray([float(row["time"]) for row in series], dtype=float)
+    shell = np.asarray([float(row.get("shell_window_energy") or 0.0) for row in series], dtype=float)
+    flux = np.asarray([float(row.get("shell_radial_flux") or 0.0) for row in series], dtype=float)
+    centroid = np.asarray([float(row.get("packet_centroid_radius") or 0.0) for row in series], dtype=float)
+    width = np.asarray([float(row.get("packet_radial_width") or 0.0) for row in series], dtype=float)
+    phase = _analytic_phase_cycles(shell)
+    travel_time = _estimated_travel_time_from_reference(reference, options)
+    rows: list[dict[str, Any]] = []
+    for event in peak_events:
+        peak_time = float(event["time"])
+        launch_time = peak_time - travel_time
+        local_flux = _interp(times, flux, peak_time)
+        local_velocity = _local_slope(times, centroid, peak_time)
+        rows.append(
+            {
+                "variant": variant,
+                "event": "shell_peak",
+                "peak_rank": event.get("peak_rank"),
+                "peak_time": peak_time,
+                "shell_energy": event.get("energy"),
+                "radial_flux": local_flux,
+                "radial_flux_direction": _flux_direction(local_flux),
+                "packet_radial_velocity": local_velocity,
+                "packet_motion": _packet_motion(local_velocity),
+                "packet_centroid_radius": _interp(times, centroid, peak_time),
+                "packet_radial_width": _interp(times, width, peak_time),
+                "local_shell_phase_cycles": _interp(times, phase, peak_time),
+                "estimated_boundary_to_shell_travel_time": travel_time,
+                "ideal_launch_time": launch_time,
+                "source_phase_at_launch_cycles": _phase_cycles(float(reference.get("drive_frequency") or 0.0), launch_time, 0.0),
+                "source_phase_at_peak_cycles": _phase_cycles(float(reference.get("drive_frequency") or 0.0), peak_time, 0.0),
+            }
+        )
+    return rows
+
+
+def _estimated_travel_time_from_reference(reference: dict[str, Any], options: SecondPulse3DOptions) -> float:
+    if options.boundary_to_shell_travel_time is not None:
+        return max(0.0, float(options.boundary_to_shell_travel_time))
+    arrival = reference.get("first_shell_arrival_time")
+    if arrival is not None:
+        return max(0.0, float(arrival))
+    return max(0.0, float(options.reference_cutoff_time) * 0.5)
+
+
+def _analytic_phase_cycles(values: np.ndarray) -> np.ndarray:
+    if values.size == 0:
+        return np.asarray([], dtype=float)
+    centered = values - float(np.mean(values))
+    if float(np.max(np.abs(centered))) <= EPSILON:
+        return np.zeros_like(centered, dtype=float)
+    spectrum = np.fft.fft(centered)
+    multiplier = np.zeros(values.size, dtype=float)
+    multiplier[0] = 1.0
+    if values.size % 2 == 0:
+        multiplier[values.size // 2] = 1.0
+        multiplier[1 : values.size // 2] = 2.0
+    else:
+        multiplier[1 : (values.size + 1) // 2] = 2.0
+    analytic = np.fft.ifft(spectrum * multiplier)
+    return np.mod(np.angle(analytic) / (2.0 * math.pi), 1.0)
+
+
+def _interp(times: np.ndarray, values: np.ndarray, time: float) -> float | None:
+    if times.size == 0 or values.size == 0:
+        return None
+    return float(np.interp(time, times, values))
+
+
+def _local_slope(times: np.ndarray, values: np.ndarray, time: float) -> float | None:
+    if times.size < 3 or values.size < 3:
+        return None
+    idx = int(np.searchsorted(times, time))
+    start = max(0, idx - 2)
+    end = min(times.size, idx + 3)
+    if end - start < 3:
+        return None
+    x = times[start:end]
+    y = values[start:end]
+    if float(np.ptp(x)) <= EPSILON:
+        return None
+    slope, _ = np.polyfit(x, y, 1)
+    return float(slope)
+
+
+def _flux_direction(value: float | None) -> str:
+    if value is None or abs(value) <= EPSILON:
+        return "flat"
+    return "inward" if value < 0.0 else "outward"
+
+
+def _packet_motion(value: float | None) -> str:
+    if value is None or abs(value) <= EPSILON:
+        return "flat"
+    return "inbound" if value < 0.0 else "outbound"
 
 
 def _comparison_fields(
@@ -624,6 +843,7 @@ def _write_report(
     classification: dict[str, Any],
     options: SecondPulse3DOptions,
     event_times: dict[str, float],
+    timing_audit: list[dict[str, Any]],
 ) -> None:
     lines = [
         f"# 3D Second Pulse Control: {control_id}",
@@ -639,19 +859,40 @@ def _write_report(
         f"- First refocus peak: `{_format(event_times.get('first_refocus_time'))}`",
         f"- Second refocus peak: `{_format(event_times.get('second_refocus_time'))}`",
         "",
-        "## Classification",
+        "## No-Pulse Timing / Phase Audit",
         "",
-        f"- Result: `{classification['label']}`",
-        f"- Reason: {classification['reason']}",
-        f"- Best variant: `{classification.get('best_variant', 'n/a')}`",
-        "",
-        "## Ranked Results",
-        "",
-        "Ranking priority: refocus peaks > reference, major peaks > reference, outer/shell below 1.0, no exit, decay better than reference, retention above reference, and added-work efficiency.",
-        "",
-        "| Rank | Variant | Role | Scale | Duration | Center | Phase At Center | Peaks | Refocus | Exit | Ret | Added Work Eff | Added Work | Outer/Shell | Decay | Global Outer |",
-        "| ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+        "| Peak | Time | Flux Dir | Packet Motion | Shell Phase | Travel | Ideal Launch | Source Phase At Launch |",
+        "| ---: | ---: | --- | --- | ---: | ---: | ---: | ---: |",
     ]
+    for row in timing_audit:
+        lines.append(
+            "| "
+            f"{row.get('peak_rank')} | "
+            f"{_format(row.get('peak_time'))} | "
+            f"{row.get('radial_flux_direction')} | "
+            f"{row.get('packet_motion')} | "
+            f"{_format(row.get('local_shell_phase_cycles'))} | "
+            f"{_format(row.get('estimated_boundary_to_shell_travel_time'))} | "
+            f"{_format(row.get('ideal_launch_time'))} | "
+            f"{_format(row.get('source_phase_at_launch_cycles'))} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Classification",
+            "",
+            f"- Result: `{classification['label']}`",
+            f"- Reason: {classification['reason']}",
+            f"- Best variant: `{classification.get('best_variant', 'n/a')}`",
+            "",
+            "## Ranked Results",
+            "",
+            "Ranking priority: refocus peaks > reference, major peaks > reference, outer/shell below 1.0, no exit, decay better than reference, retention above reference, and added-work efficiency.",
+            "",
+            "| Rank | Variant | Role | Scale | Duration | Center | Phase At Center | Peaks | Refocus | Exit | Ret | Added Work Eff | Added Work | Outer/Shell | Decay | Global Outer |",
+            "| ---: | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | --- |",
+        ]
+    )
     for row in _ranked_rows(rows):
         exit_label = "false" if not bool(row.get("shell_exit_detected")) else _format(row.get("shell_exit_time"))
         lines.append(
@@ -686,6 +927,7 @@ def _write_report(
             "- `second_pulse_ranked_summary.csv`",
             "- `second_pulse_timeseries.csv`",
             "- `second_pulse_events.csv`",
+            "- `second_pulse_timing_audit.csv`",
             "- `second_pulse_shell_energy_plot.png`",
             "- `second_pulse_radius_width_plot.png`",
             "- `second_pulse_flux_balance_plot.png`",
@@ -722,6 +964,12 @@ def _summary_fields() -> list[str]:
         "variant",
         "second_pulse_classification",
         "second_pulse_role",
+        "second_pulse_target",
+        "second_pulse_launch_offset",
+        "second_pulse_phase_mode",
+        "target_shell_peak_time",
+        "estimated_boundary_to_shell_travel_time",
+        "ideal_launch_time",
         "drive_frequency",
         "drive_cutoff_time",
         "release_phase_cycles",
@@ -763,6 +1011,27 @@ def _summary_fields() -> list[str]:
 
 def _ranked_fields() -> list[str]:
     return ["rank", "outer_shell_below_1", *_summary_fields()]
+
+
+def _timing_audit_fields() -> list[str]:
+    return [
+        "variant",
+        "event",
+        "peak_rank",
+        "peak_time",
+        "shell_energy",
+        "radial_flux",
+        "radial_flux_direction",
+        "packet_radial_velocity",
+        "packet_motion",
+        "packet_centroid_radius",
+        "packet_radial_width",
+        "local_shell_phase_cycles",
+        "estimated_boundary_to_shell_travel_time",
+        "ideal_launch_time",
+        "source_phase_at_launch_cycles",
+        "source_phase_at_peak_cycles",
+    ]
 
 
 def _delta(value: Any, reference: Any) -> float | None:

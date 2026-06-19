@@ -59,8 +59,9 @@ Current interpretation:
 - The tighter cutoff/polarity timing map classified as `cutoff_phase_timing_island_supported`: `sign_flip_cutoff_minus_0p1` at cutoff `17.9` and cutoff phase `0.468` cycles reached nine major peaks, eight refocus peaks, retention `0.322`, outer/shell `0.660`, decay `-0.0237`, no exit, and no global outer flag.
 - The first timed second-pulse control classified as `second_pulse_contaminated_or_inconclusive`: full-amplitude second pulses increased raw retention but reduced refocus count, worsened decay, and pushed outer/shell above `1.0`.
 - The reduced-work phase-matched second-pulse check also classified as `second_pulse_contaminated_or_inconclusive`: 0.1x-0.5x pulses and shorter 1.0-duration pulses still reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`.
+- The travel-time-adjusted first-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: empirical boundary-to-shell travel time was `9.44`, so the first-refocus target launch moved to `t=26.4`, but all active rows still had fewer refocus peaks, worse decay, outer/shell above `1.0`, and negative `added_work_efficiency`.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step is a second-pulse timing/phase trace audit or a tiny timing micro-map, not traps, rotation, medium shaping, defects, grid changes, or more amplitude-only pulse tests.
+- Do not run broad long sweeps or broad 3D sweeps. The next step is either one final second-refocus travel-time micro-map or shelving active second pulses in favor of passive phase/cutoff engineering, not traps, rotation, medium shaping, defects, grid changes, or more first-refocus pulse tests.
 
 ## Latest Evidence
 
@@ -1217,18 +1218,70 @@ Interpretation:
 - The current evidence points to a timing/phase interaction: a pulse centered at the first refocus peak disrupts the clean release-phase cycle even at low added work.
 - Next active-pulse work should inspect timeseries/phase traces or run a tiny center/phase-offset micro-map before adding any new trapping, medium, rotation, defect, or grid mechanism.
 
+### 3D First-Refocus Travel-Time Second-Pulse Micro-Map
+
+Command:
+
+```powershell
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-micro-map --micro-map-targets first_refocus --launch-time-offsets -0.8 -0.4 0 0.4 0.8 --second-pulse-phase-modes matched opposite plus_pi_4 minus_pi_4 --second-pulse-amplitude-scales 0.1 0.2
+```
+
+Latest summarized run:
+
+- Local report: `runs\second_pulse_3d_20260619_125050\second_pulse_report.md`
+- Summary CSV: `runs\second_pulse_3d_20260619_125050\second_pulse_summary.csv`
+- Ranked CSV: `runs\second_pulse_3d_20260619_125050\second_pulse_ranked_summary.csv`
+- Timeseries CSV: `runs\second_pulse_3d_20260619_125050\second_pulse_timeseries.csv`
+- Events CSV: `runs\second_pulse_3d_20260619_125050\second_pulse_events.csv`
+- Timing audit CSV: `runs\second_pulse_3d_20260619_125050\second_pulse_timing_audit.csv`
+- Classification: `second_pulse_contaminated_or_inconclusive`
+
+No-pulse timing audit:
+
+| Peak | Time | Flux Dir | Motion | Shell Phase | Travel | Ideal Launch | Source Phase |
+| ---: | ---: | --- | --- | ---: | ---: | ---: | ---: |
+| 1 | 20.80 | inward | inbound | 0.774 | 9.44 | 11.36 | 0.451 |
+| 2 | 35.84 | inward | inbound | 0.960 | 9.44 | 26.40 | 0.288 |
+| 3 | 41.12 | inward | outbound | 0.052 | 9.44 | 31.68 | 0.146 |
+| 4 | 46.40 | inward | inbound | 0.100 | 9.44 | 36.96 | 0.003 |
+| 5 | 52.80 | inward | outbound | 0.186 | 9.44 | 43.36 | 0.891 |
+| 6 | 58.88 | inward | outbound | 0.229 | 9.44 | 49.44 | 0.485 |
+| 7 | 64.48 | outward | inbound | 0.245 | 9.44 | 55.04 | 0.637 |
+| 8 | 70.24 | outward | outbound | 0.265 | 9.44 | 60.80 | 0.936 |
+| 9 | 78.40 | outward | inbound | 0.353 | 9.44 | 68.96 | 0.443 |
+
+Important values:
+
+| Variant | Launch Offset | Phase Mode | Scale | Center | Peaks | Refocus | Retention | Outer/Shell | Decay | Added Work Eff |
+| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| no_second_pulse | n/a | n/a | n/a | n/a | 9 | 8 | 0.322 | 0.660 | -0.0237 | n/a |
+| micro_first_refocus_launch_0p8_opposite_scale_0p2 | 0.8 | opposite | 0.2 | 27.2 | 6 | 5 | 0.373 | 1.327 | -0.0430 | -1.658 |
+| micro_first_refocus_launch_0p4_opposite_scale_0p2 | 0.4 | opposite | 0.2 | 26.8 | 6 | 5 | 0.364 | 1.330 | -0.0427 | -1.662 |
+| micro_first_refocus_launch_0p0_opposite_scale_0p2 | 0.0 | opposite | 0.2 | 26.4 | 6 | 5 | 0.355 | 1.336 | -0.0425 | -1.667 |
+| micro_first_refocus_launch_0p8_opposite_scale_0p1 | 0.8 | opposite | 0.1 | 27.2 | 6 | 5 | 0.377 | 1.316 | -0.0426 | -6.628 |
+| micro_first_refocus_launch_0p8_plus_pi_4_scale_0p2 | 0.8 | plus_pi_4 | 0.2 | 27.2 | 4 | 2 | 0.342 | 1.124 | -0.0438 | -2.639 |
+
+Interpretation:
+
+- Travel-time adjustment was the right diagnostic step, but it did not rescue active reinjection at the first refocus target.
+- The first-refocus ideal launch moved from the shell peak time `35.84` back to `26.4`; tested centers were `25.6`, `26.0`, `26.4`, `26.8`, and `27.2`.
+- Opposite-phase launches were the least bad active family, especially at later offsets, but they still cut the clean sequence from nine/eight peaks to six/five peaks.
+- No active row kept outer/shell below `1.0`, no active row improved decay beyond `-0.0237`, and every active row had negative `added_work_efficiency`.
+- The active pulse appears to create an additional packet that disrupts the already tuned release-phase cycle, even when launched early enough to arrive near the target shell peak.
+- If active pulses are pursued one more time, target the second refocus peak only; its timing audit state differs from the first refocus because the packet motion proxy is outbound and local shell phase has wrapped near zero. Otherwise shelve active second pulses and return to passive phase/cutoff engineering.
+
 ## Current Next Step
 
-Do a second-pulse timing/phase trace audit without broadening the physics scope:
+Either run one final second-refocus travel-time micro-map or shelve active second pulses:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Start from `sign_flip_cutoff_minus_0p1`: cutoff `17.9`, cutoff phase `0.468` cycles, frequency `0.92`.
 - Keep primary injected work matched per physical source area.
-- Do not keep testing amplitude-only second pulses at the same first-refocus center; reduced-work phase-matched pulses still disturbed the clean cycle.
-- Inspect the second-pulse shell-energy, radius/width, and flux traces around `t=35.84`.
-- If active reinjection continues, make it a tiny center/phase-offset micro-map around the first refocus timing, judged by `added_work_efficiency`.
+- Do not repeat first-refocus active pulses; both direct-at-peak and travel-time-adjusted first-refocus pulses disturbed the clean cycle.
+- If active reinjection continues, target only the second refocus peak with the same travel-time method, judged by `added_work_efficiency`.
+- If second-refocus targeting fails, stop active-pulse controls for now and return to passive phase/cutoff engineering.
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
 - Score whether the second pulse increases return/refocus count, improves late return-peak ratios, slows decay, raises retention, keeps outer/shell near or below `1`, delays/removes shell exit, and avoids global outer-window flags.
 - Keep global radial peak as an artifact/boundary-residue check.

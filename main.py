@@ -702,6 +702,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=["first_refocus", "preload_first_refocus", "second_refocus", "opposite_polarity", "phase_matched", "phase_offset_control"],
         help="Second-pulse roles to include in reduced-work maps",
     )
+    second_pulse_parser.add_argument("--second-pulse-micro-map", action="store_true", help="Run a travel-time-adjusted second-pulse timing/phase micro-map")
+    second_pulse_parser.add_argument("--micro-map-targets", nargs="+", default=["first_refocus"], help="Shell peaks to target in micro-map mode: first_peak, first_refocus, second_refocus")
+    second_pulse_parser.add_argument("--launch-time-offsets", type=float, nargs="+", default=[-0.8, -0.4, 0.0, 0.4, 0.8], help="Offsets around target_time - boundary_to_shell_travel_time for micro-map launches")
+    second_pulse_parser.add_argument("--second-pulse-phase-modes", nargs="+", default=["matched", "opposite", "plus_pi_4", "minus_pi_4"], help="Micro-map phase modes: matched, opposite, plus_pi_4, minus_pi_4")
+    second_pulse_parser.add_argument("--boundary-to-shell-travel-time", type=float, help="Override empirical boundary-to-shell travel time for second-pulse micro-map")
     second_pulse_parser.add_argument("--preload-time", type=float, default=1.0, help="How far before first refocus to center the preload pulse")
     second_pulse_parser.add_argument("--phase-offset-control", type=float, default=0.5 * 3.141592653589793, help="Global phase offset for the phase-offset second-pulse control")
     second_pulse_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first meaningful shell arrival")
@@ -1408,6 +1413,11 @@ def main() -> None:
                 second_pulse_amplitude_scales=tuple(args.second_pulse_amplitude_scales) if args.second_pulse_amplitude_scales else None,
                 second_pulse_durations=tuple(args.second_pulse_durations) if args.second_pulse_durations else None,
                 second_pulse_roles=tuple(args.second_pulse_roles),
+                second_pulse_micro_map=args.second_pulse_micro_map,
+                micro_map_targets=tuple(args.micro_map_targets),
+                launch_time_offsets=tuple(args.launch_time_offsets),
+                second_pulse_phase_modes=tuple(args.second_pulse_phase_modes),
+                boundary_to_shell_travel_time=args.boundary_to_shell_travel_time,
                 preload_time=args.preload_time,
                 phase_offset_control=args.phase_offset_control,
                 arrival_threshold_fraction=args.arrival_threshold_fraction,
@@ -2264,6 +2274,7 @@ def _print_3d_second_pulse_summary(result: dict[str, Any]) -> None:
     print(f"ranked CSV: {result['ranked_csv']}")
     print(f"timeseries CSV: {result['timeseries_csv']}")
     print(f"events CSV: {result['events_csv']}")
+    print(f"timing audit CSV: {result['timing_audit_csv']}")
     print(f"report: {result['report_path']}")
 
 

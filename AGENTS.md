@@ -12,7 +12,7 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 
 ## Current Rule Of Engagement
 
-- Do not run broad long sweeps or broad 3D sweeps; the next step is a second-pulse timing/phase trace audit or tiny timing micro-map, not traps, rotation, medium shaping, defects, grid changes, or broad sweeps.
+- Do not run broad long sweeps or broad 3D sweeps; the next step is either one final second-refocus travel-time micro-map or shelving active second pulses in favor of passive phase/cutoff engineering, not traps, rotation, medium shaping, defects, grid changes, or broad sweeps.
 - Treat old pre-fixed-domain results as historical context, not numerically identical baselines.
 - Legacy fixed-domain `per_cell` source handling is reference-only because emitter/source geometry was not resolution-invariant.
 - The latest source-normalized diagnostic classified the fixed-domain 41/63/81 comparison as `coarse_grid_artifact_likely`: 63x63 and 81x81 converge at physical radial peak 10.0, while 41x41 peaks at 5.0.
@@ -51,7 +51,8 @@ This file is the first stop for any agent entering the project cold. Keep it sho
 - Do not phrase the 3D candidate as defect-required localization or a confirmed standing-shell mode. Better wording: structured boundary-interference shell-window transport/refocusing at 41^3.
 - The first active second-pulse control classified as `second_pulse_contaminated_or_inconclusive` in `runs\second_pulse_3d_20260619_112731`: all full-amplitude second-pulse variants reduced the clean refocus count below the 9/8 reference, worsened decay, and pushed outer/shell above 1.0. Phase-matched/opposite-polarity pulses raised raw retention to about 0.56 but injected about 108 extra positive-work units and did not extend the clean sequence.
 - The reduced-work phase-matched second-pulse check classified as `second_pulse_contaminated_or_inconclusive` in `runs\second_pulse_3d_20260619_115332`: 0.1x-0.5x pulses and shorter 1.0-duration pulses still reduced refocus count to 4-5, pushed outer/shell above 1.20, worsened decay to roughly -0.043 to -0.046, and had negative `added_work_efficiency`.
-- The current next physics step is a second-pulse timing/phase trace audit from `sign_flip_cutoff_minus_0p1` / cutoff 17.9 / cutoff phase 0.468 cycles. Keep 41^3, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency 0.92, and radius-5 shell metrics fixed. Do not keep doing amplitude-only pulses at the same center; if active reinjection continues, use a tiny center/phase-offset micro-map judged by `added_work_efficiency`.
+- The first-refocus travel-time second-pulse micro-map classified as `second_pulse_contaminated_or_inconclusive` in `runs\second_pulse_3d_20260619_125050`: empirical boundary-to-shell travel time was 9.44, first-refocus ideal launch was t=26.4, and all active rows still had fewer refocus peaks, outer/shell above 1.0, worse decay, and negative `added_work_efficiency`.
+- The current next physics step is either one final second-refocus travel-time micro-map or shelving active second pulses. Keep 41^3, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency 0.92, and radius-5 shell metrics fixed.
 - Keep rotation language cautious: m=4/non-axisymmetric structure often persists, but coherent angular phase is sensitive to sponge and resolution settings.
 
 ## Documentation Contract
@@ -115,6 +116,7 @@ python main.py prototype-3d-cutoff-phase-map-control --config configs\long_valid
 python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json
 python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-amplitude-scale 0.5
 python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-amplitude-scales 0.1 0.2 0.35 0.5 --second-pulse-durations 2.0 1.0 --second-pulse-roles phase_matched
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-micro-map --micro-map-targets first_refocus --launch-time-offsets -0.8 -0.4 0 0.4 0.8 --second-pulse-phase-modes matched opposite plus_pi_4 minus_pi_4 --second-pulse-amplitude-scales 0.1 0.2
 python main.py breathing-period-audit --control-root runs\source_normalized_resolution_20260616_233009
 python main.py dt-control --config configs\long_validation_peak_0_92.json
 python main.py artifact-controls --config configs\long_validation_peak_0_92.json

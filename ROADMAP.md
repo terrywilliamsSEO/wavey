@@ -6,7 +6,7 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, and the tighter cutoff/polarity release-phase map found a supported timing island.
 
-Recommended next task: do a second-pulse timing/phase trace audit before adding new mechanisms. The reduced-work phase-matched check from `sign_flip_cutoff_minus_0p1` at cutoff `17.9` / cutoff phase `0.468` cycles did not beat the no-pulse reference: even 0.1x-0.5x pulses reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`. Keep frequency `0.92`, matched primary work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size `41^3`, radius-5 shell window, and global outer-window guard fixed. If active reinjection continues, make it a tiny timing/phase micro-map around the first refocus pulse center, not more amplitude-only testing. Do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet.
+Recommended next task: do not add traps, rotation, medium shaping, defects, grid changes, or broad sweeps yet. The travel-time-adjusted first-refocus second-pulse micro-map did not beat the no-pulse reference: the audit estimated boundary-to-shell travel time `9.44`, moved the first-refocus launch target to `t=26.4`, and tested offsets `-0.8` to `+0.8`, phases `matched/opposite/+pi/4/-pi/4`, and scales `0.1/0.2`. All active rows had negative `added_work_efficiency`, fewer refocus peaks, worse decay, and outer/shell above `1.0`. If active reinjection is still pursued, the only remaining tiny active-pulse check should target the second refocus peak using the same travel-time method; otherwise shelve second pulses and return to passive phase/cutoff engineering.
 
 ## Status
 
@@ -197,6 +197,12 @@ Recommended next task: do a second-pulse timing/phase trace audit before adding 
 - Added reduced-work second-pulse maps with multiple second-pulse amplitude scales, multiple pulse durations, role selection, `clean_refocus_score`, and `added_work_efficiency`.
 - Ran a reduced-work phase-matched second-pulse check in `runs\second_pulse_3d_20260619_115332`; result classified as `second_pulse_contaminated_or_inconclusive`.
 - The no-pulse reference still ranked first. Reduced phase-matched pulses at 0.1x, 0.2x, 0.35x, and 0.5x with 2.0 and 1.0 duration all lowered the clean return sequence to five or six major peaks, four or five refocus peaks, outer/shell above 1.20, decay around -0.043 to -0.046, and negative `added_work_efficiency`.
+- Added timing/phase audit output for `prototype-3d-second-pulse-control`, including shell peak times, shell radial flux direction, packet motion proxy, local shell phase, empirical boundary-to-shell travel time, ideal boundary launch time, and source phase at that launch.
+- Added `--second-pulse-micro-map`, `--micro-map-targets`, `--launch-time-offsets`, `--second-pulse-phase-modes`, and `--boundary-to-shell-travel-time`.
+- Ran the travel-time-adjusted first-refocus micro-map in `runs\second_pulse_3d_20260619_125050`; result classified as `second_pulse_contaminated_or_inconclusive`.
+- The no-pulse reference remained best: nine major peaks, eight refocus peaks, retention 0.322, outer/shell 0.660, decay -0.0237, no exit, and global outer false.
+- The timing audit estimated boundary-to-shell travel time 9.44 and first-refocus ideal launch time 26.4. The first six shell peaks had inward shell flux; later peaks switched outward.
+- The best active family was opposite-phase around later launch offsets, but it still reached only six major peaks and five refocus peaks, with outer/shell about 1.32-1.34, decay around -0.042 to -0.043, and negative `added_work_efficiency`.
 
 ### In Progress
 
@@ -205,11 +211,11 @@ Recommended next task: do a second-pulse timing/phase trace audit before adding 
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
-- Do a second-pulse timing/phase trace audit before more active-pulse controls.
+- Do not keep repeating first-refocus active pulses; travel-time adjustment did not fix the active-pulse disruption.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
 - Use `sign_flip_cutoff_minus_0p1` as the reference release phase: cutoff 17.9, cutoff phase 0.468 cycles, frequency 0.92.
-- Do not keep testing amplitude-only second pulses at the same center; reduced work did not fix the dephasing/cleanup problem.
-- If active reinjection continues, make the next control a tiny timing/phase micro-map around the first-refocus center and judge it by `added_work_efficiency`, refocus count, outer/shell, decay, and no-exit criteria.
+- If active reinjection continues, run only one more tiny target: a second-refocus travel-time-adjusted micro-map, judged by `added_work_efficiency`, refocus count, outer/shell, decay, and no-exit criteria.
+- If second-refocus targeting also fails, shelve active second pulses and return to passive phase/cutoff engineering.
 - Do not treat frequency 0.94 as additive with cutoff 18.
 - Do not move to trapping, rotation, medium shaping, defects, or grid changes before the second-pulse timing failure mode is understood or deliberately shelved.
 - Keep cubic phase structure as the main 3D source hypothesis, but do not call it a standing-shell mode unless future settled spatial-locking metrics pass.
@@ -454,3 +460,7 @@ Possible work:
 - 2026-06-19: Ran the reduced-work phase-matched second-pulse check in `runs\second_pulse_3d_20260619_115332`; classification stayed `second_pulse_contaminated_or_inconclusive`.
 - 2026-06-19: Reduced phase-matched second pulses did not improve the clean cycle: the no-pulse reference ranked first, all active rows had negative `added_work_efficiency`, and active rows dropped to five or six major peaks with outer/shell above 1.20 and worse decay.
 - 2026-06-19: Updated the next step to inspect second-pulse timing/phase traces or run a tiny timing micro-map before adding new mechanisms.
+- 2026-06-19: Added no-pulse second-pulse timing audit output and travel-time-adjusted micro-map options.
+- 2026-06-19: Ran the first-refocus travel-time micro-map in `runs\second_pulse_3d_20260619_125050`; classification stayed `second_pulse_contaminated_or_inconclusive`.
+- 2026-06-19: Boundary-to-shell travel time was estimated at 9.44, putting the first-refocus ideal launch at t=26.4. All active rows still lost refocus count and had negative `added_work_efficiency`; the no-pulse reference stayed best.
+- 2026-06-19: Updated the next step to either test only the second-refocus target with the same travel-time method, or shelve active second pulses and return to passive phase/cutoff engineering.

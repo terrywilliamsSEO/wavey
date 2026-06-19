@@ -342,6 +342,14 @@ python main.py prototype-3d-second-pulse-control --config configs\long_validatio
 
 The multi-value options create a compact map over selected second-pulse roles, amplitudes, and durations. The ranked report includes `clean_refocus_score` and `added_work_efficiency`, where added-work efficiency measures the clean-score improvement per unit of second-pulse work.
 
+Run a travel-time-adjusted second-pulse timing/phase micro-map with:
+
+```powershell
+python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-micro-map --micro-map-targets first_refocus --launch-time-offsets -0.8 -0.4 0 0.4 0.8 --second-pulse-phase-modes matched opposite plus_pi_4 minus_pi_4 --second-pulse-amplitude-scales 0.1 0.2
+```
+
+Micro-map mode first runs the no-pulse reference, writes `second_pulse_timing_audit.csv`, estimates boundary-to-shell travel time from the reference arrival, then launches second pulses at `target_peak_time - travel_time + offset`.
+
 ## Run one simulation
 
 ```powershell
@@ -743,12 +751,15 @@ When `prototype-3d-second-pulse-control` is used, the control folder includes:
 - `second_pulse_report.md`
 - `second_pulse_timeseries.csv`
 - `second_pulse_events.csv`
+- `second_pulse_timing_audit.csv`
 - `second_pulse_shell_energy_plot.png`
 - `second_pulse_radius_width_plot.png`
 - `second_pulse_flux_balance_plot.png`
 - one lifecycle run folder per second-pulse timing/phase variant
 
 The second-pulse summary and ranked CSV include active-pulse work accounting plus `clean_refocus_score`, `clean_refocus_score_delta`, and `added_work_efficiency` for comparing second pulses against the no-pulse reference without rewarding extra injected work by itself.
+
+`second_pulse_timing_audit.csv` is especially useful for active-pulse work. It records no-pulse shell peak times, radial flux direction, packet motion proxy, local shell phase, estimated boundary-to-shell travel time, ideal launch time, and source phase at launch.
 
 ## Metrics
 
