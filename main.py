@@ -104,6 +104,12 @@ from simulation.prototype_3d_release_phase_resolution_lift import (
     ReleasePhaseResolutionLiftOptions,
     run_3d_release_phase_resolution_lift,
 )
+from simulation.prototype_3d_release_phase_resolution_postmortem import (
+    DEFAULT_LIFT_ROOT,
+    DEFAULT_PROOF_ROOT,
+    ReleasePhaseResolutionPostmortemOptions,
+    run_3d_release_phase_resolution_postmortem,
+)
 from simulation.prototype_3d_second_pulse import (
     SecondPulse3DOptions,
     run_3d_second_pulse_control,
@@ -900,6 +906,21 @@ def build_parser() -> argparse.ArgumentParser:
     release_phase_resolution_lift_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
     release_phase_resolution_lift_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
     release_phase_resolution_lift_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
+
+    release_phase_resolution_postmortem_parser = subparsers.add_parser(
+        "prototype-3d-release-phase-resolution-postmortem",
+        help="Read-only postmortem comparing the 41^3 proof pack with the failed 51^3 release-phase lift",
+    )
+    release_phase_resolution_postmortem_parser.add_argument("--output-root", default="runs", help="Directory for release-phase resolution postmortem outputs")
+    release_phase_resolution_postmortem_parser.add_argument("--proof-root", default=DEFAULT_PROOF_ROOT, help="Existing 41^3 proof-pack run root")
+    release_phase_resolution_postmortem_parser.add_argument("--lift-root", default=DEFAULT_LIFT_ROOT, help="Existing 51^3 resolution-lift run root")
+    release_phase_resolution_postmortem_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Default peak threshold used for comparison")
+    release_phase_resolution_postmortem_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Refocus threshold used for comparison")
+    release_phase_resolution_postmortem_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between major lifecycle peaks")
+    release_phase_resolution_postmortem_parser.add_argument("--low-peak-threshold-fraction", type=float, default=0.20, help="Low threshold used to detect below-gate return humps")
+    release_phase_resolution_postmortem_parser.add_argument("--strict-peak-threshold-fraction", type=float, default=0.40, help="Strict threshold used for shrinkage comparison")
+    release_phase_resolution_postmortem_parser.add_argument("--radial-shift-predict-threshold", type=float, default=0.75, help="Required coherent radial shift before predicting a shell-window retry")
+    release_phase_resolution_postmortem_parser.add_argument("--timing-shift-predict-threshold", type=float, default=0.75, help="Required coherent timing shift before predicting a cutoff retry")
 
     second_pulse_parser = subparsers.add_parser(
         "prototype-3d-second-pulse-control",
@@ -1849,6 +1870,24 @@ def main() -> None:
             ),
         )
         _print_3d_release_phase_resolution_lift_summary(result)
+        return
+
+    if args.command == "prototype-3d-release-phase-resolution-postmortem":
+        result = run_3d_release_phase_resolution_postmortem(
+            options=ReleasePhaseResolutionPostmortemOptions(
+                output_root=args.output_root,
+                proof_root=args.proof_root,
+                lift_root=args.lift_root,
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                min_peak_separation_time=args.min_peak_separation_time,
+                low_peak_threshold_fraction=args.low_peak_threshold_fraction,
+                strict_peak_threshold_fraction=args.strict_peak_threshold_fraction,
+                radial_shift_predict_threshold=args.radial_shift_predict_threshold,
+                timing_shift_predict_threshold=args.timing_shift_predict_threshold,
+            )
+        )
+        _print_3d_release_phase_resolution_postmortem_summary(result)
         return
 
     if args.command == "prototype-3d-second-pulse-control":
@@ -2886,6 +2925,31 @@ def _print_3d_release_phase_resolution_lift_summary(result: dict[str, Any]) -> N
     print(f"summary CSV: {result['summary_csv']}")
     print(f"threshold robust CSV: {result['threshold_robust_csv']}")
     print(f"gates CSV: {result['gates_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_release_phase_resolution_postmortem_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D release-phase resolution postmortem complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("prediction:")
+    for row in result.get("prediction_rows", []):
+        print(
+            f"  - {row.get('recommendation')}: "
+            f"cutoff={_format_optional(row.get('predicted_cutoff'))}, "
+            f"shell_radius={_format_optional(row.get('predicted_shell_window_radius'))}, "
+            f"reason={row.get('reason')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
+    print(f"prediction CSV: {result['prediction_csv']}")
     print(f"report: {result['report_path']}")
 
 

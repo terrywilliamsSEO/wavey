@@ -64,6 +64,7 @@ Current interpretation:
 - Active second pulses are now shelved until a new mechanism justifies revisiting them; the passive release-phase rule is blind-confirmed around the phase-0.50 pocket with frequency fixed at `0.92`. Half-dt validation showed the original two-row strong pocket was dt-sensitive, and the fixed recentering map then showed the half-dt strict 9/8 window shifts upward to cutoffs `17.9375-17.945`.
 - The fixed quarter-dt proof pack classified as `release_phase_quarter_dt_proof_supported`: proof-candidate cutoffs `17.94`, `17.9425`, and `17.945` preserved strict 9/8 with no exit, global outer false, outer/shell below `1.0`, stable tail area, stable return timing, stable inward flux, and positive threshold-free candidate margin. This remains a `41^3` proof-pack result, not a scale-validated claim.
 - The controlled recalibrated `51^3` resolution lift classified as `release_phase_resolution_lift_failed`: the phase-targeted candidate at cutoff `17.9425`, phase `0.5071`, and both controls all fell to default 9/8 and conservative strict 7/6. The lifted packet stayed clean by no-exit/global-outer/outer-shell/energy gates, but strict 9/8 preservation and phase separation did not survive the lift.
+- The read-only resolution postmortem classified as `resolution_lift_blurred_returns_no_predictive_recalibration`: the `51^3` rows still contain late return humps below frozen gates, but candidate and controls share the same count shrinkage, and timing/radial shifts do not isolate one honest recalibrated retry. Do not run the proposed 51^3 retry unless a new mechanism changes that prediction.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -75,7 +76,7 @@ Current interpretation:
 - The predictor recommended only a tiny blind confirmation: predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
 - The blind confirmation classified as `release_phase_blind_confirmed`: predicted-strong cutoffs `17.932885` and `17.937885` preserved default 11/10 and strict clean 9/8, lower-edge `17.9225` and weak-control `17.915` fell to strict 8/7, and upper-edge `17.965` stayed strict 9/8 but only default 10/9.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation, half-dt numerical validation, half-dt recentering map, quarter-dt proof pack, and requested `51^3` resolution lift are complete; do not tune around the pre-registered/recentered/proof/lift cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, broad grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
+- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation, half-dt numerical validation, half-dt recentering map, quarter-dt proof pack, requested `51^3` resolution lift, and read-only lift postmortem are complete; do not tune around the pre-registered/recentered/proof/lift cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, broad grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
 
 ## Latest Evidence
 
@@ -1758,11 +1759,43 @@ Interpretation:
 - The `41^3` passive release-phase proof remains real within its numerical setting, but the strict 9/8 phase-separated pocket did not survive this controlled `51^3` lift.
 - This was not active contamination: the candidate had no shell exit, global outer false, outer/shell below `1.0`, zero post-cutoff external work, and matched work per physical source area.
 - Threshold-free lifecycle metrics remained close to the proof reference, so a clean packet still exists at `51^3`; what failed is the stronger conservative refocusing count and separation from controls.
-- Do not auto-run `61^3`, tune nearby `51^3` phases, or add mechanisms from this result. Any future grid step needs an explicit resolution-equivalence or failure-mode audit first.
+- Do not auto-run `61^3`, tune nearby `51^3` phases, or add mechanisms from this result. The read-only failure-mode postmortem is complete and did not recommend a retry; any future grid step needs a new explicit mechanism.
+
+### Release-Phase Resolution Postmortem
+
+Command:
+
+```powershell
+python main.py prototype-3d-release-phase-resolution-postmortem
+```
+
+Latest summarized run:
+
+- Local report: `runs\release_phase_resolution_postmortem_3d_20260620_100043\release_phase_resolution_postmortem_report.md`
+- Summary CSV: `runs\release_phase_resolution_postmortem_3d_20260620_100043\release_phase_resolution_postmortem_summary.csv`
+- Peak comparison CSV: `runs\release_phase_resolution_postmortem_3d_20260620_100043\release_phase_resolution_peak_comparison.csv`
+- Recalibration prediction CSV: `runs\release_phase_resolution_postmortem_3d_20260620_100043\release_phase_resolution_recalibration_prediction.csv`
+- Classification: `resolution_lift_blurred_returns_no_predictive_recalibration`
+- Inputs: `runs\release_phase_proof_pack_3d_20260619_234039` versus `runs\release_phase_resolution_lift_3d_20260620_091834`
+
+Postmortem result:
+
+| Group | Cutoff | Phase | 0.20 Count | 0.30 Count | 0.40 Count | Last Peak | Tail Area | Radial V | Tail Radius |
+| --- | ---: | ---: | --- | --- | --- | ---: | ---: | ---: | ---: |
+| 41^3 proof winners | 17.94-17.945 | 0.5048-0.5094 | 12/11 | 10/9 | 9/8 | 78.2 | ~0.001227 | ~-0.075 | ~6.32 |
+| 51^3 candidate | 17.9425 | 0.5071 | 11/10 | 9/8 | 7/6 | 69.36 | 0.001167 | -0.0578 | 7.416 |
+| 51^3 controls | 17.9375, 17.915 | 0.5025, 0.4818 | 11/10 | 9/8 | 7/6 | 69.36-69.4 | 0.001170-0.001178 | -0.0582 to -0.0602 | 7.449-7.763 |
+
+Interpretation:
+
+- The `51^3` run did not simply lose all returns: the candidate still has 11/10 at the looser 0.20 peak detector, while the frozen/default/strict gates count only 9/8 and 7/6.
+- This is below-gate blur/shrinkage plus early termination of accepted peaks, not shell exit or active contamination.
+- The candidate arrives earlier by about `0.88`, first refocus moves later by about `1.2`, and the tail radius shifts outward by about `1.09`, but the shell-peak radius does not shift and both controls show the same pattern.
+- The postmortem prediction is `no_recalibrated_retry`; do not run the one-candidate 51^3 retry from this evidence alone.
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, and one-step `51^3` resolution lift are complete, so do not tune nearby cutoffs based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, and read-only postmortem are complete, so do not tune nearby cutoffs based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
@@ -1777,9 +1810,9 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
 - Rank by major shell-window peak count, refocus count, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, global outer false, and phase at cutoff.
 - Keep global radial peak as an artifact/boundary-residue check.
-- Keep the grid tiny. The proof-motivated `51^3` scale check failed strict gates, so do not escalate to `61^3` without a new explicit numerical-equivalence rationale.
+- Keep the grid tiny. The proof-motivated `51^3` scale check failed strict gates, and the postmortem did not recommend a recalibrated retry, so do not escalate to `61^3` without a new explicit mechanism.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
-- Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. The release-phase-recalibrated `51^3` candidate plus two controls has already been run and failed strict gates; any future scale check should be explicitly justified, not automatic.
+- Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. The release-phase-recalibrated `51^3` candidate plus two controls has already been run and failed strict gates; the postmortem says no single retry is predicted. Any future scale check should be explicitly justified, not automatic.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

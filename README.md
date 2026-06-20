@@ -412,6 +412,14 @@ python main.py prototype-3d-release-phase-resolution-lift --config configs\long_
 
 This is a one-step scale checkpoint, not a resolution sweep. It defaults to one `51^3` candidate plus two fixed controls at quarter dt, recomputing cutoffs from target release phases instead of copying lower-resolution cutoff times. The fixed setup is neutral lattice, same physical domain, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 physical shell window, no active second pulses, and no resonator layer. Current project state: `runs\release_phase_resolution_lift_3d_20260620_091834` classified as `release_phase_resolution_lift_failed`; the `51^3` candidate and controls all reached default 9/8 and conservative strict 7/6, so do not auto-run `61^3` or tune nearby phases from that result.
 
+Run the read-only postmortem for the failed resolution lift with:
+
+```powershell
+python main.py prototype-3d-release-phase-resolution-postmortem
+```
+
+This command runs no physics. It compares the `41^3` proof-pack winning rows against the failed `51^3` candidate and controls using existing summary, threshold-robust, event, and timeseries artifacts. It answers whether `51^3` lost returns outright or whether returns moved/blurred below the frozen gate, then writes a one-row recalibration prediction. Current project state: `runs\release_phase_resolution_postmortem_3d_20260620_100043` classified as `resolution_lift_blurred_returns_no_predictive_recalibration`; it recommends no single recalibrated `51^3` retry from the current evidence.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -915,6 +923,16 @@ When `prototype-3d-release-phase-resolution-lift` is used, the control folder in
 - one lifecycle run folder per tested grid/phase row
 
 The resolution-lift report includes fixed setup, pass/fail gates, threshold-robust rows, threshold-free lifecycle metrics, energy-accounting fields, and the final classification. Current project state: `runs\release_phase_resolution_lift_3d_20260620_091834` classified as `release_phase_resolution_lift_failed`.
+
+When `prototype-3d-release-phase-resolution-postmortem` is used, the read-only output folder includes:
+
+- `release_phase_resolution_postmortem_report.md`
+- `release_phase_resolution_postmortem_summary.csv`
+- `release_phase_resolution_peak_comparison.csv`
+- `release_phase_resolution_recalibration_prediction.csv`
+- `release_phase_resolution_postmortem_summary.json`
+
+The postmortem report includes event-threshold shrinkage, arrival/refocus timing shifts, peak amplitudes, tail area, autocorrelation, spectral concentration, radial group velocity, shell-window radial alignment, packet width/spread, return phases, and a recalibration recommendation. Current project state: `runs\release_phase_resolution_postmortem_3d_20260620_100043` recommends `no_recalibrated_retry`.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 
