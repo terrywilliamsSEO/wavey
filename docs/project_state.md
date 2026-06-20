@@ -61,7 +61,7 @@ Current interpretation:
 - The reduced-work phase-matched second-pulse check also classified as `second_pulse_contaminated_or_inconclusive`: 0.1x-0.5x pulses and shorter 1.0-duration pulses still reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`.
 - The travel-time-adjusted first-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: empirical boundary-to-shell travel time was `9.44`, so the first-refocus target launch moved to `t=26.4`, but all active rows still had fewer refocus peaks, worse decay, outer/shell above `1.0`, and negative `added_work_efficiency`.
 - The travel-time-adjusted second-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: the second-refocus target launch moved to `t=31.68`, but active rows still failed strict clean criteria. Best ranked active row reached retention `0.491`, but only six/five peaks, outer/shell `1.254`, decay `-0.0455`, and negative `added_work_efficiency`.
-- Active second pulses are now shelved until a new mechanism justifies revisiting them; the passive release-phase rule is blind-confirmed around the phase-0.50 pocket with frequency fixed at `0.92`, but the half-dt numerical validation classified the two-row strong pocket as `release_phase_dt_sensitive`.
+- Active second pulses are now shelved until a new mechanism justifies revisiting them; the passive release-phase rule is blind-confirmed around the phase-0.50 pocket with frequency fixed at `0.92`. Half-dt validation showed the original two-row strong pocket was dt-sensitive, and the fixed recentering map then showed the half-dt strict 9/8 window shifts upward to cutoffs `17.9375-17.945`.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -73,7 +73,7 @@ Current interpretation:
 - The predictor recommended only a tiny blind confirmation: predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
 - The blind confirmation classified as `release_phase_blind_confirmed`: predicted-strong cutoffs `17.932885` and `17.937885` preserved default 11/10 and strict clean 9/8, lower-edge `17.9225` and weak-control `17.915` fell to strict 8/7, and upper-edge `17.965` stayed strict 9/8 but only default 10/9.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation and half-dt numerical validation are complete; do not tune around the pre-registered cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, grid changes beyond explicit numerical validation, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
+- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation, half-dt numerical validation, and fixed half-dt recentering map are complete; do not tune around the pre-registered/recentered cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, grid changes beyond explicit numerical validation, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
 
 ## Latest Evidence
 
@@ -1606,16 +1606,55 @@ Interpretation:
 - The rule remains a useful phase predictor at baseline dt, but the lower half-cycle strong point is numerically sensitive. Do not claim the 17.932885/17.937885 pair is half-dt invariant.
 - Quarter dt was not run by default because baseline plus half dt already exposed sensitivity; use `--include-quarter-dt` only for an explicitly requested numerical follow-up.
 
+### Release-Phase Half-dt Recentering
+
+Command:
+
+```powershell
+python main.py prototype-3d-release-phase-dt-recenter --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\release_phase_dt_recenter_3d_20260619_220833\release_phase_dt_recenter_report.md`
+- Summary CSV: `runs\release_phase_dt_recenter_3d_20260619_220833\release_phase_dt_recenter_summary.csv`
+- Threshold-robust CSV: `runs\release_phase_dt_recenter_3d_20260619_220833\release_phase_dt_recenter_threshold_robust_score.csv`
+- Classification: `release_phase_half_dt_recentered`
+- Setup: half dt only, `41^3`, neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer
+
+Half-dt recentering results:
+
+| Role | Cutoff | Phase | Default Count | Strict 0.35 | Strict 0.40 | Retention | Outer/Shell | Decay |
+| --- | ---: | ---: | --- | --- | --- | ---: | ---: | ---: |
+| recenter candidate | 17.930 | 0.4956 | 9/8 | 8/7 | 8/7 | 0.316698 | 0.639588 | -0.0238616 |
+| recenter candidate | 17.9325 | 0.4979 | 9/8 | 8/7 | 8/7 | 0.316106 | 0.637812 | -0.0238850 |
+| recenter candidate | 17.935 | 0.5002 | 9/8 | 8/7 | 8/7 | 0.315500 | 0.636038 | -0.0239092 |
+| recenter candidate | 17.9375 | 0.5025 | 10/9 | 9/8 | 9/8 | 0.314881 | 0.634270 | -0.0239343 |
+| recenter candidate | 17.940 | 0.5048 | 10/9 | 9/8 | 9/8 | 0.314247 | 0.632506 | -0.0239601 |
+| recenter candidate | 17.9425 | 0.5071 | 10/9 | 9/8 | 9/8 | 0.313600 | 0.630750 | -0.0239868 |
+| recenter candidate | 17.945 | 0.5094 | 10/9 | 9/8 | 9/8 | 0.312942 | 0.629005 | -0.0240143 |
+| recenter candidate | 17.9475 | 0.5117 | 9/8 | 8/7 | 8/7 | 0.312271 | 0.627272 | -0.0240425 |
+| recenter candidate | 17.950 | 0.5140 | 9/8 | 8/7 | 8/7 | 0.311588 | 0.625551 | -0.0240714 |
+| low-side control | 17.9225 | 0.4887 | 9/8 | 8/7 | 8/7 | 0.318383 | 0.644932 | -0.0237966 |
+| weak control | 17.915 | 0.4818 | 9/8 | 8/7 | 8/7 | 0.319927 | 0.650275 | -0.0237394 |
+
+Interpretation:
+
+- The half-dt optimum did not disappear. It shifted upward from the baseline-dt pocket into the half-dt strict-clean window `17.9375-17.945`, phase `0.5025-0.5094`.
+- The best conservative row was `17.9375`; all four strict-clean rows in the recentered window had default 10/9, strict 9/8, no exit, global outer false, and outer/shell below 1.0.
+- Lower-side controls and the adjacent lower/upper outside rows remained strict 8/7, so the recentering is not a detector-only tie with the weak controls.
+- Do not run quarter dt automatically. If a future numerical check is explicitly requested, target only the recentered half-dt window and its immediate neighbors.
+
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation and half-dt numerical validation are complete, so do not tune nearby cutoffs based on the result:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, and fixed half-dt recentering map are complete, so do not tune nearby cutoffs based on the result:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat `sign_flip_cutoff_minus_0p07`, `sign_flip_cutoff_minus_0p065`, and `sign_flip_cutoff_minus_0p06` as the current narrow phase-lock needle candidates.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt. The half-dt validation preserved strict 9/8 at `17.937885` but not `17.932885`, so the lower side of the pocket is dt-sensitive.
+- Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, and treat the half-dt strict-clean window as shifted upward to `17.9375-17.945` at phase `0.5025-0.5094`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
 - Do not expand passive boundary-inner-edge resonator variants yet; the first passive layer pass was energy-accounted but reduced strict counts.
@@ -1625,7 +1664,7 @@ Run no new physics unless explicitly requested. The blind confirmation and half-
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny while the passive timing island is being mapped.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
-- Do not add traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second pulses yet.
+- Do not add traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second pulses yet. Do not run quarter dt unless explicitly requested as a targeted numerical check of the recentered half-dt window.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync

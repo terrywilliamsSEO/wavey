@@ -388,6 +388,14 @@ python main.py prototype-3d-release-phase-numerical-validation --config configs\
 
 This is a fixed baseline/half-dt check of the pre-registered strong and lower-side controls, not a tuning pass. It keeps the same `41^3` neutral-lattice, stronger-sponge, inner-sponge-edge sign-flip cubic source, frequency `0.92`, matched-work, radius-5 shell-window setup fixed, with no active second pulses and no resonator layer. Quarter dt is available only through the explicit `--include-quarter-dt` flag. Current project state: the run classified as `release_phase_dt_sensitive`; half dt preserved strict 9/8 at `17.937885` but not at `17.932885`.
 
+Run the fixed half-dt release-phase recentering map with:
+
+```powershell
+python main.py prototype-3d-release-phase-dt-recenter --config configs\long_validation_peak_0_92.json
+```
+
+This is a fixed half-dt-only map, not a tuning pass. It tests only cutoffs `17.930`, `17.9325`, `17.935`, `17.9375`, `17.940`, `17.9425`, `17.945`, `17.9475`, `17.950`, plus low-side controls `17.9225` and `17.915`, under the same `41^3` neutral-lattice, stronger-sponge, inner-sponge-edge sign-flip cubic source, frequency `0.92`, matched-work, radius-5 shell-window setup. Current project state: the run classified as `release_phase_half_dt_recentered`; half-dt strict 9/8 recentered to cutoffs `17.9375-17.945`.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -418,7 +426,7 @@ The completed second-refocus reference micro-map used:
 python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-micro-map --micro-map-targets second_refocus --launch-time-offsets -0.8 -0.4 0 0.4 0.8 --second-pulse-phase-modes matched opposite plus_pi_4 minus_pi_4 --second-pulse-amplitude-scales 0.1 0.2
 ```
 
-It did not beat the no-pulse reference. Active reinjection is shelved unless a new mechanism changes the premise; the passive release-phase rule has since been blind-confirmed but is half-dt sensitive, so do not tune nearby cutoffs based on the confirmation result.
+It did not beat the no-pulse reference. Active reinjection is shelved unless a new mechanism changes the premise; the passive release-phase rule has since been blind-confirmed and the half-dt optimum recentered upward, so do not tune nearby cutoffs based on the confirmation result.
 
 ## Run one simulation
 
@@ -858,6 +866,16 @@ When `prototype-3d-release-phase-numerical-validation` is used, the control fold
 - one lifecycle run folder per cutoff/dt variant
 
 The numerical-validation report includes baseline/half-dt rows, strict 0.35/0.40 counts, threshold-free metrics, and dt-comparison deltas. Current project state: `runs\release_phase_numerical_validation_3d_20260619_214240` classified as `release_phase_dt_sensitive`.
+
+When `prototype-3d-release-phase-dt-recenter` is used, the control folder includes:
+
+- `release_phase_dt_recenter_report.md`
+- `release_phase_dt_recenter_summary.csv`
+- `release_phase_dt_recenter_threshold_robust_score.csv`
+- `release_phase_dt_recenter_summary.json`
+- one lifecycle run folder per tested cutoff
+
+The dt-recenter report includes `half-dt recentered phase cluster`, `comparison to baseline blind-confirmed cluster`, `strict 9/8 preservation window`, `threshold-free lifecycle metrics`, and `recommended next numerical check` sections. Current project state: `runs\release_phase_dt_recenter_3d_20260619_220833` classified as `release_phase_half_dt_recentered`.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 
