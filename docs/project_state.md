@@ -62,6 +62,7 @@ Current interpretation:
 - The travel-time-adjusted first-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: empirical boundary-to-shell travel time was `9.44`, so the first-refocus target launch moved to `t=26.4`, but all active rows still had fewer refocus peaks, worse decay, outer/shell above `1.0`, and negative `added_work_efficiency`.
 - The travel-time-adjusted second-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: the second-refocus target launch moved to `t=31.68`, but active rows still failed strict clean criteria. Best ranked active row reached retention `0.491`, but only six/five peaks, outer/shell `1.254`, decay `-0.0455`, and negative `added_work_efficiency`.
 - Active second pulses are now shelved until a new mechanism justifies revisiting them; the passive release-phase rule is blind-confirmed around the phase-0.50 pocket with frequency fixed at `0.92`. Half-dt validation showed the original two-row strong pocket was dt-sensitive, and the fixed recentering map then showed the half-dt strict 9/8 window shifts upward to cutoffs `17.9375-17.945`.
+- The fixed quarter-dt proof pack classified as `release_phase_quarter_dt_proof_supported`: proof-candidate cutoffs `17.94`, `17.9425`, and `17.945` preserved strict 9/8 with no exit, global outer false, outer/shell below `1.0`, stable tail area, stable return timing, stable inward flux, and positive threshold-free candidate margin. This is the current numerical settlement of the passive phase rule at `41^3`.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -73,7 +74,7 @@ Current interpretation:
 - The predictor recommended only a tiny blind confirmation: predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
 - The blind confirmation classified as `release_phase_blind_confirmed`: predicted-strong cutoffs `17.932885` and `17.937885` preserved default 11/10 and strict clean 9/8, lower-edge `17.9225` and weak-control `17.915` fell to strict 8/7, and upper-edge `17.965` stayed strict 9/8 but only default 10/9.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation, half-dt numerical validation, and fixed half-dt recentering map are complete; do not tune around the pre-registered/recentered cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, grid changes beyond explicit numerical validation, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
+- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation, half-dt numerical validation, half-dt recentering map, and quarter-dt proof pack are complete; do not tune around the pre-registered/recentered/proof cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, broad grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
 
 ## Latest Evidence
 
@@ -1604,7 +1605,7 @@ Interpretation:
 - Baseline dt reproduced the blind-confirmed phase split.
 - Half dt did not preserve the full two-row strong pocket: `17.937885` remained strict-clean at 9/8, but `17.932885` dropped to the low-control 8/7 family.
 - The rule remains a useful phase predictor at baseline dt, but the lower half-cycle strong point is numerically sensitive. Do not claim the 17.932885/17.937885 pair is half-dt invariant.
-- Quarter dt was not run by default because baseline plus half dt already exposed sensitivity; use `--include-quarter-dt` only for an explicitly requested numerical follow-up.
+- Quarter dt was not run in this command because baseline plus half dt exposed sensitivity first; the later proof pack below targets only the recentered half-dt window and immediate controls.
 
 ### Release-Phase Half-dt Recentering
 
@@ -1643,18 +1644,83 @@ Interpretation:
 - The half-dt optimum did not disappear. It shifted upward from the baseline-dt pocket into the half-dt strict-clean window `17.9375-17.945`, phase `0.5025-0.5094`.
 - The best conservative row was `17.9375`; all four strict-clean rows in the recentered window had default 10/9, strict 9/8, no exit, global outer false, and outer/shell below 1.0.
 - Lower-side controls and the adjacent lower/upper outside rows remained strict 8/7, so the recentering is not a detector-only tie with the weak controls.
-- Do not run quarter dt automatically. If a future numerical check is explicitly requested, target only the recentered half-dt window and its immediate neighbors.
+- This result motivated a proof pack rather than another discovery sweep: quarter dt should only target the recentered window and immediate controls.
+
+### Release-Phase Quarter-dt Proof Pack
+
+Command:
+
+```powershell
+python main.py prototype-3d-release-phase-proof-pack --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\release_phase_proof_pack_3d_20260619_234039\release_phase_proof_pack_report.md`
+- Candidate card: `runs\release_phase_proof_pack_3d_20260619_234039\candidate_card.md`
+- Summary CSV: `runs\release_phase_proof_pack_3d_20260619_234039\release_phase_proof_pack_summary.csv`
+- Threshold-robust CSV: `runs\release_phase_proof_pack_3d_20260619_234039\release_phase_proof_pack_threshold_robust_score.csv`
+- Gates CSV: `runs\release_phase_proof_pack_3d_20260619_234039\release_phase_proof_pack_gates.csv`
+- Classification: `release_phase_quarter_dt_proof_supported`
+- Setup: quarter dt only, `41^3`, neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer
+
+Frozen candidate card:
+
+- Grid: `41^3`
+- Lattice: neutral
+- Source: inner-sponge-edge sign-flip cubic boundary source
+- Sponge: stronger sponge at original width
+- Frequency: `0.92`
+- Work: matched per physical source area
+- Shell metric: radius-5 shell window
+- Active second pulses: none
+- Resonator layer: none
+- Candidate phase span: `0.5025-0.5094`
+
+Quarter-dt proof-pack results:
+
+| Role | Cutoff | Phase | Default Count | Strict 0.35 | Strict 0.40 | Retention | Outer/Shell | Tail Area t>50 | Timing Reg | Inward Flux | Strict Clean |
+| --- | ---: | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| lower immediate control | 17.935 | 0.5002 | 9/8 | 8/7 | 8/7 | 0.315418 | 0.636549 | 0.00123400 | 0.571049 | 0.823798 | false |
+| proof candidate | 17.9375 | 0.5025 | 9/8 | 8/7 | 8/7 | 0.314791 | 0.634787 | 0.00123185 | 0.571049 | 0.823526 | false |
+| proof candidate | 17.940 | 0.5048 | 10/9 | 9/8 | 9/8 | 0.314149 | 0.633032 | 0.00122960 | 0.840291 | 0.823256 | true |
+| proof candidate | 17.9425 | 0.5071 | 10/9 | 9/8 | 9/8 | 0.313495 | 0.631284 | 0.00122724 | 0.839147 | 0.822984 | true |
+| proof candidate | 17.945 | 0.5094 | 10/9 | 9/8 | 9/8 | 0.312828 | 0.629546 | 0.00122477 | 0.837958 | 0.822710 | true |
+| upper immediate control | 17.9475 | 0.5117 | 10/9 | 9/8 | 9/8 | 0.312149 | 0.627818 | 0.00122221 | 0.838416 | 0.822431 | true |
+| low-side control | 17.9225 | 0.4887 | 9/8 | 8/7 | 8/7 | 0.318335 | 0.645414 | 0.00124311 | 0.569388 | 0.825093 | false |
+| weak control | 17.915 | 0.4818 | 9/8 | 8/7 | 8/7 | 0.319880 | 0.650734 | 0.00124726 | 0.569388 | 0.825835 | false |
+
+Gate results:
+
+| Gate | Value | Threshold | Pass |
+| --- | ---: | --- | --- |
+| strict neighboring 9/8 | 3 | >=2 | true |
+| no exit | all clean rows | true | true |
+| global outer false | all clean rows | true | true |
+| outer/shell below 1.0 | all clean rows | <1.0 | true |
+| stable tail area | 0.001605 | <=0.03 | true |
+| stable return timing | 0.002333 | <=0.08 | true |
+| stable inward flux | 0.000545 | <=0.02 | true |
+| threshold-free candidate margin | 1100.496 | >25.0 | true |
+
+Interpretation:
+
+- The quarter-dt proof pack supports the passive release-phase rule at the stricter time step: the strict-clean proof-candidate cluster is `17.94-17.945`, phase `0.5048-0.5094`.
+- The lower immediate/proof rows and low-side controls stay strict 8/7, so the result is not a threshold-only tie with the weak side.
+- The upper immediate control at `17.9475` also stays strict 9/8. Treat it as compatible upper support, not permission to keep sweeping.
+- The headline claim should be threshold-free stability plus conservative strict 9/8 preservation. Default 10/9 at quarter dt is useful, but do not claim the older default 11/10 count is time-step invariant.
+- The next physics step, only if explicitly requested, is one resolution lift with the release phase recalibrated by this rule, probably a single `51^3` or `61^3` candidate plus two controls. Do not copy cutoffs blindly across resolution.
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, and fixed half-dt recentering map are complete, so do not tune nearby cutoffs based on the result:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, and quarter-dt proof pack are complete, so do not tune nearby cutoffs based on the result:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
-- Treat `sign_flip_cutoff_minus_0p07`, `sign_flip_cutoff_minus_0p065`, and `sign_flip_cutoff_minus_0p06` as the current narrow phase-lock needle candidates.
+- Treat the frozen proof-pack setup as canonical: `41^3`, neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, and treat the half-dt strict-clean window as shifted upward to `17.9375-17.945` at phase `0.5025-0.5094`.
+- Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, the half-dt strict-clean window as shifted upward to `17.9375-17.945`, and the quarter-dt proof span as `17.94-17.945` with phase `0.5048-0.5094`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
 - Do not expand passive boundary-inner-edge resonator variants yet; the first passive layer pass was energy-accounted but reduced strict counts.
@@ -1662,9 +1728,9 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
 - Rank by major shell-window peak count, refocus count, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, global outer false, and phase at cutoff.
 - Keep global radial peak as an artifact/boundary-residue check.
-- Keep the grid tiny while the passive timing island is being mapped.
+- Keep the grid tiny unless running the next proof-motivated scale check.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
-- Do not add traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second pulses yet. Do not run quarter dt unless explicitly requested as a targeted numerical check of the recentered half-dt window.
+- Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. Only after the proof pack, a future scale check should be one release-phase-recalibrated `51^3` or `61^3` candidate plus two controls, not a sweep.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync
