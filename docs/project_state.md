@@ -1793,6 +1793,43 @@ Interpretation:
 - The candidate arrives earlier by about `0.88`, first refocus moves later by about `1.2`, and the tail radius shifts outward by about `1.09`, but the shell-peak radius does not shift and both controls show the same pattern.
 - The postmortem prediction is `no_recalibrated_retry`; do not run the one-candidate 51^3 retry from this evidence alone.
 
+### Release-Phase Modal Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-release-phase-modal-audit
+```
+
+Latest summarized run:
+
+- Local report: `runs\release_phase_modal_audit_3d_20260620_110344\release_phase_modal_audit_report.md`
+- Summary CSV: `runs\release_phase_modal_audit_3d_20260620_110344\modal_audit_summary.csv`
+- Shell spectrum CSV: `runs\release_phase_modal_audit_3d_20260620_110344\shell_spectrum_comparison.csv`
+- Return timing CSV: `runs\release_phase_modal_audit_3d_20260620_110344\return_timing_jitter.csv`
+- Radial packet CSV: `runs\release_phase_modal_audit_3d_20260620_110344\radial_packet_width_comparison.csv`
+- Phase coherence CSV: `runs\release_phase_modal_audit_3d_20260620_110344\phase_coherence_comparison.csv`
+- Classification: `resolution_blur_mechanism_supported`
+- Inputs: `runs\release_phase_proof_pack_3d_20260619_234039`, `runs\release_phase_resolution_lift_3d_20260620_091834`, `runs\release_phase_resolution_postmortem_3d_20260620_100043`, and `runs\central_burst_3d_20260620_103248`
+
+Modal-audit comparison:
+
+| Group | Rows | Dominant Freq | Conc | Bandwidth | Loose | Default | Strict | Tail Radius | Outer/Shell |
+| --- | --- | ---: | ---: | ---: | --- | --- | --- | ---: | ---: |
+| 41^3 proof cluster | 17.94-17.945 | 0.012807 | 0.740-0.742 | 0.1180 | 12/11 | 10/9 | 9/8 | 6.317-6.329 | 0.630-0.633 |
+| 51^3 candidate/control rows | 17.9425, 17.9375, 17.915 | 0.012801-0.012807 | 0.828-0.838 | 0.1519-0.1529 | 11/10 | 9/8 | 7/6 | 7.416-7.763 | 0.692-0.710 |
+| central best transient | 5.52 medium burst | 0 | 0 | 0 | 1/0 | 1/0 | 1/0 | 14.819 | 0.0179 |
+| central 0.92 repeated contaminated | low-extreme burst | 0.011101 | 0.637 | 0.0220 | 4/2 | 4/2 | 3/2 | 15.143 | 6.85-6.86 |
+
+Interpretation:
+
+- The `51^3` lift did not lose the shell-energy band. Proof and lift rows share a dominant frequency near `0.012807`.
+- The lifted rows did lose strict refocusing quality: proof rows are strict 9/8, while the `51^3` candidate and controls are strict 7/6.
+- Loose-threshold recovery persists at `51^3`: candidate/control rows still show 11/10 at the loose detector, matching the postmortem's below-gate return finding.
+- The blur evidence is spectral/radial rather than a simple low-coherence collapse: `51^3` spectral concentration is higher, but bandwidth grows by `0.290751` relative to proof and tail radius shifts outward by `1.21855`.
+- The central HF contrast does not explain the passive branch. The cleanest central burst is transient, and the 0.92 repeated rows are shell-exiting and outer/shell contaminated.
+- The audit identifies no mechanism-derived next candidate. Do not run a new `51^3` retry, larger grid, or central-burst expansion from this report alone.
+
 ### Central HF Scattering Branch
 
 Command:
@@ -1841,7 +1878,7 @@ Interpretation:
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, and first central HF scattering ladder are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, and read-only modal audit are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
@@ -1857,6 +1894,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - Rank by major shell-window peak count, refocus count, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, global outer false, and phase at cutoff.
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny. The proof-motivated `51^3` scale check failed strict gates, and the postmortem did not recommend a recalibrated retry, so do not escalate to `61^3` without a new explicit mechanism.
+- The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. The release-phase-recalibrated `51^3` candidate plus two controls has already been run and failed strict gates; the postmortem says no single retry is predicted. Any future scale check should be explicitly justified, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.

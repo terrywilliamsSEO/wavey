@@ -110,6 +110,14 @@ from simulation.prototype_3d_release_phase_resolution_postmortem import (
     ReleasePhaseResolutionPostmortemOptions,
     run_3d_release_phase_resolution_postmortem,
 )
+from simulation.prototype_3d_release_phase_modal_audit import (
+    DEFAULT_CENTRAL_ROOT as DEFAULT_MODAL_CENTRAL_ROOT,
+    DEFAULT_LIFT_ROOT as DEFAULT_MODAL_LIFT_ROOT,
+    DEFAULT_POSTMORTEM_ROOT as DEFAULT_MODAL_POSTMORTEM_ROOT,
+    DEFAULT_PROOF_ROOT as DEFAULT_MODAL_PROOF_ROOT,
+    ReleasePhaseModalAuditOptions,
+    run_3d_release_phase_modal_audit,
+)
 from simulation.prototype_3d_central_burst import (
     CentralBurst3DOptions,
     run_3d_central_burst_control,
@@ -925,6 +933,23 @@ def build_parser() -> argparse.ArgumentParser:
     release_phase_resolution_postmortem_parser.add_argument("--strict-peak-threshold-fraction", type=float, default=0.40, help="Strict threshold used for shrinkage comparison")
     release_phase_resolution_postmortem_parser.add_argument("--radial-shift-predict-threshold", type=float, default=0.75, help="Required coherent radial shift before predicting a shell-window retry")
     release_phase_resolution_postmortem_parser.add_argument("--timing-shift-predict-threshold", type=float, default=0.75, help="Required coherent timing shift before predicting a cutoff retry")
+
+    release_phase_modal_audit_parser = subparsers.add_parser(
+        "prototype-3d-release-phase-modal-audit",
+        help="Read-only modal audit comparing 41^3 proof, 51^3 blur, and central-burst contrast artifacts",
+    )
+    release_phase_modal_audit_parser.add_argument("--output-root", default="runs", help="Directory for release-phase modal-audit outputs")
+    release_phase_modal_audit_parser.add_argument("--proof-root", default=DEFAULT_MODAL_PROOF_ROOT, help="Existing 41^3 proof-pack run root")
+    release_phase_modal_audit_parser.add_argument("--lift-root", default=DEFAULT_MODAL_LIFT_ROOT, help="Existing 51^3 resolution-lift run root")
+    release_phase_modal_audit_parser.add_argument("--postmortem-root", default=DEFAULT_MODAL_POSTMORTEM_ROOT, help="Existing release-phase resolution-postmortem run root")
+    release_phase_modal_audit_parser.add_argument("--central-root", default=DEFAULT_MODAL_CENTRAL_ROOT, help="Existing central HF burst run root")
+    release_phase_modal_audit_parser.add_argument("--same-band-relative-tolerance", type=float, default=0.16, help="Relative tolerance for considering proof/lift shell spectra the same modal band")
+    release_phase_modal_audit_parser.add_argument("--min-strict-major-loss", type=float, default=1.0, help="Minimum strict major-peak loss needed for blur/finiteness classification")
+    release_phase_modal_audit_parser.add_argument("--min-loose-recovery", type=float, default=1.0, help="Minimum loose-threshold recovery above strict counts needed for blur classification")
+    release_phase_modal_audit_parser.add_argument("--blur-width-growth-threshold", type=float, default=0.03, help="Relative radial-width/spread growth threshold for blur classification")
+    release_phase_modal_audit_parser.add_argument("--blur-bandwidth-growth-threshold", type=float, default=0.05, help="Relative spectral-bandwidth growth threshold for blur classification")
+    release_phase_modal_audit_parser.add_argument("--blur-tail-radius-shift-threshold", type=float, default=0.40, help="Tail-radius shift threshold for blur classification")
+    release_phase_modal_audit_parser.add_argument("--finite-grid-concentration-ratio", type=float, default=1.20, help="Proof/lift concentration ratio needed for finite-grid-resonance classification")
 
     central_burst_parser = subparsers.add_parser(
         "prototype-3d-central-burst-control",
@@ -1922,6 +1947,26 @@ def main() -> None:
             )
         )
         _print_3d_release_phase_resolution_postmortem_summary(result)
+        return
+
+    if args.command == "prototype-3d-release-phase-modal-audit":
+        result = run_3d_release_phase_modal_audit(
+            options=ReleasePhaseModalAuditOptions(
+                output_root=args.output_root,
+                proof_root=args.proof_root,
+                lift_root=args.lift_root,
+                postmortem_root=args.postmortem_root,
+                central_root=args.central_root,
+                same_band_relative_tolerance=args.same_band_relative_tolerance,
+                min_strict_major_loss=args.min_strict_major_loss,
+                min_loose_recovery=args.min_loose_recovery,
+                blur_width_growth_threshold=args.blur_width_growth_threshold,
+                blur_bandwidth_growth_threshold=args.blur_bandwidth_growth_threshold,
+                blur_tail_radius_shift_threshold=args.blur_tail_radius_shift_threshold,
+                finite_grid_concentration_ratio=args.finite_grid_concentration_ratio,
+            )
+        )
+        _print_3d_release_phase_modal_audit_summary(result)
         return
 
     if args.command in {"prototype-3d-central-burst-control", "central-hf-scattering-branch"}:
@@ -3017,6 +3062,39 @@ def _print_3d_release_phase_resolution_postmortem_summary(result: dict[str, Any]
     print(f"summary CSV: {result['summary_csv']}")
     print(f"comparison CSV: {result['comparison_csv']}")
     print(f"prediction CSV: {result['prediction_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_release_phase_modal_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D release-phase modal audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("rows:")
+    for row in result.get("summary_rows", []):
+        print(
+            f"  - {row.get('audit_group')} / {row.get('variant')}: "
+            f"grid={row.get('grid_size')}, "
+            f"loose={row.get('loose_major_peaks')}/{row.get('loose_refocus_peaks')}, "
+            f"default={row.get('default_major_peaks')}/{row.get('default_refocus_peaks')}, "
+            f"strict={row.get('strict_major_peaks')}/{row.get('strict_refocus_peaks')}, "
+            f"freq={_format_optional(row.get('dominant_shell_frequency'))}, "
+            f"conc={_format_optional(row.get('dominant_spectral_concentration'))}, "
+            f"bandwidth={_format_optional(row.get('spectral_bandwidth'))}, "
+            f"tail_radius={_format_optional(row.get('tail_packet_radius_mean'))}, "
+            f"outer/shell={_format_optional(row.get('tail_outer_to_shell_mean'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"spectrum CSV: {result['spectrum_csv']}")
+    print(f"jitter CSV: {result['jitter_csv']}")
+    print(f"radial CSV: {result['radial_csv']}")
+    print(f"phase CSV: {result['phase_csv']}")
     print(f"report: {result['report_path']}")
 
 

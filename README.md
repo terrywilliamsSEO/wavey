@@ -420,6 +420,14 @@ python main.py prototype-3d-release-phase-resolution-postmortem
 
 This command runs no physics. It compares the `41^3` proof-pack winning rows against the failed `51^3` candidate and controls using existing summary, threshold-robust, event, and timeseries artifacts. It answers whether `51^3` lost returns outright or whether returns moved/blurred below the frozen gate, then writes a one-row recalibration prediction. Current project state: `runs\release_phase_resolution_postmortem_3d_20260620_100043` classified as `resolution_lift_blurred_returns_no_predictive_recalibration`; it recommends no single recalibrated `51^3` retry from the current evidence.
 
+Run the read-only modal audit across the proof pack, failed lift, postmortem, and central-burst contrast with:
+
+```powershell
+python main.py prototype-3d-release-phase-modal-audit
+```
+
+This command runs no physics. It compares the `41^3` proof-cluster rows, the failed `51^3` candidate and controls, and the central-burst best/repeated-contaminated rows using existing CSV artifacts. It reports shell-energy spectra, spectral concentration/bandwidth, autocorrelation decay, return timing jitter, peak widths, radial group velocity, radial packet width/spread, scalar shell-energy phase locking, neighboring radial-window energy proxies, and loose-vs-strict return-count shrinkage. Current project state: `runs\release_phase_modal_audit_3d_20260620_110344` classified as `resolution_blur_mechanism_supported`; it found the same dominant shell band at `41^3` and `51^3`, but the lifted rows have larger spectral bandwidth, outward tail-radius shift, strict 7/6 shrinkage, and no mechanism-derived retry.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -941,6 +949,17 @@ When `prototype-3d-release-phase-resolution-postmortem` is used, the read-only o
 - `release_phase_resolution_postmortem_summary.json`
 
 The postmortem report includes event-threshold shrinkage, arrival/refocus timing shifts, peak amplitudes, tail area, autocorrelation, spectral concentration, radial group velocity, shell-window radial alignment, packet width/spread, return phases, and a recalibration recommendation. Current project state: `runs\release_phase_resolution_postmortem_3d_20260620_100043` recommends `no_recalibrated_retry`.
+
+When `prototype-3d-release-phase-modal-audit` is used, the read-only output folder includes:
+
+- `release_phase_modal_audit_report.md`
+- `modal_audit_summary.csv`
+- `shell_spectrum_comparison.csv`
+- `return_timing_jitter.csv`
+- `radial_packet_width_comparison.csv`
+- `phase_coherence_comparison.csv`
+
+The modal audit report compares the `41^3` proof cluster, failed `51^3` lift rows, and central HF burst contrast without running physics. Current project state: `runs\release_phase_modal_audit_3d_20260620_110344` classified as `resolution_blur_mechanism_supported`: same dominant shell band, larger `51^3` bandwidth, outward tail-radius shift, loose-return recovery, strict-count shrinkage, and no mechanism-derived next candidate.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 
