@@ -127,6 +127,10 @@ from simulation.prototype_3d_release_phase_dispersion_audit import (
     ReleasePhaseDispersionAuditOptions,
     run_3d_release_phase_dispersion_audit,
 )
+from simulation.prototype_3d_spatial_phase_instrumentation import (
+    SpatialPhaseInstrumentationOptions,
+    run_3d_spatial_phase_instrumentation,
+)
 from simulation.prototype_3d_central_burst import (
     CentralBurst3DOptions,
     run_3d_central_burst_control,
@@ -980,6 +984,49 @@ def build_parser() -> argparse.ArgumentParser:
     release_phase_dispersion_audit_parser.add_argument("--min-tail-radius-shift", type=float, default=0.40, help="Minimum tail-radius shift needed for blur classification")
     release_phase_dispersion_audit_parser.add_argument("--max-lift-bandwidth-cv", type=float, default=0.02, help="Maximum 51^3 bandwidth CV for a predictable blur model")
     release_phase_dispersion_audit_parser.add_argument("--max-lift-tail-radius-cv", type=float, default=0.04, help="Maximum 51^3 tail-radius CV for a predictable blur model")
+
+    spatial_phase_parser = subparsers.add_parser(
+        "prototype-3d-spatial-phase-instrumentation",
+        help="Instrumentation-only reproduction of the 41^3 proof row and failed 51^3 lift candidate with shell phase frames",
+    )
+    spatial_phase_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed-domain lattice constants")
+    spatial_phase_parser.add_argument("--output-root", default="runs", help="Directory for spatial-phase instrumentation outputs")
+    spatial_phase_parser.add_argument("--proof-grid-size", type=int, default=41, help="Frozen proof-row grid size")
+    spatial_phase_parser.add_argument("--lift-grid-size", type=int, default=51, help="Frozen failed-lift candidate grid size")
+    spatial_phase_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define fixed physical source-layer width")
+    spatial_phase_parser.add_argument("--physical-duration", type=float, default=96.0, help="Physical end time for reproductions")
+    spatial_phase_parser.add_argument("--sample-every", type=int, default=10, help="Compatibility sampling interval")
+    spatial_phase_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense lifecycle/sample interval")
+    spatial_phase_parser.add_argument("--radial-bins", type=int, default=40, help="Number of lifecycle radial bins")
+    spatial_phase_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Physical shell-window inner radius")
+    spatial_phase_parser.add_argument("--shell-window-width", type=float, default=4.0, help="Physical shell-window width")
+    spatial_phase_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Fallback shell-window width in dx units")
+    spatial_phase_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    spatial_phase_parser.add_argument("--target-work-per-source-area", type=float, help="Override matched work per physical source area")
+    spatial_phase_parser.add_argument("--fixed-drive-frequency", type=float, default=0.92, help="Fixed sign-flip cubic drive frequency")
+    spatial_phase_parser.add_argument("--proof-cutoff", type=float, default=17.94, help="Frozen 41^3 proof-row cutoff")
+    spatial_phase_parser.add_argument("--lift-target-release-phase", type=float, default=0.5071, help="Frozen 51^3 failed-lift target release phase")
+    spatial_phase_parser.add_argument("--dt-scale", type=float, default=0.25, help="dt scale for both reproductions")
+    spatial_phase_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first arrival")
+    spatial_phase_parser.add_argument("--exit-threshold-fraction", type=float, default=0.12, help="Fraction of shell peak used to mark shell-window exit")
+    spatial_phase_parser.add_argument("--exit-hold-samples", type=int, default=10, help="Consecutive below-threshold samples required for exit")
+    spatial_phase_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Default event peak threshold")
+    spatial_phase_parser.add_argument("--frame-peak-threshold-fraction", type=float, default=0.20, help="Loose threshold used only for storing spatial return frames")
+    spatial_phase_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Fraction of first peak required for refocus peaks")
+    spatial_phase_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between return peaks")
+    spatial_phase_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
+    spatial_phase_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
+    spatial_phase_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
+    spatial_phase_parser.add_argument("--max-return-frames", type=int, default=12, help="Maximum loose return-peak frames to export per reproduction")
+    spatial_phase_parser.add_argument("--radial-phase-bins", type=int, default=12, help="Number of radial shell phase bins")
+    spatial_phase_parser.add_argument("--angular-theta-bins", type=int, default=8, help="Number of azimuth bins for spherical shell phase coherence")
+    spatial_phase_parser.add_argument("--angular-polar-bins", type=int, default=4, help="Number of polar bins for spherical shell phase coherence")
+    spatial_phase_parser.add_argument("--coherence-drop-threshold", type=float, default=0.12, help="Shell coherence drop threshold for decoherence classification")
+    spatial_phase_parser.add_argument("--radial-coherence-drop-threshold", type=float, default=0.12, help="Radial coherence drop threshold for decoherence classification")
+    spatial_phase_parser.add_argument("--angular-coherence-drop-threshold", type=float, default=0.12, help="Angular coherence drop threshold for decoherence classification")
+    spatial_phase_parser.add_argument("--node-stability-drop-threshold", type=float, default=0.10, help="Node/antinode stability drop threshold")
+    spatial_phase_parser.add_argument("--width-growth-threshold", type=float, default=0.15, help="Relative return-spread growth threshold for coherent blur")
+    spatial_phase_parser.add_argument("--center-shift-threshold", type=float, default=0.40, help="Radial center shift threshold for shell-window alignment classification")
 
     central_burst_parser = subparsers.add_parser(
         "prototype-3d-central-burst-control",
@@ -2021,6 +2068,53 @@ def main() -> None:
             )
         )
         _print_3d_release_phase_dispersion_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-spatial-phase-instrumentation":
+        config = _load_sim_config(args.config)
+        result = run_3d_spatial_phase_instrumentation(
+            config,
+            options=SpatialPhaseInstrumentationOptions(
+                output_root=args.output_root,
+                proof_grid_size=args.proof_grid_size,
+                lift_grid_size=args.lift_grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                physical_duration=args.physical_duration,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                target_work_per_source_area=args.target_work_per_source_area,
+                fixed_drive_frequency=args.fixed_drive_frequency,
+                proof_cutoff=args.proof_cutoff,
+                lift_target_release_phase=args.lift_target_release_phase,
+                dt_scale=args.dt_scale,
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                frame_peak_threshold_fraction=args.frame_peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                min_peak_separation_time=args.min_peak_separation_time,
+                min_refocus_count=args.min_refocus_count,
+                min_width_growth_fraction=args.min_width_growth_fraction,
+                min_decay_rate_magnitude=args.min_decay_rate_magnitude,
+                max_return_frames=args.max_return_frames,
+                radial_phase_bins=args.radial_phase_bins,
+                angular_theta_bins=args.angular_theta_bins,
+                angular_polar_bins=args.angular_polar_bins,
+                coherence_drop_threshold=args.coherence_drop_threshold,
+                radial_coherence_drop_threshold=args.radial_coherence_drop_threshold,
+                angular_coherence_drop_threshold=args.angular_coherence_drop_threshold,
+                node_stability_drop_threshold=args.node_stability_drop_threshold,
+                width_growth_threshold=args.width_growth_threshold,
+                center_shift_threshold=args.center_shift_threshold,
+            ),
+        )
+        _print_3d_spatial_phase_instrumentation_summary(result)
         return
 
     if args.command in {"prototype-3d-central-burst-control", "central-hf-scattering-branch"}:
@@ -3183,6 +3277,54 @@ def _print_3d_release_phase_dispersion_audit_summary(result: dict[str, Any]) -> 
     print(f"shell CSV: {result['shell_csv']}")
     print(f"phase CSV: {result['phase_csv']}")
     print(f"prediction CSV: {result['prediction_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_spatial_phase_instrumentation_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D spatial phase instrumentation complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("reproductions:")
+    for row in result.get("variants", []):
+        print(
+            f"  - {row.get('audit_group')} / {row.get('variant')}: "
+            f"grid={row.get('grid_size')}, "
+            f"cutoff={_format_optional(row.get('drive_cutoff_time'))}, "
+            f"phase={_format_optional(row.get('cutoff_phase_cycles'))}, "
+            f"default={row.get('default_major_peaks_at_0p30')}/{row.get('default_refocus_peaks_at_0p30')}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"frames={row.get('instrumented_return_frame_count')}, "
+            f"shell_coh={_format_optional(row.get('shell_phase_coherence_mean'))}, "
+            f"radial_coh={_format_optional(row.get('radial_phase_coherence_mean'))}, "
+            f"angular_coh={_format_optional(row.get('angular_phase_coherence_mean'))}, "
+            f"spread={_format_optional(row.get('return_radial_spread_mean'))}"
+        )
+    print("comparison:")
+    for row in result.get("comparison_rows", []):
+        print(
+            f"  - strict_loss={_format_optional(row.get('strict_major_loss'))}, "
+            f"shell_drop={_format_optional(row.get('shell_phase_coherence_drop'))}, "
+            f"radial_drop={_format_optional(row.get('radial_phase_coherence_drop'))}, "
+            f"angular_drop={_format_optional(row.get('angular_phase_coherence_drop'))}, "
+            f"node_drop={_format_optional(row.get('node_phase_stability_drop'))}, "
+            f"center_shift={_format_optional(row.get('return_radial_centroid_shift'))}, "
+            f"spread_growth={_format_optional(row.get('return_radial_spread_relative_growth'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"frame index CSV: {result['frame_index_csv']}")
+    print(f"displacement CSV: {result['displacement_csv']}")
+    print(f"velocity CSV: {result['velocity_csv']}")
+    print(f"radial phase CSV: {result['radial_frames_csv']}")
+    print(f"angular phase CSV: {result['angular_csv']}")
+    print(f"stability CSV: {result['stability_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
     print(f"report: {result['report_path']}")
 
 

@@ -436,6 +436,14 @@ python main.py prototype-3d-release-phase-dispersion-audit
 
 This command runs no physics. It compares `41^3` proof rows against the failed `51^3` lift rows and reconstructs only deterministic source/shell geometry from the baseline config. It reports dominant shell frequency, modal bandwidth, return peak width, return spacing, tail-radius drift, radial packet width/spread, radial group velocity, shell-window leakage, source discretization, shell-window sampling, and spatial-phase-frame availability. Current project state: `runs\release_phase_dispersion_audit_3d_20260620_150931` classified as `scalable_blur_model_supported`: the blur is consistent and predictable across `51^3` rows, but no source-shaped candidate is recommended because true spatial shell phase frames were not stored.
 
+Run the spatial phase instrumentation reproduction with:
+
+```powershell
+python main.py prototype-3d-spatial-phase-instrumentation --config configs\long_validation_peak_0_92.json
+```
+
+This is an instrumentation-only reproduction, not tuning. It reruns exactly one `41^3` proof row and one failed `51^3` lift candidate with the frozen passive setup, then exports shell displacement/velocity frames, radial and angular shell phase coherence, node/antinode stability maps, phase drift across return peaks, and a `41^3` vs `51^3` comparison. Current project state: `runs\spatial_phase_instrumentation_3d_20260620_170518` classified as `spatial_phase_decoherence_supported`: the `51^3` candidate loses shell/radial/angular phase coherence while radial spread and center shift do not explain the strict-count loss.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -982,6 +990,27 @@ When `prototype-3d-release-phase-dispersion-audit` is used, the read-only output
 - `release_phase_dispersion_audit_summary.json`
 
 The dispersion audit report asks whether the `51^3` blur is predictable enough to justify a mechanism-derived correction. Current project state: `runs\release_phase_dispersion_audit_3d_20260620_150931` classified as `scalable_blur_model_supported`, but the prediction row remains `none` because true spatial shell phase frames are missing.
+
+When `prototype-3d-spatial-phase-instrumentation` is used, the control folder includes:
+
+- `spatial_phase_instrumentation_report.md`
+- `spatial_phase_instrumentation_summary.csv`
+- `spatial_phase_threshold_robust_score.csv`
+- `spatial_phase_event_threshold_counts.csv`
+- `spatial_phase_lifecycle_timeseries.csv`
+- `spatial_phase_lifecycle_events.csv`
+- `spatial_phase_frame_index.csv`
+- `shell_displacement_frames.csv`
+- `shell_velocity_frames.csv`
+- `radial_shell_phase_frames.csv`
+- `shell_phase_coherence_by_radius.csv`
+- `angular_shell_phase_coherence.csv`
+- `node_antinode_stability_maps.csv`
+- `phase_drift_across_return_peaks.csv`
+- `spatial_phase_41_vs_51_comparison.csv`
+- `spatial_phase_instrumentation_summary.json`
+
+The spatial-phase instrumentation report captures true shell displacement/velocity frames at loose return peaks while preserving default/strict event scoring. Current project state: `runs\spatial_phase_instrumentation_3d_20260620_170518` classified as `spatial_phase_decoherence_supported`, so do not run a source-shaped `51^3` candidate unless a future mechanism explains how phase pre-compensation would address the sector/radius decoherence.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

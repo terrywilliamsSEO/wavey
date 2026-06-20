@@ -65,6 +65,7 @@ Current interpretation:
 - The fixed quarter-dt proof pack classified as `release_phase_quarter_dt_proof_supported`: proof-candidate cutoffs `17.94`, `17.9425`, and `17.945` preserved strict 9/8 with no exit, global outer false, outer/shell below `1.0`, stable tail area, stable return timing, stable inward flux, and positive threshold-free candidate margin. This remains a `41^3` proof-pack result, not a scale-validated claim.
 - The controlled recalibrated `51^3` resolution lift classified as `release_phase_resolution_lift_failed`: the phase-targeted candidate at cutoff `17.9425`, phase `0.5071`, and both controls all fell to default 9/8 and conservative strict 7/6. The lifted packet stayed clean by no-exit/global-outer/outer-shell/energy gates, but strict 9/8 preservation and phase separation did not survive the lift.
 - The read-only resolution postmortem classified as `resolution_lift_blurred_returns_no_predictive_recalibration`: the `51^3` rows still contain late return humps below frozen gates, but candidate and controls share the same count shrinkage, and timing/radial shifts do not isolate one honest recalibrated retry. Do not run the proposed 51^3 retry unless a new mechanism changes that prediction.
+- The spatial phase instrumentation reproduction classified as `spatial_phase_decoherence_supported`: the failed `51^3` candidate loses shell/radial/angular shell phase coherence relative to the `41^3` proof row, while return spread does not grow and radial center shift is small. Treat the scale loss as spatial phase decoherence, not just coherent widening or shell-window misalignment.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -1883,6 +1884,56 @@ Interpretation:
 - The blocker is spatial phase data. Existing lifecycle artifacts do not store true shell phase frames, so the audit cannot design phase pre-compensation or source apodization safely.
 - Prediction remains `none`: do not run a source-shaped `51^3` candidate yet. The safe next infrastructure step is to instrument future proof/lift runs with spatial shell phase frames and neighboring radial-window energy, then rerun this read-only audit.
 
+### Spatial Phase Instrumentation
+
+Command:
+
+```powershell
+python main.py prototype-3d-spatial-phase-instrumentation --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\spatial_phase_instrumentation_3d_20260620_170518\spatial_phase_instrumentation_report.md`
+- Summary CSV: `runs\spatial_phase_instrumentation_3d_20260620_170518\spatial_phase_instrumentation_summary.csv`
+- Frame index CSV: `runs\spatial_phase_instrumentation_3d_20260620_170518\spatial_phase_frame_index.csv`
+- Shell displacement frames: `runs\spatial_phase_instrumentation_3d_20260620_170518\shell_displacement_frames.csv`
+- Shell velocity frames: `runs\spatial_phase_instrumentation_3d_20260620_170518\shell_velocity_frames.csv`
+- Radial phase frames: `runs\spatial_phase_instrumentation_3d_20260620_170518\radial_shell_phase_frames.csv`
+- Shell phase by radius: `runs\spatial_phase_instrumentation_3d_20260620_170518\shell_phase_coherence_by_radius.csv`
+- Angular phase CSV: `runs\spatial_phase_instrumentation_3d_20260620_170518\angular_shell_phase_coherence.csv`
+- Node/antinode stability CSV: `runs\spatial_phase_instrumentation_3d_20260620_170518\node_antinode_stability_maps.csv`
+- Phase drift CSV: `runs\spatial_phase_instrumentation_3d_20260620_170518\phase_drift_across_return_peaks.csv`
+- Comparison CSV: `runs\spatial_phase_instrumentation_3d_20260620_170518\spatial_phase_41_vs_51_comparison.csv`
+- Classification: `spatial_phase_decoherence_supported`
+
+Fixed reproduction setup:
+
+- `41^3` proof row: cutoff `17.94`, phase `0.5048`, quarter dt.
+- `51^3` failed-lift candidate: cutoff `17.9425`, phase `0.5071`, quarter dt.
+- Neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer.
+- Loose frame-capture threshold `0.20` was used only to store below-gate return evidence; default/strict event scoring remains unchanged.
+
+Spatial phase comparison:
+
+| Metric | 41^3 proof | 51^3 lift | Delta |
+| --- | ---: | ---: | ---: |
+| Default count | 10/9 | 9/8 | -1/-1 |
+| Strict count | 9/8 | 7/6 | -2/-2 |
+| Shell phase coherence mean | 0.738741 | 0.591512 | -0.147229 |
+| Radial phase coherence mean | 0.795901 | 0.653694 | -0.142207 |
+| Angular phase coherence mean | 0.739392 | 0.600653 | -0.138739 |
+| Node phase stability mean | 0.362924 | 0.366907 | +0.00398 |
+| Return radial centroid mean | 6.97064 | 7.05765 | +0.0870 |
+| Return radial spread mean | 1.16086 | 1.14198 | -0.0163 relative |
+
+Interpretation:
+
+- The `51^3` candidate loses spatial phase organization across the shell, radial bins, and angular/spherical sectors.
+- The failure is not explained by a wider coherent packet: return spread is slightly lower at `51^3`.
+- The failure is not primarily shell-window centering: radial centroid shift is only about `0.087`.
+- Any future `51^3` source-shaped candidate needs a mechanism-derived phase-precompensation argument first. Do not run source shaping, new cutoff tuning, `61^3`, central-burst expansion, defects, resonators, active pulses, or shell rings from this result alone.
+
 ### Central HF Scattering Branch
 
 Command:
@@ -1931,13 +1982,14 @@ Interpretation:
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, and read-only dispersion audit are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, and spatial phase instrumentation reproduction are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat the frozen proof-pack setup as canonical at `41^3`: neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
+- Treat the failed `51^3` lift as a spatial phase decoherence problem unless new evidence says otherwise. The next safe work is read-only analysis of the captured sector/radius phase maps or a mechanism-derived phase-precompensation design, not a source-shaped physics run.
 - Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, the half-dt strict-clean window as shifted upward to `17.9375-17.945`, and the quarter-dt proof span as `17.94-17.945` with phase `0.5048-0.5094`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
