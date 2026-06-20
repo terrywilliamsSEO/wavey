@@ -404,6 +404,14 @@ python main.py prototype-3d-release-phase-proof-pack --config configs\long_valid
 
 This is a proof pack, not a discovery sweep. It tests only the recentered half-dt window at quarter dt: proof candidates `17.9375`, `17.940`, `17.9425`, and `17.945`, immediate controls `17.935` and `17.9475`, and low-side controls `17.9225` and `17.915`. It freezes the candidate card and checks predeclared gates for strict 9/8, no exit, global outer false, outer/shell below `1.0`, stable tail area, stable return timing, stable inward flux, and threshold-free candidate margin. Current project state: `runs\release_phase_proof_pack_3d_20260619_234039` classified as `release_phase_quarter_dt_proof_supported`; proof-candidate cutoffs `17.94-17.945` preserved strict clean 9/8.
 
+Run the controlled release-phase resolution lift with:
+
+```powershell
+python main.py prototype-3d-release-phase-resolution-lift --config configs\long_validation_peak_0_92.json
+```
+
+This is a one-step scale checkpoint, not a resolution sweep. It defaults to one `51^3` candidate plus two fixed controls at quarter dt, recomputing cutoffs from target release phases instead of copying lower-resolution cutoff times. The fixed setup is neutral lattice, same physical domain, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 physical shell window, no active second pulses, and no resonator layer. Current project state: `runs\release_phase_resolution_lift_3d_20260620_091834` classified as `release_phase_resolution_lift_failed`; the `51^3` candidate and controls all reached default 9/8 and conservative strict 7/6, so do not auto-run `61^3` or tune nearby phases from that result.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -896,6 +904,17 @@ When `prototype-3d-release-phase-proof-pack` is used, the control folder include
 - one lifecycle run folder per tested cutoff
 
 The proof-pack report includes the frozen candidate setup, threshold-robust rows, phase-rule gates, threshold-free lifecycle metrics, and a recommendation for the next numerical scale check. Current project state: `runs\release_phase_proof_pack_3d_20260619_234039` classified as `release_phase_quarter_dt_proof_supported`.
+
+When `prototype-3d-release-phase-resolution-lift` is used, the control folder includes:
+
+- `release_phase_resolution_lift_report.md`
+- `release_phase_resolution_lift_summary.csv`
+- `release_phase_resolution_lift_threshold_robust_score.csv`
+- `release_phase_resolution_lift_gates.csv`
+- `release_phase_resolution_lift_summary.json`
+- one lifecycle run folder per tested grid/phase row
+
+The resolution-lift report includes fixed setup, pass/fail gates, threshold-robust rows, threshold-free lifecycle metrics, energy-accounting fields, and the final classification. Current project state: `runs\release_phase_resolution_lift_3d_20260620_091834` classified as `release_phase_resolution_lift_failed`.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 
