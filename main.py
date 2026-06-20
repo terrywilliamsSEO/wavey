@@ -84,6 +84,10 @@ from simulation.prototype_3d_release_phase_return_map import (
     ReleasePhaseReturnMapOptions,
     run_3d_release_phase_return_map,
 )
+from simulation.prototype_3d_release_phase_blind_confirmation import (
+    ReleasePhaseBlindConfirmationOptions,
+    run_3d_release_phase_blind_confirmation,
+)
 from simulation.prototype_3d_second_pulse import (
     SecondPulse3DOptions,
     run_3d_second_pulse_control,
@@ -742,6 +746,34 @@ def build_parser() -> argparse.ArgumentParser:
     release_phase_return_map_parser.add_argument("--default-top-major-target", type=int, default=11, help="Default-detector major-peak target for top-row marking")
     release_phase_return_map_parser.add_argument("--default-top-refocus-target", type=int, default=10, help="Default-detector refocus-peak target for top-row marking")
     release_phase_return_map_parser.add_argument("--strict-outer-shell-target", type=float, default=1.0, help="Maximum outer/shell ratio for conservative pass")
+
+    release_phase_blind_parser = subparsers.add_parser(
+        "prototype-3d-release-phase-blind-confirmation",
+        help="Run the five-cutoff blind confirmation of the 3D release-phase predictor",
+    )
+    release_phase_blind_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    release_phase_blind_parser.add_argument("--cutoffs", type=float, nargs="+", required=True, help="Five predictor-recommended cutoffs to test without tuning")
+    release_phase_blind_parser.add_argument("--output-root", default="runs", help="Directory for release-phase blind-confirmation outputs")
+    release_phase_blind_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this confirmation is fixed at 41^3")
+    release_phase_blind_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    release_phase_blind_parser.add_argument("--physical-duration", type=float, default=96.0, help="Extended physical end time while preserving each tested cutoff")
+    release_phase_blind_parser.add_argument("--sample-every", type=int, default=10, help="Sample interval passed to shared calibration options")
+    release_phase_blind_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense sample interval for lifecycle diagnostics")
+    release_phase_blind_parser.add_argument("--radial-bins", type=int, default=40, help="Number of radial bins for packet radius/width tracking")
+    release_phase_blind_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Inner radius of the measured shell window")
+    release_phase_blind_parser.add_argument("--shell-window-width", type=float, help="Physical width for the measured shell window; defaults to near-shell-width-dx * dx")
+    release_phase_blind_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    release_phase_blind_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    release_phase_blind_parser.add_argument("--fixed-drive-frequency", type=float, default=0.92, help="Fixed sign-flip cubic drive frequency")
+    release_phase_blind_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first meaningful shell arrival")
+    release_phase_blind_parser.add_argument("--exit-threshold-fraction", type=float, default=0.12, help="Fraction of shell peak used to mark shell-window exit after the peak")
+    release_phase_blind_parser.add_argument("--exit-hold-samples", type=int, default=10, help="Consecutive below-threshold samples required to mark shell-window exit")
+    release_phase_blind_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Default peak threshold; strict checks use 0.35 and 0.40")
+    release_phase_blind_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Fraction of first major peak required for later refocus peaks")
+    release_phase_blind_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between major lifecycle peaks")
+    release_phase_blind_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
+    release_phase_blind_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
+    release_phase_blind_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
 
     second_pulse_parser = subparsers.add_parser(
         "prototype-3d-second-pulse-control",
@@ -1533,6 +1565,38 @@ def main() -> None:
             ),
         )
         _print_3d_release_phase_return_map_summary(result)
+        return
+
+    if args.command == "prototype-3d-release-phase-blind-confirmation":
+        config = _load_sim_config(args.config)
+        result = run_3d_release_phase_blind_confirmation(
+            config,
+            options=ReleasePhaseBlindConfirmationOptions(
+                output_root=args.output_root,
+                cutoffs=tuple(args.cutoffs),
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                physical_duration=args.physical_duration,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                fixed_drive_frequency=args.fixed_drive_frequency,
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                min_peak_separation_time=args.min_peak_separation_time,
+                min_refocus_count=args.min_refocus_count,
+                min_width_growth_fraction=args.min_width_growth_fraction,
+                min_decay_rate_magnitude=args.min_decay_rate_magnitude,
+            ),
+        )
+        _print_3d_release_phase_blind_confirmation_summary(result)
         return
 
     if args.command == "prototype-3d-second-pulse-control":
@@ -2439,6 +2503,29 @@ def _print_3d_release_phase_return_map_summary(result: dict[str, Any]) -> None:
     print(f"feature CSV: {result['feature_csv']}")
     print(f"predictions CSV: {result['predictions_csv']}")
     print(f"binned CSV: {result['binned_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_release_phase_blind_confirmation_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D release-phase blind confirmation complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print("rows:")
+    for row in result.get("summary_rows", []):
+        print(
+            f"  - {row.get('prediction_role')}: "
+            f"cutoff={_format_optional(row.get('drive_cutoff_time'))}, "
+            f"phase={_format_optional(row.get('cutoff_phase_cycles'))}, "
+            f"default={row.get('default_major_peaks_at_0p30')}/{row.get('default_refocus_peaks_at_0p30')}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"ret={_format_optional(row.get('retention'))}, "
+            f"outer/shell={_format_optional(row.get('outer_shell'))}, "
+            f"clean={row.get('strict_clean_pass')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"prediction check CSV: {result['prediction_check_csv']}")
     print(f"report: {result['report_path']}")
 
 

@@ -372,6 +372,14 @@ python main.py prototype-3d-release-phase-return-map --run-roots runs\cutoff_pha
 
 This command does not run new physics. It consumes existing cutoff/refocusing summaries, ranked outputs, threshold-robust scores, events, and timeseries where available, then writes a feature table, phase-bin summary, simple interpretable predictions, and five blind-confirmation cutoff recommendations.
 
+Run the blind confirmation of that release-phase predictor with:
+
+```powershell
+python main.py prototype-3d-release-phase-blind-confirmation --config configs\long_validation_peak_0_92.json --cutoffs 17.932885 17.937885 17.9225 17.965 17.915
+```
+
+This is a fixed five-row confirmation, not a tuning pass. It keeps the same `41^3` neutral-lattice, stronger-sponge, inner-sponge-edge sign-flip cubic source, frequency `0.92`, matched-work, radius-5 shell-window setup fixed, with no active second pulses and no resonator layer. Current project state: the blind run classified as `release_phase_blind_confirmed`; both predicted strong rows preserved default 11/10 and strict 9/8, while the lower-edge and weak-control rows fell to strict 8/7.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -402,7 +410,7 @@ The completed second-refocus reference micro-map used:
 python main.py prototype-3d-second-pulse-control --config configs\long_validation_peak_0_92.json --second-pulse-micro-map --micro-map-targets second_refocus --launch-time-offsets -0.8 -0.4 0 0.4 0.8 --second-pulse-phase-modes matched opposite plus_pi_4 minus_pi_4 --second-pulse-amplitude-scales 0.1 0.2
 ```
 
-It did not beat the no-pulse reference. Active reinjection is shelved unless a new mechanism changes the premise; the current path is passive cutoff-only refinement around the provisional cutoff `17.94` point.
+It did not beat the no-pulse reference. Active reinjection is shelved unless a new mechanism changes the premise; the passive release-phase rule has since been blind-confirmed, so do not tune nearby cutoffs based on the confirmation result.
 
 ## Run one simulation
 
@@ -822,6 +830,16 @@ When `prototype-3d-release-phase-return-map` is used, the analysis folder includ
 - `release_phase_return_map_summary.json`
 
 The report includes `predictive phase rule` and `blind confirmation recommendation` sections. Current project state: the read-only return map classified as `release_phase_predictive_rule_supported`; the best cluster centers near phase `0.500554` cycles, strict 9/8 preservation spans about `0.491-0.5232` cycles in reference-compatible rows, and default 11/10 rows occupy the narrower `0.4956-0.5048` phase pocket.
+
+When `prototype-3d-release-phase-blind-confirmation` is used, the control folder includes:
+
+- `release_phase_blind_confirmation_report.md`
+- `release_phase_blind_confirmation_summary.csv`
+- `release_phase_blind_confirmation_prediction_check.csv`
+- `release_phase_blind_confirmation_summary.json`
+- one lifecycle run folder per tested cutoff
+
+The blind-confirmation report includes fixed-setup, prediction-check, and threshold-free metric sections. Current project state: `runs\release_phase_blind_confirmation_3d_20260619_210435` classified as `release_phase_blind_confirmed`.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 

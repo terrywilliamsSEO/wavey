@@ -61,7 +61,7 @@ Current interpretation:
 - The reduced-work phase-matched second-pulse check also classified as `second_pulse_contaminated_or_inconclusive`: 0.1x-0.5x pulses and shorter 1.0-duration pulses still reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`.
 - The travel-time-adjusted first-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: empirical boundary-to-shell travel time was `9.44`, so the first-refocus target launch moved to `t=26.4`, but all active rows still had fewer refocus peaks, worse decay, outer/shell above `1.0`, and negative `added_work_efficiency`.
 - The travel-time-adjusted second-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: the second-refocus target launch moved to `t=31.68`, but active rows still failed strict clean criteria. Best ranked active row reached retention `0.491`, but only six/five peaks, outer/shell `1.254`, decay `-0.0455`, and negative `added_work_efficiency`.
-- Active second pulses are now shelved until a new mechanism justifies revisiting them; the immediate path remains passive cutoff engineering, now centered on the provisional cutoff `17.94` point with frequency fixed at `0.92`.
+- Active second pulses are now shelved until a new mechanism justifies revisiting them; the passive release-phase rule is now blind-confirmed around the phase-0.50 pocket with frequency fixed at `0.92`.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -70,9 +70,10 @@ Current interpretation:
 - Conservative claim: the phase-lock cluster preserves or improves the clean 9/8 refocusing family under stricter detection, not that 11/10 is threshold-invariant.
 - The first passive boundary-inner-edge resonator-layer mechanism test classified as `no_resonator_still_wins`. The no-resonator reference and zero-coupling control preserved the six-cutoff strict 9/8 cluster, but all coupled resonator variants dropped to strict 8/7 despite clean no-exit/global-outer flags and zero post-cutoff external work.
 - The read-only release-phase return map classified as `release_phase_predictive_rule_supported`: the best cluster centers near phase `0.500554` cycles, reference-compatible rows preserve strict 9/8 across about `0.491-0.5232` cycles, and default 11/10 rows occupy the narrower `0.4956-0.5048` phase pocket.
-- The predictor recommends only a tiny future blind confirmation if physics is run next: predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
+- The predictor recommended only a tiny blind confirmation: predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
+- The blind confirmation classified as `release_phase_blind_confirmed`: predicted-strong cutoffs `17.932885` and `17.937885` preserved default 11/10 and strict clean 9/8, lower-edge `17.9225` and weak-control `17.915` fell to strict 8/7, and upper-edge `17.965` stayed strict 9/8 but only default 10/9.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next physics step, if requested, is only the five-cutoff blind confirmation above under the fixed setup; do not expand the resonator layer, traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
+- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation is complete; do not tune around the five cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
 
 ## Latest Evidence
 
@@ -1537,16 +1538,48 @@ Interpretation:
 - The result supports a phase/early-packet rule for separating the strict 9/8 cluster from weaker rows, while preserving the existing caution that 11/10 is not threshold-invariant.
 - Any next physics should be limited to the five cutoffs above under the same fixed setup.
 
+### Release-Phase Blind Confirmation
+
+Command:
+
+```powershell
+python main.py prototype-3d-release-phase-blind-confirmation --config configs\long_validation_peak_0_92.json --cutoffs 17.932885 17.937885 17.9225 17.965 17.915
+```
+
+Latest summarized run:
+
+- Local report: `runs\release_phase_blind_confirmation_3d_20260619_210435\release_phase_blind_confirmation_report.md`
+- Summary CSV: `runs\release_phase_blind_confirmation_3d_20260619_210435\release_phase_blind_confirmation_summary.csv`
+- Prediction-check CSV: `runs\release_phase_blind_confirmation_3d_20260619_210435\release_phase_blind_confirmation_prediction_check.csv`
+- Classification: `release_phase_blind_confirmed`
+- Setup: `41^3`, neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer
+
+Blind results:
+
+| Role | Cutoff | Phase | Default Count | Strict 0.35 | Strict 0.40 | Retention | Outer/Shell | Decay |
+| --- | ---: | ---: | --- | --- | --- | ---: | ---: | ---: |
+| predicted strong | 17.932885 | 0.498254 | 11/10 | 9/8 | 9/8 | 0.316025 | 0.636520 | -0.0238894 |
+| predicted strong | 17.937885 | 0.502854 | 11/10 | 9/8 | 9/8 | 0.314831 | 0.632958 | -0.0239385 |
+| lower boundary/edge | 17.9225 | 0.4887 | 9/8 | 8/7 | 8/7 | 0.318327 | 0.643986 | -0.0237978 |
+| upper boundary/edge | 17.965 | 0.5278 | 10/9 | 9/8 | 9/8 | 0.307245 | 0.614321 | -0.0243047 |
+| weak negative control | 17.915 | 0.4818 | 9/8 | 8/7 | 8/7 | 0.319825 | 0.649397 | -0.0237408 |
+
+Interpretation:
+
+- The return-map rule survived the blind check: the two predicted strong rows preserved the strict clean 9/8 family and default 11/10, while the predicted weak control fell below the strong cluster.
+- The lower edge also failed strict 9/8, while the upper edge stayed strict 9/8 without default 11/10. This sharpens the picture: the default 11/10 pocket is narrower than the strict 9/8 band and appears centered near phase 0.50 cycles.
+- Do not tune around this result. Treat it as confirmation of the narrow release-phase phase-lock rule, not permission for broad cutoff sweeps.
+
 ## Current Next Step
 
-Run no new physics unless explicitly requested. If a blind confirmation is requested, keep it to the predictor's five cutoffs and the conservative threshold-robust floor:
+Run no new physics unless explicitly requested. The blind confirmation is complete, so do not tune nearby cutoffs based on the result:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat `sign_flip_cutoff_minus_0p07`, `sign_flip_cutoff_minus_0p065`, and `sign_flip_cutoff_minus_0p06` as the current narrow phase-lock needle candidates.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Test only the predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
+- Treat the confirmed strong pocket as centered near phase 0.50 cycles. The lower edge/weak side fails strict 9/8 by phase 0.4887/0.4818, while the upper edge at 0.5278 still preserves strict 9/8 without default 11/10.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
 - Do not expand passive boundary-inner-edge resonator variants yet; the first passive layer pass was energy-accounted but reduced strict counts.
