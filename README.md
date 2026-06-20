@@ -364,6 +364,14 @@ python main.py prototype-3d-resonator-layer-control --config configs\long_valida
 
 This is a narrow mechanism test, not a sweep. It keeps the same `41^3` neutral-lattice, stronger-sponge, inner-sponge-edge sign-flip cubic source, frequency `0.92`, matched-work, radius-5 shell-window setup fixed, maps only cutoffs `17.920` through `17.950`, and compares the no-resonator reference, a weak passive boundary-inner-edge resonator layer tuned near/slightly below/slightly above the drive frequency, a moderate-cubic passive resonator layer, a zero-coupling control, and a high-damping control. The resonator is passive: no external drive is applied to its auxiliary oscillator and the report records post-cutoff external work, resonator energy, lattice energy, coupling exchange, and energy-accounting error.
 
+Build the read-only 3D release-phase return-map predictor from existing run artifacts with:
+
+```powershell
+python main.py prototype-3d-release-phase-return-map --run-roots runs\cutoff_phase_map_3d_20260619_162240 runs\cutoff_phase_map_3d_20260619_155704 runs\cutoff_phase_map_3d_20260619_145631 runs\resonator_layer_3d_20260619_175949
+```
+
+This command does not run new physics. It consumes existing cutoff/refocusing summaries, ranked outputs, threshold-robust scores, events, and timeseries where available, then writes a feature table, phase-bin summary, simple interpretable predictions, and five blind-confirmation cutoff recommendations.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -804,6 +812,16 @@ When `prototype-3d-resonator-layer-control` is used, the control folder includes
 - `resonator_layer_summary.json`
 
 The resonator-layer report includes `threshold-robust refocusing score`, `phase-lock cluster width`, `resonator energy accounting`, `contamination audit`, and `best conservative row` sections. Current project state: the first passive layer run classified as `no_resonator_still_wins`; no-resonator and zero-coupling preserved the strict six-cutoff 9/8 cluster, while coupled resonator rows dropped to strict 8/7 despite zero post-cutoff external work and passing energy accounting.
+
+When `prototype-3d-release-phase-return-map` is used, the analysis folder includes:
+
+- `release_phase_return_map_report.md`
+- `release_phase_feature_table.csv`
+- `release_phase_predictions.csv`
+- `release_phase_binned_summary.csv`
+- `release_phase_return_map_summary.json`
+
+The report includes `predictive phase rule` and `blind confirmation recommendation` sections. Current project state: the read-only return map classified as `release_phase_predictive_rule_supported`; the best cluster centers near phase `0.500554` cycles, strict 9/8 preservation spans about `0.491-0.5232` cycles in reference-compatible rows, and default 11/10 rows occupy the narrower `0.4956-0.5048` phase pocket.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 

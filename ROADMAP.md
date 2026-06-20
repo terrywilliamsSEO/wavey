@@ -6,7 +6,7 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, the tighter cutoff/polarity release-phase map found a supported timing island, and ultra-fine passive refinement found a narrow phase-lock needle rather than a broad timing island.
 
-Recommended next task: active second-pulse controls remain shelved, and the first passive boundary-inner-edge resonator-layer mechanism test did not help. In `runs\resonator_layer_3d_20260619_175949`, the no-resonator reference and zero-coupling control preserved the strict six-cutoff 9/8 cluster, while all coupled resonator variants dropped to strict 8/7 and failed to widen or stabilize the phase-lock cluster. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not expand resonator variants, add traps, rotation, medium shaping, defects, grid changes, frequency combinations, active pulses, or broad sweeps without a new mechanism-specific reason.
+Recommended next task: use the read-only release-phase return-map result as the guide for one tiny blind confirmation only if new physics is explicitly requested. In `runs\release_phase_return_map_3d_20260619_205221`, the predictor classified as `release_phase_predictive_rule_supported`: the reference-compatible strict 9/8 rows cluster around phase `0.50` cycles, default 11/10 rows occupy the narrower `0.4956-0.5048` pocket, and the report recommends cutoffs `17.932885`, `17.937885`, `17.9225`, `17.965`, and `17.915` as two predicted-strong, two boundary/edge, and one weak control points. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not expand resonator variants, add traps, rotation, medium shaping, defects, grid changes, frequency combinations, active pulses, or broad sweeps without a new mechanism-specific reason.
 
 ## Status
 
@@ -227,6 +227,10 @@ Recommended next task: active second-pulse controls remain shelved, and the firs
 - The no-resonator reference and zero-coupling control each preserved strict 9/8 across six cutoffs: `17.925`, `17.93`, `17.935`, `17.94`, `17.945`, and `17.95`.
 - All coupled resonator variants, including tuned, slightly below, slightly above, moderate cubic, and high damping, dropped to strict 8/7 across the narrow cluster. Their default counts reached at most 10/9, with retention near `0.289-0.296` and decay near `-0.0262` to `-0.0264`.
 - Energy accounting passed for all rows, and post-cutoff external work was zero, so the result is a passive negative mechanism test rather than active contamination. Do not expand resonator variants unless a new mechanism gives a specific reason.
+- Added `prototype-3d-release-phase-return-map`, a read-only analysis command that consumes existing cutoff/refocusing summaries, threshold-robust scores, events, and timeseries to build interpretable phase/early-packet predictors without running new physics.
+- Ran `python main.py prototype-3d-release-phase-return-map --run-roots runs\cutoff_phase_map_3d_20260619_162240 runs\cutoff_phase_map_3d_20260619_155704 runs\cutoff_phase_map_3d_20260619_145631 runs\resonator_layer_3d_20260619_175949` in `runs\release_phase_return_map_3d_20260619_205221`; classification was `release_phase_predictive_rule_supported`.
+- The predictive rule centers the best cluster at phase `0.500554` cycles. Reference-compatible rows preserve strict 9/8 across roughly `0.491-0.5232` cycles, while default 11/10 rows remain confined to `0.4956-0.5048`, so 11/10 is phase-guided but still threshold/cutoff sensitive.
+- Recommended blind confirmation cutoffs: predicted strong `17.932885` and `17.937885`; boundary/edge `17.9225` and `17.965`; weak negative control `17.915`. These are recommendations only; no new physics was run for this analysis.
 
 ### In Progress
 
@@ -240,6 +244,7 @@ Recommended next task: active second-pulse controls remain shelved, and the firs
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
 - Treat `sign_flip_cutoff_minus_0p07` as the current best passive row, but describe the 17.93-17.94 pocket as a narrow phase-lock needle, not a broad island.
 - Use the conservative 9/8 threshold-robust result as the floor for the cluster. The default 11/10 count can guide local passive work, but do not present it as threshold-invariant.
+- If running new physics, do only the predictor's five-cutoff blind confirmation: `17.932885`, `17.937885`, `17.9225`, `17.965`, and `17.915`.
 - Rank rows by major shell-window peak count, refocus count, no shell exit, retention, outer/shell below 1.0, decay closest to zero, global outer false, and phase at cutoff.
 - Do not treat frequency 0.94 as additive with cutoff 18.
 - Do not move to trapping, rotation, medium shaping, defects, grid changes, or active reinjection before the passive timing island is mapped more tightly.
@@ -504,3 +509,6 @@ Possible work:
 - 2026-06-19: Ran `python main.py prototype-3d-cutoff-phase-map-control --config configs\long_validation_peak_0_92.json --threshold-robust-confirmation` in `runs\cutoff_phase_map_3d_20260619_162240`; classification stayed `cutoff_phase_timing_island_supported`.
 - 2026-06-19: The confirmation showed the top cluster is not a single-point fluke, but 11/10 is not threshold-invariant: cutoffs 17.93, 17.935, and 17.94 count as 12/11 at threshold 0.25, 11/10 at 0.30, and 9/8 at thresholds 0.35 and 0.40.
 - 2026-06-19: Updated the conservative claim to: the narrow phase-lock cluster preserves or improves the clean 9/8 refocusing family under stricter detection, while the exact 11/10 count remains threshold-sensitive.
+- 2026-06-19: Added `prototype-3d-release-phase-return-map`, a read-only predictor that combines existing cutoff/refocusing summaries, robust scores, events, and timeseries into `release_phase_feature_table.csv`, `release_phase_predictions.csv`, `release_phase_binned_summary.csv`, and a Markdown report.
+- 2026-06-19: Ran the release-phase return map in `runs\release_phase_return_map_3d_20260619_205221`; classification was `release_phase_predictive_rule_supported`. The best cluster center was phase `0.500554`, strict 9/8 preservation spanned about `0.491-0.5232` cycles, and default 11/10 rows occupied `0.4956-0.5048`.
+- 2026-06-19: The predictor recommended five blind-confirmation cutoffs only: strong `17.932885` and `17.937885`, boundary/edge `17.9225` and `17.965`, and weak control `17.915`.

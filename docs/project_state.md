@@ -69,8 +69,10 @@ Current interpretation:
 - The threshold-robust confirmation classified the same narrow cluster as real enough to continue, but not as threshold-invariant 11/10. Cutoffs `17.93`, `17.935`, and `17.94` preserve a conservative 9/8 count under stricter thresholds `0.35` and `0.40`, while staying no-exit and global-outer false.
 - Conservative claim: the phase-lock cluster preserves or improves the clean 9/8 refocusing family under stricter detection, not that 11/10 is threshold-invariant.
 - The first passive boundary-inner-edge resonator-layer mechanism test classified as `no_resonator_still_wins`. The no-resonator reference and zero-coupling control preserved the six-cutoff strict 9/8 cluster, but all coupled resonator variants dropped to strict 8/7 despite clean no-exit/global-outer flags and zero post-cutoff external work.
+- The read-only release-phase return map classified as `release_phase_predictive_rule_supported`: the best cluster centers near phase `0.500554` cycles, reference-compatible rows preserve strict 9/8 across about `0.491-0.5232` cycles, and default 11/10 rows occupy the narrower `0.4956-0.5048` phase pocket.
+- The predictor recommends only a tiny future blind confirmation if physics is run next: predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step remains passive narrow-needle interpretation under the conservative 9/8 floor; do not expand the resonator layer, traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
+- Do not run broad long sweeps or broad 3D sweeps. The next physics step, if requested, is only the five-cutoff blind confirmation above under the fixed setup; do not expand the resonator layer, traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
 
 ## Latest Evidence
 
@@ -1494,15 +1496,57 @@ Interpretation:
 - The no-resonator reference remains the current best conservative row: `no_resonator_reference_cutoff_17p930`, cutoff `17.93`, release phase `0.4956` cycles, default 11/10, strict 9/8, retention `0.316689`, outer/shell `0.638587`, decay `-0.0238625`, no exit, and global outer false.
 - Do not expand this resonator-layer family unless a new mechanism specifies why a different passive coupling geometry or parameter scale should avoid the observed strict-count degradation.
 
+### Release-Phase Return-Map Predictor
+
+Command:
+
+```powershell
+python main.py prototype-3d-release-phase-return-map --run-roots runs\cutoff_phase_map_3d_20260619_162240 runs\cutoff_phase_map_3d_20260619_155704 runs\cutoff_phase_map_3d_20260619_145631 runs\resonator_layer_3d_20260619_175949
+```
+
+Latest summarized run:
+
+- Local report: `runs\release_phase_return_map_3d_20260619_205221\release_phase_return_map_report.md`
+- Feature table: `runs\release_phase_return_map_3d_20260619_205221\release_phase_feature_table.csv`
+- Predictions CSV: `runs\release_phase_return_map_3d_20260619_205221\release_phase_predictions.csv`
+- Binned summary CSV: `runs\release_phase_return_map_3d_20260619_205221\release_phase_binned_summary.csv`
+- Classification: `release_phase_predictive_rule_supported`
+- Inputs: `runs\cutoff_phase_map_3d_20260619_162240`, `runs\cutoff_phase_map_3d_20260619_155704`, `runs\cutoff_phase_map_3d_20260619_145631`, and `runs\resonator_layer_3d_20260619_175949`
+
+Predictive rule:
+
+- Best-cluster center near phase `0.50`: yes; center `0.500554` cycles.
+- Reference-compatible strict 9/8 preservation range: about `0.491-0.5232` cycles.
+- Default 11/10 range: `0.4956-0.5048` cycles.
+- The 11/10 rows are predictable as a narrow phase-guided pocket, but the exact count remains threshold/cutoff sensitive; the conservative claim stays strict 9/8 preservation.
+- Top separating features included shell-energy autocorrelation, dominant spectral concentration, early outer/shell ratio, tail area after `t=50`, cutoff time, and return timing regularity.
+
+Blind confirmation recommendation:
+
+| Role | Cutoff | Phase | Predicted Strict |
+| --- | ---: | ---: | --- |
+| predicted strong | 17.932885 | 0.498254 | 9/8 |
+| predicted strong | 17.937885 | 0.502854 | 9/8 |
+| boundary/edge | 17.9225 | 0.4887 | 9/8 |
+| boundary/edge | 17.965 | 0.5278 | 9/8 |
+| weak negative control | 17.915 | 0.4818 | 8/7 |
+
+Interpretation:
+
+- This was read-only: no new physics was run.
+- The result supports a phase/early-packet rule for separating the strict 9/8 cluster from weaker rows, while preserving the existing caution that 11/10 is not threshold-invariant.
+- Any next physics should be limited to the five cutoffs above under the same fixed setup.
+
 ## Current Next Step
 
-Continue passive narrow-needle interpretation with the conservative threshold-robust floor:
+Run no new physics unless explicitly requested. If a blind confirmation is requested, keep it to the predictor's five cutoffs and the conservative threshold-robust floor:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat `sign_flip_cutoff_minus_0p07`, `sign_flip_cutoff_minus_0p065`, and `sign_flip_cutoff_minus_0p06` as the current narrow phase-lock needle candidates.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
+- Test only the predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
 - Do not expand passive boundary-inner-edge resonator variants yet; the first passive layer pass was energy-accounted but reduced strict counts.

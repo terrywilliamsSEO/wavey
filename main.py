@@ -80,6 +80,10 @@ from simulation.prototype_3d_resonator_layer import (
     ResonatorLayer3DOptions,
     run_3d_resonator_layer_control,
 )
+from simulation.prototype_3d_release_phase_return_map import (
+    ReleasePhaseReturnMapOptions,
+    run_3d_release_phase_return_map,
+)
 from simulation.prototype_3d_second_pulse import (
     SecondPulse3DOptions,
     run_3d_second_pulse_control,
@@ -719,6 +723,25 @@ def build_parser() -> argparse.ArgumentParser:
     resonator_layer_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
     resonator_layer_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
     resonator_layer_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
+
+    release_phase_return_map_parser = subparsers.add_parser(
+        "prototype-3d-release-phase-return-map",
+        help="Build a read-only release-phase return-map predictor from existing 3D run artifacts",
+    )
+    release_phase_return_map_parser.add_argument(
+        "--run-roots",
+        type=Path,
+        nargs="+",
+        required=True,
+        help="Existing run directories to analyze; no new physics simulations are run",
+    )
+    release_phase_return_map_parser.add_argument("--output-root", default="runs", help="Directory for release-phase return-map outputs")
+    release_phase_return_map_parser.add_argument("--phase-bin-width", type=float, default=0.025, help="Release-phase bin width in cycles")
+    release_phase_return_map_parser.add_argument("--strict-major-peak-target", type=int, default=9, help="Strict major-peak floor for conservative pass")
+    release_phase_return_map_parser.add_argument("--strict-refocus-peak-target", type=int, default=8, help="Strict refocus-peak floor for conservative pass")
+    release_phase_return_map_parser.add_argument("--default-top-major-target", type=int, default=11, help="Default-detector major-peak target for top-row marking")
+    release_phase_return_map_parser.add_argument("--default-top-refocus-target", type=int, default=10, help="Default-detector refocus-peak target for top-row marking")
+    release_phase_return_map_parser.add_argument("--strict-outer-shell-target", type=float, default=1.0, help="Maximum outer/shell ratio for conservative pass")
 
     second_pulse_parser = subparsers.add_parser(
         "prototype-3d-second-pulse-control",
@@ -1494,6 +1517,22 @@ def main() -> None:
             ),
         )
         _print_3d_resonator_layer_summary(result)
+        return
+
+    if args.command == "prototype-3d-release-phase-return-map":
+        result = run_3d_release_phase_return_map(
+            list(args.run_roots),
+            options=ReleasePhaseReturnMapOptions(
+                output_root=args.output_root,
+                phase_bin_width=args.phase_bin_width,
+                strict_major_peak_target=args.strict_major_peak_target,
+                strict_refocus_peak_target=args.strict_refocus_peak_target,
+                default_top_major_target=args.default_top_major_target,
+                default_top_refocus_target=args.default_top_refocus_target,
+                strict_outer_shell_target=args.strict_outer_shell_target,
+            ),
+        )
+        _print_3d_release_phase_return_map_summary(result)
         return
 
     if args.command == "prototype-3d-second-pulse-control":
@@ -2377,6 +2416,29 @@ def _print_3d_resonator_layer_summary(result: dict[str, Any]) -> None:
     print(f"energy timeseries CSV: {result['energy_timeseries_csv']}")
     print(f"coupling exchange CSV: {result['coupling_exchange_csv']}")
     print(f"events CSV: {result['events_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_release_phase_return_map_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D release-phase return map complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("blind recommendations:")
+    for row in result.get("prediction_rows", []):
+        if row.get("prediction_kind") != "blind_recommendation":
+            continue
+        print(
+            f"  - {row.get('recommendation_role')}: "
+            f"cutoff={_format_optional(row.get('cutoff_time'))}, "
+            f"phase={_format_optional(row.get('release_phase_cycles'))}, "
+            f"predicted={row.get('nearest_neighbor_predicted_major')}/{row.get('nearest_neighbor_predicted_refocus')}"
+        )
+    print(f"feature CSV: {result['feature_csv']}")
+    print(f"predictions CSV: {result['predictions_csv']}")
+    print(f"binned CSV: {result['binned_csv']}")
     print(f"report: {result['report_path']}")
 
 
