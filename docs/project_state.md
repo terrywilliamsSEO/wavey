@@ -66,6 +66,7 @@ Current interpretation:
 - The controlled recalibrated `51^3` resolution lift classified as `release_phase_resolution_lift_failed`: the phase-targeted candidate at cutoff `17.9425`, phase `0.5071`, and both controls all fell to default 9/8 and conservative strict 7/6. The lifted packet stayed clean by no-exit/global-outer/outer-shell/energy gates, but strict 9/8 preservation and phase separation did not survive the lift.
 - The read-only resolution postmortem classified as `resolution_lift_blurred_returns_no_predictive_recalibration`: the `51^3` rows still contain late return humps below frozen gates, but candidate and controls share the same count shrinkage, and timing/radial shifts do not isolate one honest recalibrated retry. Do not run the proposed 51^3 retry unless a new mechanism changes that prediction.
 - The spatial phase instrumentation reproduction classified as `spatial_phase_decoherence_supported`: the failed `51^3` candidate loses shell/radial/angular shell phase coherence relative to the `41^3` proof row, while return spread does not grow and radial center shift is small. Treat the scale loss as spatial phase decoherence, not just coherent widening or shell-window misalignment.
+- The read-only spatial phase precompensation design classified as `no_safe_phase_correction`: the allowed global/per-face/cubic/harmonic/release-nudge basis explained almost none of the matched shell-sector phase error (`R2=0.00531`) and per-return phase drift was unstable (`1.04098` rad), so no precompensated `51^3` candidate should run from the current frames.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -1934,6 +1935,49 @@ Interpretation:
 - The failure is not primarily shell-window centering: radial centroid shift is only about `0.087`.
 - Any future `51^3` source-shaped candidate needs a mechanism-derived phase-precompensation argument first. Do not run source shaping, new cutoff tuning, `61^3`, central-burst expansion, defects, resonators, active pulses, or shell rings from this result alone.
 
+### Spatial Phase Precompensation Design
+
+Command:
+
+```powershell
+python main.py prototype-3d-spatial-phase-precompensation-design
+```
+
+Latest summarized run:
+
+- Local report: `runs\spatial_phase_precomp_design_3d_20260620_175852\phase_precompensation_design_report.md`
+- Phase-error modes CSV: `runs\spatial_phase_precomp_design_3d_20260620_175852\phase_error_modes.csv`
+- Candidate JSON: `runs\spatial_phase_precomp_design_3d_20260620_175852\recommended_candidate.json`
+- Rejected corrections CSV: `runs\spatial_phase_precomp_design_3d_20260620_175852\rejected_overfit_corrections.csv`
+- Classification: `no_safe_phase_correction`
+
+Design constraints:
+
+- Read-only analysis of `runs\spatial_phase_instrumentation_3d_20260620_170518`.
+- Allowed basis: global phase offset, per-face phase offsets, cubic phase-strength multiplier, one angular harmonic, and a tiny release-phase nudge only if measured phase drift is stable.
+- Forbidden/rejected: cell-by-cell phase masks, broad cutoff tuning, frequency sweep, high-order angular harmonics, unstable release-phase nudge, and low-dimensional candidate when the fit is not explanatory.
+
+Fit result:
+
+| Metric | Value |
+| --- | ---: |
+| Matched shell-sector samples | 352 |
+| Low-dimensional model R2 | 0.00530876 |
+| Weighted RMSE | 0.975624 |
+| Per-return global phase-error std | 1.04098 rad |
+| Recommended global offset | -0.203649 rad |
+| Max face offset | 0.0506322 rad |
+| Cubic strength multiplier | 0.97664 |
+| Angular harmonic amplitude | 0.0642295 rad |
+| Release-phase nudge | 0 |
+| Candidate recommended | false |
+
+Interpretation:
+
+- The 51^3 phase loss is real, but the captured error does not collapse into a stable low-dimensional boundary correction.
+- Per-return global phase errors swing too much to justify even a small release-phase nudge.
+- The precompensated `51^3` candidate was intentionally not run because the required `phase_precomp_candidate_supported` gate did not pass.
+
 ### Central HF Scattering Branch
 
 Command:
@@ -1982,14 +2026,14 @@ Interpretation:
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, and spatial phase instrumentation reproduction are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, and precompensation design are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat the frozen proof-pack setup as canonical at `41^3`: neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Treat the failed `51^3` lift as a spatial phase decoherence problem unless new evidence says otherwise. The next safe work is read-only analysis of the captured sector/radius phase maps or a mechanism-derived phase-precompensation design, not a source-shaped physics run.
+- Treat the failed `51^3` lift as a spatial phase decoherence problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design, so do not run a source-shaped or precompensated physics candidate from the current evidence.
 - Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, the half-dt strict-clean window as shifted upward to `17.9375-17.945`, and the quarter-dt proof span as `17.94-17.945` with phase `0.5048-0.5094`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
@@ -2000,7 +2044,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny. The proof-motivated `51^3` scale check failed strict gates, and the postmortem did not recommend a recalibrated retry, so do not escalate to `61^3` without a new explicit mechanism.
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
-- The dispersion audit supports `scalable_blur_model_supported`, but it is not yet actionable. True spatial shell phase frames are missing, and source discretization/shell-window scaling are not isolated as safe corrections.
+- The dispersion audit supports `scalable_blur_model_supported`, but it is not yet actionable. True spatial shell phase frames were captured later, and the first low-dimensional precompensation design classified as `no_safe_phase_correction`.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. The release-phase-recalibrated `51^3` candidate plus two controls has already been run and failed strict gates; the postmortem says no single retry is predicted. Any future scale check should be explicitly justified, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.

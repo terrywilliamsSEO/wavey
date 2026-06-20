@@ -131,6 +131,11 @@ from simulation.prototype_3d_spatial_phase_instrumentation import (
     SpatialPhaseInstrumentationOptions,
     run_3d_spatial_phase_instrumentation,
 )
+from simulation.prototype_3d_spatial_phase_precompensation_design import (
+    DEFAULT_SPATIAL_PHASE_ROOT as DEFAULT_PRECOMP_SPATIAL_PHASE_ROOT,
+    SpatialPhasePrecompensationDesignOptions,
+    run_3d_spatial_phase_precompensation_design,
+)
 from simulation.prototype_3d_central_burst import (
     CentralBurst3DOptions,
     run_3d_central_burst_control,
@@ -1027,6 +1032,27 @@ def build_parser() -> argparse.ArgumentParser:
     spatial_phase_parser.add_argument("--node-stability-drop-threshold", type=float, default=0.10, help="Node/antinode stability drop threshold")
     spatial_phase_parser.add_argument("--width-growth-threshold", type=float, default=0.15, help="Relative return-spread growth threshold for coherent blur")
     spatial_phase_parser.add_argument("--center-shift-threshold", type=float, default=0.40, help="Radial center shift threshold for shell-window alignment classification")
+
+    precomp_design_parser = subparsers.add_parser(
+        "prototype-3d-spatial-phase-precompensation-design",
+        help="Read-only low-dimensional phase-precompensation design from captured spatial phase frames",
+    )
+    precomp_design_parser.add_argument("--output-root", default="runs", help="Directory for phase-precompensation design outputs")
+    precomp_design_parser.add_argument("--spatial-phase-root", default=DEFAULT_PRECOMP_SPATIAL_PHASE_ROOT, help="Existing spatial phase instrumentation run root")
+    precomp_design_parser.add_argument("--angular-harmonic-m", type=int, default=4, help="Simple angular harmonic order allowed in the low-dimensional correction")
+    precomp_design_parser.add_argument("--ridge-lambda", type=float, default=0.01, help="Ridge regularization used for the low-dimensional phase-error fit")
+    precomp_design_parser.add_argument("--min-matched-sector-samples", type=int, default=96, help="Minimum matched shell-sector phase samples")
+    precomp_design_parser.add_argument("--min-model-r2", type=float, default=0.12, help="Minimum low-dimensional model R2 for candidate support")
+    precomp_design_parser.add_argument("--max-peak-global-phase-std", type=float, default=0.35, help="Maximum per-return global phase-error std for temporal stability")
+    precomp_design_parser.add_argument("--max-global-phase-offset", type=float, default=0.35, help="Maximum safe global phase offset in radians")
+    precomp_design_parser.add_argument("--max-face-phase-offset", type=float, default=0.25, help="Maximum safe per-face phase offset in radians")
+    precomp_design_parser.add_argument("--max-cubic-multiplier-delta", type=float, default=0.20, help="Maximum safe cubic strength multiplier delta")
+    precomp_design_parser.add_argument("--max-angular-harmonic-amplitude", type=float, default=0.25, help="Maximum safe angular harmonic phase amplitude in radians")
+    precomp_design_parser.add_argument("--max-release-phase-nudge", type=float, default=0.004, help="Maximum safe release-phase nudge in cycles")
+    precomp_design_parser.add_argument("--baseline-cubic-sign", type=float, default=-1.0, help="Baseline sign-flip cubic sign")
+    precomp_design_parser.add_argument("--baseline-drive-frequency", type=float, default=0.92, help="Baseline drive frequency")
+    precomp_design_parser.add_argument("--baseline-target-release-phase", type=float, default=0.5071, help="Baseline 51^3 target release phase")
+    precomp_design_parser.add_argument("--baseline-cutoff", type=float, default=17.9425, help="Baseline 51^3 failed-lift cutoff")
 
     central_burst_parser = subparsers.add_parser(
         "prototype-3d-central-burst-control",
@@ -2115,6 +2141,30 @@ def main() -> None:
             ),
         )
         _print_3d_spatial_phase_instrumentation_summary(result)
+        return
+
+    if args.command == "prototype-3d-spatial-phase-precompensation-design":
+        result = run_3d_spatial_phase_precompensation_design(
+            options=SpatialPhasePrecompensationDesignOptions(
+                output_root=args.output_root,
+                spatial_phase_root=args.spatial_phase_root,
+                angular_harmonic_m=args.angular_harmonic_m,
+                ridge_lambda=args.ridge_lambda,
+                min_matched_sector_samples=args.min_matched_sector_samples,
+                min_model_r2=args.min_model_r2,
+                max_peak_global_phase_std=args.max_peak_global_phase_std,
+                max_global_phase_offset=args.max_global_phase_offset,
+                max_face_phase_offset=args.max_face_phase_offset,
+                max_cubic_multiplier_delta=args.max_cubic_multiplier_delta,
+                max_angular_harmonic_amplitude=args.max_angular_harmonic_amplitude,
+                max_release_phase_nudge=args.max_release_phase_nudge,
+                baseline_cubic_sign=args.baseline_cubic_sign,
+                baseline_drive_frequency=args.baseline_drive_frequency,
+                baseline_target_release_phase=args.baseline_target_release_phase,
+                baseline_cutoff=args.baseline_cutoff,
+            )
+        )
+        _print_3d_spatial_phase_precompensation_design_summary(result)
         return
 
     if args.command in {"prototype-3d-central-burst-control", "central-hf-scattering-branch"}:
@@ -3325,6 +3375,49 @@ def _print_3d_spatial_phase_instrumentation_summary(result: dict[str, Any]) -> N
     print(f"angular phase CSV: {result['angular_csv']}")
     print(f"stability CSV: {result['stability_csv']}")
     print(f"comparison CSV: {result['comparison_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_spatial_phase_precompensation_design_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D spatial phase precompensation design complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    summary = result.get("summary_row", {})
+    print("fit summary:")
+    print(
+        "  - "
+        f"samples={summary.get('matched_sector_samples')}, "
+        f"r2={_format_optional(summary.get('low_dimensional_model_r2'))}, "
+        f"rmse={_format_optional(summary.get('low_dimensional_weighted_rmse_radians'))}, "
+        f"per_peak_phase_std={_format_optional(summary.get('per_peak_global_phase_error_std_radians'))}, "
+        f"global_offset={_format_optional(summary.get('recommended_global_phase_offset_radians'))}, "
+        f"max_face_offset={_format_optional(summary.get('recommended_max_face_phase_offset_radians'))}, "
+        f"cubic_mult={_format_optional(summary.get('recommended_cubic_phase_strength_multiplier'))}, "
+        f"harmonic_amp={_format_optional(summary.get('recommended_angular_harmonic_amplitude_radians'))}, "
+        f"release_nudge={_format_optional(summary.get('recommended_release_phase_nudge_cycles'))}"
+    )
+    candidate = result.get("recommended_candidate", {})
+    print("candidate:")
+    print(
+        "  - "
+        f"recommended={candidate.get('recommended')}, "
+        f"target_phase={_format_optional(candidate.get('target_release_phase'))}, "
+        f"cutoff={_format_optional(candidate.get('cutoff'))}, "
+        f"basis={candidate.get('correction_basis')}"
+    )
+    print("rejected corrections:")
+    for row in result.get("rejected_rows", []):
+        print(f"  - {row.get('correction')}: {row.get('risk_level')} risk, {row.get('reason')}")
+    print(f"modes CSV: {result['modes_csv']}")
+    print(f"candidate JSON: {result['recommended_candidate_json']}")
+    print(f"rejected CSV: {result['rejected_csv']}")
     print(f"report: {result['report_path']}")
 
 

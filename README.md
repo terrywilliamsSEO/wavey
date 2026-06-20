@@ -444,6 +444,14 @@ python main.py prototype-3d-spatial-phase-instrumentation --config configs\long_
 
 This is an instrumentation-only reproduction, not tuning. It reruns exactly one `41^3` proof row and one failed `51^3` lift candidate with the frozen passive setup, then exports shell displacement/velocity frames, radial and angular shell phase coherence, node/antinode stability maps, phase drift across return peaks, and a `41^3` vs `51^3` comparison. Current project state: `runs\spatial_phase_instrumentation_3d_20260620_170518` classified as `spatial_phase_decoherence_supported`: the `51^3` candidate loses shell/radial/angular phase coherence while radial spread and center shift do not explain the strict-count loss.
 
+Run the read-only spatial phase precompensation design with:
+
+```powershell
+python main.py prototype-3d-spatial-phase-precompensation-design
+```
+
+This command runs no physics. It consumes the captured spatial phase frames and tries only low-dimensional correction bases: global phase offset, per-face offsets, cubic phase-strength multiplier, cubic sign-flip bias through the same basis, one simple angular harmonic, and a tiny release-phase nudge only if measured phase drift is stable. Current project state: `runs\spatial_phase_precomp_design_3d_20260620_175852` classified as `no_safe_phase_correction`; the low-dimensional fit had R2 `0.00531` and per-return global phase-error std `1.04098` radians, so no precompensated `51^3` candidate should be run from this evidence.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1011,6 +1019,16 @@ When `prototype-3d-spatial-phase-instrumentation` is used, the control folder in
 - `spatial_phase_instrumentation_summary.json`
 
 The spatial-phase instrumentation report captures true shell displacement/velocity frames at loose return peaks while preserving default/strict event scoring. Current project state: `runs\spatial_phase_instrumentation_3d_20260620_170518` classified as `spatial_phase_decoherence_supported`, so do not run a source-shaped `51^3` candidate unless a future mechanism explains how phase pre-compensation would address the sector/radius decoherence.
+
+When `prototype-3d-spatial-phase-precompensation-design` is used, the control folder includes:
+
+- `phase_precompensation_design_report.md`
+- `phase_error_modes.csv`
+- `recommended_candidate.json`
+- `rejected_overfit_corrections.csv`
+- `spatial_phase_precompensation_design_summary.json`
+
+The precompensation design report is a gate, not a physics run. Current project state: `runs\spatial_phase_precomp_design_3d_20260620_175852` classified as `no_safe_phase_correction`, with `recommended_candidate.json` marked `"recommended": false`.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 
