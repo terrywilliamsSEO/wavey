@@ -452,6 +452,14 @@ python main.py prototype-3d-spatial-phase-precompensation-design
 
 This command runs no physics. It consumes the captured spatial phase frames and tries only low-dimensional correction bases: global phase offset, per-face offsets, cubic phase-strength multiplier, cubic sign-flip bias through the same basis, one simple angular harmonic, and a tiny release-phase nudge only if measured phase drift is stable. Current project state: `runs\spatial_phase_precomp_design_3d_20260620_175852` classified as `no_safe_phase_correction`; the low-dimensional fit had R2 `0.00531` and per-return global phase-error std `1.04098` radians, so no precompensated `51^3` candidate should be run from this evidence.
 
+Run the read-only source-spectrum design audit with:
+
+```powershell
+python main.py prototype-3d-source-spectrum-design-audit
+```
+
+This command runs no physics. It asks whether the current continuous hard-cutoff source window injects carrier sidebands that could plausibly explain the `51^3` modal bandwidth growth and spatial decoherence, and whether a same-frequency, same-cutoff-phase, same-work smooth temporal envelope would theoretically narrow the source spectrum. Current project state: `runs\source_spectrum_design_audit_3d_20260620_181010` classified as `source_spectrum_narrowing_candidate_supported`; it supports at most one future `51^3` smooth-envelope candidate plus two controls, not a sweep.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1018,7 +1026,7 @@ When `prototype-3d-spatial-phase-instrumentation` is used, the control folder in
 - `spatial_phase_41_vs_51_comparison.csv`
 - `spatial_phase_instrumentation_summary.json`
 
-The spatial-phase instrumentation report captures true shell displacement/velocity frames at loose return peaks while preserving default/strict event scoring. Current project state: `runs\spatial_phase_instrumentation_3d_20260620_170518` classified as `spatial_phase_decoherence_supported`, so do not run a source-shaped `51^3` candidate unless a future mechanism explains how phase pre-compensation would address the sector/radius decoherence.
+The spatial-phase instrumentation report captures true shell displacement/velocity frames at loose return peaks while preserving default/strict event scoring. Current project state: `runs\spatial_phase_instrumentation_3d_20260620_170518` classified as `spatial_phase_decoherence_supported`. The later phase-precompensation design rejected spatial correction, while the later source-spectrum audit supports only a narrow temporal smoothing candidate.
 
 When `prototype-3d-spatial-phase-precompensation-design` is used, the control folder includes:
 
@@ -1029,6 +1037,17 @@ When `prototype-3d-spatial-phase-precompensation-design` is used, the control fo
 - `spatial_phase_precompensation_design_summary.json`
 
 The precompensation design report is a gate, not a physics run. Current project state: `runs\spatial_phase_precomp_design_3d_20260620_175852` classified as `no_safe_phase_correction`, with `recommended_candidate.json` marked `"recommended": false`.
+
+When `prototype-3d-source-spectrum-design-audit` is used, the control folder includes:
+
+- `source_spectrum_design_audit_report.md`
+- `source_spectrum_summary.csv`
+- `source_envelope_spectrum.csv`
+- `smooth_envelope_candidate.json`
+- `rejected_source_spectrum_options.csv`
+- `source_spectrum_design_audit_summary.json`
+
+The source-spectrum design report is a theory gate, not a physics run. Current project state: `runs\source_spectrum_design_audit_3d_20260620_181010` classified as `source_spectrum_narrowing_candidate_supported`: hard-cutoff far sideband fraction was `0.049396`, the same-release smooth envelope reduced it to `0.000516`, and `smooth_envelope_candidate.json` is marked `"recommended": true`.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

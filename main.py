@@ -136,6 +136,14 @@ from simulation.prototype_3d_spatial_phase_precompensation_design import (
     SpatialPhasePrecompensationDesignOptions,
     run_3d_spatial_phase_precompensation_design,
 )
+from simulation.prototype_3d_source_spectrum_design_audit import (
+    DEFAULT_CONFIG_PATH as DEFAULT_SOURCE_SPECTRUM_CONFIG_PATH,
+    DEFAULT_DISPERSION_ROOT as DEFAULT_SOURCE_SPECTRUM_DISPERSION_ROOT,
+    DEFAULT_PRECOMP_ROOT as DEFAULT_SOURCE_SPECTRUM_PRECOMP_ROOT,
+    DEFAULT_SPATIAL_PHASE_ROOT as DEFAULT_SOURCE_SPECTRUM_SPATIAL_ROOT,
+    SourceSpectrumDesignAuditOptions,
+    run_3d_source_spectrum_design_audit,
+)
 from simulation.prototype_3d_central_burst import (
     CentralBurst3DOptions,
     run_3d_central_burst_control,
@@ -1053,6 +1061,28 @@ def build_parser() -> argparse.ArgumentParser:
     precomp_design_parser.add_argument("--baseline-drive-frequency", type=float, default=0.92, help="Baseline drive frequency")
     precomp_design_parser.add_argument("--baseline-target-release-phase", type=float, default=0.5071, help="Baseline 51^3 target release phase")
     precomp_design_parser.add_argument("--baseline-cutoff", type=float, default=17.9425, help="Baseline 51^3 failed-lift cutoff")
+
+    source_spectrum_parser = subparsers.add_parser(
+        "prototype-3d-source-spectrum-design-audit",
+        help="Read-only source-spectrum audit for a possible smooth-envelope 51^3 candidate",
+    )
+    source_spectrum_parser.add_argument("--output-root", default="runs", help="Directory for source-spectrum design audit outputs")
+    source_spectrum_parser.add_argument("--config", dest="config_path", default=DEFAULT_SOURCE_SPECTRUM_CONFIG_PATH, help="Baseline JSON SimulationConfig")
+    source_spectrum_parser.add_argument("--dispersion-root", default=DEFAULT_SOURCE_SPECTRUM_DISPERSION_ROOT, help="Existing release-phase dispersion audit root")
+    source_spectrum_parser.add_argument("--spatial-phase-root", default=DEFAULT_SOURCE_SPECTRUM_SPATIAL_ROOT, help="Existing spatial phase instrumentation root")
+    source_spectrum_parser.add_argument("--precomp-root", default=DEFAULT_SOURCE_SPECTRUM_PRECOMP_ROOT, help="Existing phase-precompensation design root")
+    source_spectrum_parser.add_argument("--physical-duration", type=float, default=96.0, help="Physical duration used for source-spectrum zero padding")
+    source_spectrum_parser.add_argument("--dt-scale", type=float, default=0.25, help="dt scale used by the proof/lift source comparison")
+    source_spectrum_parser.add_argument("--proof-cutoff", type=float, default=17.94, help="41^3 proof-row cutoff")
+    source_spectrum_parser.add_argument("--lift-cutoff", type=float, default=17.9425, help="51^3 failed-lift cutoff")
+    source_spectrum_parser.add_argument("--drive-frequency", type=float, help="Override carrier frequency; defaults to config driver frequency")
+    source_spectrum_parser.add_argument("--phase-cycle-index", type=int, default=16, help="Reference release-phase cycle index")
+    source_spectrum_parser.add_argument("--far-sideband-multiplier", type=float, default=2.0, help="Far-sideband threshold in multiples of 1/cutoff")
+    source_spectrum_parser.add_argument("--min-modal-bandwidth-growth", type=float, default=0.05, help="Minimum observed modal bandwidth growth for support")
+    source_spectrum_parser.add_argument("--min-spatial-coherence-drop", type=float, default=0.10, help="Minimum spatial coherence drop for support")
+    source_spectrum_parser.add_argument("--min-current-far-sideband-fraction", type=float, default=0.01, help="Minimum hard-window far-sideband fraction for support")
+    source_spectrum_parser.add_argument("--min-smoothing-sideband-reduction", type=float, default=0.50, help="Minimum theoretical sideband reduction for support")
+    source_spectrum_parser.add_argument("--max-smooth-bandwidth-ratio", type=float, default=1.05, help="Maximum smooth/hard source bandwidth ratio for support")
 
     central_burst_parser = subparsers.add_parser(
         "prototype-3d-central-burst-control",
@@ -2165,6 +2195,31 @@ def main() -> None:
             )
         )
         _print_3d_spatial_phase_precompensation_design_summary(result)
+        return
+
+    if args.command == "prototype-3d-source-spectrum-design-audit":
+        result = run_3d_source_spectrum_design_audit(
+            options=SourceSpectrumDesignAuditOptions(
+                output_root=args.output_root,
+                config_path=args.config_path,
+                dispersion_root=args.dispersion_root,
+                spatial_phase_root=args.spatial_phase_root,
+                precomp_root=args.precomp_root,
+                physical_duration=args.physical_duration,
+                dt_scale=args.dt_scale,
+                proof_cutoff=args.proof_cutoff,
+                lift_cutoff=args.lift_cutoff,
+                drive_frequency=args.drive_frequency,
+                phase_cycle_index=args.phase_cycle_index,
+                far_sideband_multiplier=args.far_sideband_multiplier,
+                min_modal_bandwidth_growth=args.min_modal_bandwidth_growth,
+                min_spatial_coherence_drop=args.min_spatial_coherence_drop,
+                min_current_far_sideband_fraction=args.min_current_far_sideband_fraction,
+                min_smoothing_sideband_reduction=args.min_smoothing_sideband_reduction,
+                max_smooth_bandwidth_ratio=args.max_smooth_bandwidth_ratio,
+            )
+        )
+        _print_3d_source_spectrum_design_audit_summary(result)
         return
 
     if args.command in {"prototype-3d-central-burst-control", "central-hf-scattering-branch"}:
@@ -3417,6 +3472,55 @@ def _print_3d_spatial_phase_precompensation_design_summary(result: dict[str, Any
         print(f"  - {row.get('correction')}: {row.get('risk_level')} risk, {row.get('reason')}")
     print(f"modes CSV: {result['modes_csv']}")
     print(f"candidate JSON: {result['recommended_candidate_json']}")
+    print(f"rejected CSV: {result['rejected_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_source_spectrum_design_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D source spectrum design audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    summary = result.get("summary_row", {})
+    print("source-spectrum summary:")
+    print(
+        "  - "
+        f"envelope={summary.get('current_source_envelope')} -> {summary.get('proposed_smooth_envelope')}, "
+        f"modal_bw_growth={_format_optional(summary.get('observed_modal_bandwidth_relative_delta'))}, "
+        f"hard_sideband={_format_optional(summary.get('hard_far_sideband_fraction_mean'))}, "
+        f"smooth_sideband={_format_optional(summary.get('smooth_far_sideband_fraction_mean'))}, "
+        f"sideband_reduction={_format_optional(summary.get('smoothing_far_sideband_reduction_fraction'))}, "
+        f"source_bw_ratio={_format_optional(summary.get('smooth_to_hard_source_bandwidth_ratio'))}, "
+        f"candidate_gate={summary.get('candidate_gate')}"
+    )
+    print("source windows:")
+    for row in result.get("source_rows", []):
+        print(
+            f"  - {row.get('role')} / {row.get('envelope_kind')}: "
+            f"phase={_format_optional(row.get('release_phase_cycles'))}, "
+            f"bw={_format_optional(row.get('source_bandwidth'))}, "
+            f"far_sideband={_format_optional(row.get('far_sideband_fraction'))}, "
+            f"scale={_format_optional(row.get('work_proxy_scale'))}"
+        )
+    candidate = result.get("candidate", {})
+    print("candidate:")
+    print(
+        "  - "
+        f"recommended={candidate.get('recommended')}, "
+        f"envelope={candidate.get('envelope')}, "
+        f"cutoff={_format_optional(candidate.get('cutoff'))}, "
+        f"target_phase={_format_optional(candidate.get('target_release_phase'))}, "
+        f"work_policy={candidate.get('total_work_policy')}"
+    )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"spectrum CSV: {result['spectrum_csv']}")
+    print(f"candidate JSON: {result['candidate_json']}")
     print(f"rejected CSV: {result['rejected_csv']}")
     print(f"report: {result['report_path']}")
 

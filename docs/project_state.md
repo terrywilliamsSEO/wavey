@@ -67,6 +67,7 @@ Current interpretation:
 - The read-only resolution postmortem classified as `resolution_lift_blurred_returns_no_predictive_recalibration`: the `51^3` rows still contain late return humps below frozen gates, but candidate and controls share the same count shrinkage, and timing/radial shifts do not isolate one honest recalibrated retry. Do not run the proposed 51^3 retry unless a new mechanism changes that prediction.
 - The spatial phase instrumentation reproduction classified as `spatial_phase_decoherence_supported`: the failed `51^3` candidate loses shell/radial/angular shell phase coherence relative to the `41^3` proof row, while return spread does not grow and radial center shift is small. Treat the scale loss as spatial phase decoherence, not just coherent widening or shell-window misalignment.
 - The read-only spatial phase precompensation design classified as `no_safe_phase_correction`: the allowed global/per-face/cubic/harmonic/release-nudge basis explained almost none of the matched shell-sector phase error (`R2=0.00531`) and per-return phase drift was unstable (`1.04098` rad), so no precompensated `51^3` candidate should run from the current frames.
+- The read-only source-spectrum design audit classified as `source_spectrum_narrowing_candidate_supported`: the current continuous hard-cutoff source has a nontrivial far sideband fraction (`0.049396`), and a same-frequency/same-cutoff-phase/same-work smooth `sin^2` envelope theoretically reduces it to `0.000516`. This supports one future `51^3` smooth-envelope candidate plus two controls, not any broad source-shaping sweep.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -1883,7 +1884,7 @@ Interpretation:
 - This is not currently a source-discretization correction: effective source area changed by only about `5%`, source phase circular strength barely changed, and physical source width stayed fixed.
 - This is not currently a shell-window scaling correction: the shell window stayed physically fixed at radius `5` and width `4`; the different width in cells is expected from finer `dx`.
 - The blocker is spatial phase data. Existing lifecycle artifacts do not store true shell phase frames, so the audit cannot design phase pre-compensation or source apodization safely.
-- Prediction remains `none`: do not run a source-shaped `51^3` candidate yet. The safe next infrastructure step is to instrument future proof/lift runs with spatial shell phase frames and neighboring radial-window energy, then rerun this read-only audit.
+- Prediction from this dispersion audit alone remained `none`: it did not authorize a source-shaped `51^3` candidate. Later spatial-frame and source-spectrum audits narrowed the remaining source-shaped option to temporal smoothing only.
 
 ### Spatial Phase Instrumentation
 
@@ -1933,7 +1934,7 @@ Interpretation:
 - The `51^3` candidate loses spatial phase organization across the shell, radial bins, and angular/spherical sectors.
 - The failure is not explained by a wider coherent packet: return spread is slightly lower at `51^3`.
 - The failure is not primarily shell-window centering: radial centroid shift is only about `0.087`.
-- Any future `51^3` source-shaped candidate needs a mechanism-derived phase-precompensation argument first. Do not run source shaping, new cutoff tuning, `61^3`, central-burst expansion, defects, resonators, active pulses, or shell rings from this result alone.
+- This result alone did not authorize source shaping, new cutoff tuning, `61^3`, central-burst expansion, defects, resonators, active pulses, or shell rings. The later phase-precompensation design rejected spatial precompensation; the later source-spectrum audit supports only temporal smoothing as a narrow separate gate.
 
 ### Spatial Phase Precompensation Design
 
@@ -1977,6 +1978,60 @@ Interpretation:
 - The 51^3 phase loss is real, but the captured error does not collapse into a stable low-dimensional boundary correction.
 - Per-return global phase errors swing too much to justify even a small release-phase nudge.
 - The precompensated `51^3` candidate was intentionally not run because the required `phase_precomp_candidate_supported` gate did not pass.
+
+### Source Spectrum Design Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-source-spectrum-design-audit
+```
+
+Latest summarized run:
+
+- Local report: `runs\source_spectrum_design_audit_3d_20260620_181010\source_spectrum_design_audit_report.md`
+- Summary CSV: `runs\source_spectrum_design_audit_3d_20260620_181010\source_spectrum_summary.csv`
+- Source spectrum CSV: `runs\source_spectrum_design_audit_3d_20260620_181010\source_envelope_spectrum.csv`
+- Candidate JSON: `runs\source_spectrum_design_audit_3d_20260620_181010\smooth_envelope_candidate.json`
+- Rejected options CSV: `runs\source_spectrum_design_audit_3d_20260620_181010\rejected_source_spectrum_options.csv`
+- Classification: `source_spectrum_narrowing_candidate_supported`
+
+Design constraints:
+
+- Read-only analysis only; no physics was run.
+- Uses the existing dispersion audit, spatial phase instrumentation, and failed precompensation design artifacts.
+- Keeps frequency `0.92`, cutoff/release phase, neutral lattice, grid target, source geometry, and total work proxy fixed.
+- Tests only the theoretical spectrum effect of replacing the current continuous hard-cutoff envelope with a same-release smooth `sin^2` envelope.
+- Rejects frequency sweeps, cutoff tuning, increased work, spatial phase precompensation, central burst, resonators, defects, and broad source-shape sweeps.
+
+Source-spectrum result:
+
+| Metric | Hard cutoff | Smooth same-release |
+| --- | ---: | ---: |
+| 41^3 release phase | 0.5048 | 0.5048 |
+| 51^3 release phase | 0.5071 | 0.5071 |
+| Source bandwidth mean | 0.106874 | 0.0321803 |
+| Far sideband fraction mean | 0.0493964 | 0.000516074 |
+| Smooth/hard bandwidth ratio | n/a | 0.301104 |
+| Sideband reduction | n/a | 0.989552 |
+| Work-proxy scale | 1.0 | about 1.633 |
+
+Context folded into the classification:
+
+| Existing evidence | Value |
+| --- | ---: |
+| Same modal band at 41^3/51^3 | true |
+| Observed modal bandwidth growth | 0.290751 |
+| Strict major loss | 2 |
+| Max spatial coherence drop | 0.147229 |
+| Phase precompensation classification | no_safe_phase_correction |
+| Hard source spectrum delta from 41^3 to 51^3 | 0 |
+
+Interpretation:
+
+- The source-spectrum route remains plausible because the current boundary source is a rectangular on/off drive in the 3D branch, and the sideband reduction from a same-release smooth envelope is large.
+- This is not proof that a smooth envelope will restore strict 9/8. The source spectrum itself is effectively unchanged between the 41^3 proof and 51^3 lift, so the hypothesis is that 51^3 resolves or suffers from the same sideband/modal spread more strongly.
+- If this is tested, run exactly one `51^3` smooth-envelope candidate plus two controls: original hard cutoff at the same phase and a wrong/over-smoothed control. Do not tune cutoff, frequency, spatial phase, work, source geometry, grid size, or medium properties.
 
 ### Central HF Scattering Branch
 
@@ -2026,14 +2081,14 @@ Interpretation:
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, and precompensation design are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, precompensation design, and source-spectrum design audit are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat the frozen proof-pack setup as canonical at `41^3`: neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Treat the failed `51^3` lift as a spatial phase decoherence problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design, so do not run a source-shaped or precompensated physics candidate from the current evidence.
+- Treat the failed `51^3` lift as a spatial phase decoherence problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design. The only remaining supported source-shaped physics test is a same-release smooth-envelope `51^3` candidate plus two controls, and only if explicitly requested.
 - Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, the half-dt strict-clean window as shifted upward to `17.9375-17.945`, and the quarter-dt proof span as `17.94-17.945` with phase `0.5048-0.5094`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
@@ -2044,7 +2099,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny. The proof-motivated `51^3` scale check failed strict gates, and the postmortem did not recommend a recalibrated retry, so do not escalate to `61^3` without a new explicit mechanism.
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
-- The dispersion audit supports `scalable_blur_model_supported`, but it is not yet actionable. True spatial shell phase frames were captured later, and the first low-dimensional precompensation design classified as `no_safe_phase_correction`.
+- The source-spectrum design audit supports `source_spectrum_narrowing_candidate_supported`: if the next physics step is run, keep it to one smooth-envelope `51^3` candidate plus two controls with frequency, release phase, work, lattice, sponge, source geometry, shell window, and grid fixed.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. The release-phase-recalibrated `51^3` candidate plus two controls has already been run and failed strict gates; the postmortem says no single retry is predicted. Any future scale check should be explicitly justified, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.
