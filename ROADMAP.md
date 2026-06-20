@@ -6,7 +6,7 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, the tighter cutoff/polarity release-phase map found a supported timing island, and ultra-fine passive refinement found a narrow phase-lock needle rather than a broad timing island.
 
-Current next task: do not tune or expand after the blind confirmation. In `runs\release_phase_blind_confirmation_3d_20260619_210435`, the five pre-registered cutoffs classified as `release_phase_blind_confirmed`: the two predicted-strong rows at cutoffs `17.932885` and `17.937885` preserved default 11/10 and strict clean 9/8, the lower-edge row `17.9225` and weak control `17.915` fell to strict 8/7, and the upper edge `17.965` preserved strict 9/8 but not default 11/10. This supports the phase-rule interpretation while preserving the caution that 11/10 is a narrow, threshold-sensitive pocket. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not expand resonator variants, add traps, rotation, medium shaping, defects, grid changes, frequency combinations, active pulses, or broad sweeps without a new mechanism-specific reason.
+Current next task: do not tune or expand after the blind and numerical validations. In `runs\release_phase_blind_confirmation_3d_20260619_210435`, the five pre-registered cutoffs classified as `release_phase_blind_confirmed`: the two predicted-strong rows at cutoffs `17.932885` and `17.937885` preserved default 11/10 and strict clean 9/8, the lower-edge row `17.9225` and weak control `17.915` fell to strict 8/7, and the upper edge `17.965` preserved strict 9/8 but not default 11/10. The follow-up half-dt validation in `runs\release_phase_numerical_validation_3d_20260619_214240` classified as `release_phase_dt_sensitive`: the `17.937885` strong row still preserved strict 9/8 at half dt, but `17.932885` dropped to strict 8/7 and default 9/8. The phase rule is supported as a baseline-dt/blind-confirmed predictor, but it is not numerically settled as a two-row half-dt invariant. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not expand resonator variants, add traps, rotation, medium shaping, defects, grid changes beyond explicit numerical validation, frequency combinations, active pulses, or broad sweeps without a new mechanism-specific reason.
 
 ## Status
 
@@ -235,10 +235,15 @@ Current next task: do not tune or expand after the blind confirmation. In `runs\
 - Ran `python main.py prototype-3d-release-phase-blind-confirmation --config configs\long_validation_peak_0_92.json --cutoffs 17.932885 17.937885 17.9225 17.965 17.915` in `runs\release_phase_blind_confirmation_3d_20260619_210435`; classification was `release_phase_blind_confirmed`.
 - The predicted-strong rows preserved default 11/10 and strict clean 9/8: cutoff `17.932885` at phase `0.498254` and cutoff `17.937885` at phase `0.502854`. Retention was `0.316025` and `0.314831`, outer/shell was `0.636520` and `0.632958`, and both had no exit/global outer false.
 - The lower edge `17.9225` at phase `0.4887` and weak control `17.915` at phase `0.4818` fell to default 9/8 and strict 8/7. The upper edge `17.965` at phase `0.5278` preserved strict 9/8 but only default 10/9, matching the prediction that edge rows may remain strict-clean without being default 11/10.
+- Added `prototype-3d-release-phase-numerical-validation`, a baseline/half-dt validation command for the pre-registered blind-confirmation cutoffs. Quarter dt is available only as the explicit `--include-quarter-dt` option and was not run in this pass.
+- Ran `python main.py prototype-3d-release-phase-numerical-validation --config configs\long_validation_peak_0_92.json --cutoffs 17.932885 17.937885 17.9225 17.915` in `runs\release_phase_numerical_validation_3d_20260619_214240`; classification was `release_phase_dt_sensitive`.
+- Baseline rows reproduced the blind split: both strong rows reached default 11/10 and strict 9/8, while `17.9225` and `17.915` stayed at default 9/8 and strict 8/7.
+- At half dt, cutoff `17.937885` still preserved strict 9/8 with default 10/9, but cutoff `17.932885` dropped to default 9/8 and strict 8/7. Low-side controls stayed strict 8/7. No row exited or triggered a global outer flag, and outer/shell stayed below 1.0.
+- Interpretation: the release-phase rule remains a real baseline-dt/blind-confirmed timing predictor, but its lower half-cycle strong point is numerically sensitive. Do not claim the two-strong-row phase pocket is half-dt invariant.
 
 ### In Progress
 
-- None. The blind confirmation is complete; do not tune the five-cutoff result.
+- None. The blind and numerical validations are complete; do not tune the pre-registered cutoff result.
 
 ### Next
 
@@ -248,7 +253,7 @@ Current next task: do not tune or expand after the blind confirmation. In `runs\
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
 - Treat `sign_flip_cutoff_minus_0p07` as the current best passive row, but describe the 17.93-17.94 pocket as a narrow phase-lock needle, not a broad island.
 - Use the conservative 9/8 threshold-robust result as the floor for the cluster. The default 11/10 count can guide local passive work, but do not present it as threshold-invariant.
-- The five-cutoff blind confirmation is complete; do not add nearby cutoff tuning based on the result.
+- The five-cutoff blind confirmation and four-cutoff half-dt validation are complete; do not add nearby cutoff tuning based on the result. Treat the half-cycle rule as dt-sensitive until a mechanism-specific numerical check explains why `17.932885` drops at half dt.
 - Rank rows by major shell-window peak count, refocus count, no shell exit, retention, outer/shell below 1.0, decay closest to zero, global outer false, and phase at cutoff.
 - Do not treat frequency 0.94 as additive with cutoff 18.
 - Do not move to trapping, rotation, medium shaping, defects, grid changes, or active reinjection before the passive timing island is mapped more tightly.
@@ -518,3 +523,5 @@ Possible work:
 - 2026-06-19: The predictor recommended five blind-confirmation cutoffs only: strong `17.932885` and `17.937885`, boundary/edge `17.9225` and `17.965`, and weak control `17.915`.
 - 2026-06-19: Added and ran `prototype-3d-release-phase-blind-confirmation` in `runs\release_phase_blind_confirmation_3d_20260619_210435`; classification was `release_phase_blind_confirmed`.
 - 2026-06-19: Blind result: predicted strong cutoffs `17.932885` and `17.937885` preserved default 11/10 and strict clean 9/8; lower edge `17.9225` and weak control `17.915` dropped to strict 8/7; upper edge `17.965` preserved strict 9/8 but only default 10/9.
+- 2026-06-19: Added and ran `prototype-3d-release-phase-numerical-validation` in `runs\release_phase_numerical_validation_3d_20260619_214240`; classification was `release_phase_dt_sensitive`.
+- 2026-06-19: Numerical validation result: baseline dt reproduced the blind split, but half dt kept only cutoff `17.937885` strict-clean at 9/8. Cutoff `17.932885` dropped to default 9/8 and strict 8/7, while low-side controls stayed 8/7. Keep the release-phase rule as blind-confirmed but not half-dt invariant.

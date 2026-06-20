@@ -61,7 +61,7 @@ Current interpretation:
 - The reduced-work phase-matched second-pulse check also classified as `second_pulse_contaminated_or_inconclusive`: 0.1x-0.5x pulses and shorter 1.0-duration pulses still reduced refocus count, worsened decay, pushed outer/shell above `1.0`, and had negative `added_work_efficiency`.
 - The travel-time-adjusted first-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: empirical boundary-to-shell travel time was `9.44`, so the first-refocus target launch moved to `t=26.4`, but all active rows still had fewer refocus peaks, worse decay, outer/shell above `1.0`, and negative `added_work_efficiency`.
 - The travel-time-adjusted second-refocus micro-map also classified as `second_pulse_contaminated_or_inconclusive`: the second-refocus target launch moved to `t=31.68`, but active rows still failed strict clean criteria. Best ranked active row reached retention `0.491`, but only six/five peaks, outer/shell `1.254`, decay `-0.0455`, and negative `added_work_efficiency`.
-- Active second pulses are now shelved until a new mechanism justifies revisiting them; the passive release-phase rule is now blind-confirmed around the phase-0.50 pocket with frequency fixed at `0.92`.
+- Active second pulses are now shelved until a new mechanism justifies revisiting them; the passive release-phase rule is blind-confirmed around the phase-0.50 pocket with frequency fixed at `0.92`, but the half-dt numerical validation classified the two-row strong pocket as `release_phase_dt_sensitive`.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -73,7 +73,7 @@ Current interpretation:
 - The predictor recommended only a tiny blind confirmation: predicted strong cutoffs `17.932885` and `17.937885`, boundary/edge cutoffs `17.9225` and `17.965`, and weak negative control `17.915`.
 - The blind confirmation classified as `release_phase_blind_confirmed`: predicted-strong cutoffs `17.932885` and `17.937885` preserved default 11/10 and strict clean 9/8, lower-edge `17.9225` and weak-control `17.915` fell to strict 8/7, and upper-edge `17.965` stayed strict 9/8 but only default 10/9.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation is complete; do not tune around the five cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
+- Do not run broad long sweeps or broad 3D sweeps. The blind confirmation and half-dt numerical validation are complete; do not tune around the pre-registered cutoffs or expand the resonator layer, traps, rotation, medium shaping, defects, grid changes beyond explicit numerical validation, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
 
 ## Latest Evidence
 
@@ -1570,16 +1570,52 @@ Interpretation:
 - The lower edge also failed strict 9/8, while the upper edge stayed strict 9/8 without default 11/10. This sharpens the picture: the default 11/10 pocket is narrower than the strict 9/8 band and appears centered near phase 0.50 cycles.
 - Do not tune around this result. Treat it as confirmation of the narrow release-phase phase-lock rule, not permission for broad cutoff sweeps.
 
+### Release-Phase Numerical Validation
+
+Command:
+
+```powershell
+python main.py prototype-3d-release-phase-numerical-validation --config configs\long_validation_peak_0_92.json --cutoffs 17.932885 17.937885 17.9225 17.915
+```
+
+Latest summarized run:
+
+- Local report: `runs\release_phase_numerical_validation_3d_20260619_214240\release_phase_numerical_validation_report.md`
+- Summary CSV: `runs\release_phase_numerical_validation_3d_20260619_214240\release_phase_numerical_validation_summary.csv`
+- Comparison CSV: `runs\release_phase_numerical_validation_3d_20260619_214240\release_phase_numerical_validation_comparison.csv`
+- Classification: `release_phase_dt_sensitive`
+- Setup: baseline dt and half dt only, `41^3`, neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer
+
+Numerical-validation results:
+
+| dt | Role | Cutoff | Phase | Default Count | Strict 0.35 | Strict 0.40 | Retention | Outer/Shell | Decay |
+| --- | --- | ---: | ---: | --- | --- | --- | ---: | ---: | ---: |
+| baseline | predicted strong | 17.932885 | 0.498254 | 11/10 | 9/8 | 9/8 | 0.316025 | 0.636520 | -0.0238894 |
+| baseline | predicted strong | 17.937885 | 0.502854 | 11/10 | 9/8 | 9/8 | 0.314831 | 0.632958 | -0.0239385 |
+| baseline | low edge | 17.9225 | 0.4887 | 9/8 | 8/7 | 8/7 | 0.318327 | 0.643986 | -0.0237978 |
+| baseline | weak control | 17.915 | 0.4818 | 9/8 | 8/7 | 8/7 | 0.319825 | 0.649397 | -0.0237408 |
+| half dt | predicted strong | 17.932885 | 0.498254 | 9/8 | 8/7 | 8/7 | 0.316014 | 0.637538 | -0.0238887 |
+| half dt | predicted strong | 17.937885 | 0.502854 | 10/9 | 9/8 | 9/8 | 0.314784 | 0.633998 | -0.0239382 |
+| half dt | low edge | 17.9225 | 0.4887 | 9/8 | 8/7 | 8/7 | 0.318383 | 0.644932 | -0.0237966 |
+| half dt | weak control | 17.915 | 0.4818 | 9/8 | 8/7 | 8/7 | 0.319927 | 0.650275 | -0.0237394 |
+
+Interpretation:
+
+- Baseline dt reproduced the blind-confirmed phase split.
+- Half dt did not preserve the full two-row strong pocket: `17.937885` remained strict-clean at 9/8, but `17.932885` dropped to the low-control 8/7 family.
+- The rule remains a useful phase predictor at baseline dt, but the lower half-cycle strong point is numerically sensitive. Do not claim the 17.932885/17.937885 pair is half-dt invariant.
+- Quarter dt was not run by default because baseline plus half dt already exposed sensitivity; use `--include-quarter-dt` only for an explicitly requested numerical follow-up.
+
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation is complete, so do not tune nearby cutoffs based on the result:
+Run no new physics unless explicitly requested. The blind confirmation and half-dt numerical validation are complete, so do not tune nearby cutoffs based on the result:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat `sign_flip_cutoff_minus_0p07`, `sign_flip_cutoff_minus_0p065`, and `sign_flip_cutoff_minus_0p06` as the current narrow phase-lock needle candidates.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Treat the confirmed strong pocket as centered near phase 0.50 cycles. The lower edge/weak side fails strict 9/8 by phase 0.4887/0.4818, while the upper edge at 0.5278 still preserves strict 9/8 without default 11/10.
+- Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt. The half-dt validation preserved strict 9/8 at `17.937885` but not `17.932885`, so the lower side of the pocket is dt-sensitive.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
 - Do not expand passive boundary-inner-edge resonator variants yet; the first passive layer pass was energy-accounted but reduced strict counts.
