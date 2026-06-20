@@ -76,6 +76,10 @@ from simulation.prototype_3d_refocusing_map import (
     RefocusingMap3DOptions,
     run_3d_refocusing_map_control,
 )
+from simulation.prototype_3d_resonator_layer import (
+    ResonatorLayer3DOptions,
+    run_3d_resonator_layer_control,
+)
 from simulation.prototype_3d_second_pulse import (
     SecondPulse3DOptions,
     run_3d_second_pulse_control,
@@ -688,6 +692,33 @@ def build_parser() -> argparse.ArgumentParser:
     cutoff_phase_parser.add_argument("--strict-retention-target", type=float, default=0.30, help="Strict retention target for timing-island evidence")
     cutoff_phase_parser.add_argument("--strict-outer-shell-target", type=float, default=1.0, help="Strict outer/shell target for timing-island evidence")
     cutoff_phase_parser.add_argument("--timing-cluster-phase-tolerance-cycles", type=float, default=0.12, help="Max circular phase span for a timing-island cluster")
+
+    resonator_layer_parser = subparsers.add_parser(
+        "prototype-3d-resonator-layer-control",
+        help="Run the narrow passive boundary-inner-edge resonator layer test around the 3D phase-lock cluster",
+    )
+    resonator_layer_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for the 2D baseline candidate")
+    resonator_layer_parser.add_argument("--output-root", default="runs", help="Directory for 3D resonator-layer outputs")
+    resonator_layer_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; this control is fixed at 41^3")
+    resonator_layer_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define the fixed physical source-layer width")
+    resonator_layer_parser.add_argument("--physical-duration", type=float, default=96.0, help="Extended physical end time while preserving each tested cutoff")
+    resonator_layer_parser.add_argument("--sample-every", type=int, default=10, help="Sample interval passed to shared calibration options")
+    resonator_layer_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense sample interval for lifecycle and energy diagnostics")
+    resonator_layer_parser.add_argument("--radial-bins", type=int, default=40, help="Number of radial bins for packet radius/width tracking")
+    resonator_layer_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Inner radius of the measured shell window")
+    resonator_layer_parser.add_argument("--shell-window-width", type=float, help="Physical width for the measured shell window; defaults to near-shell-width-dx * dx")
+    resonator_layer_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Default shell-window width in dx units")
+    resonator_layer_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    resonator_layer_parser.add_argument("--fixed-drive-frequency", type=float, default=0.92, help="Fixed sign-flip cubic drive frequency for the resonator test")
+    resonator_layer_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first meaningful shell arrival")
+    resonator_layer_parser.add_argument("--exit-threshold-fraction", type=float, default=0.12, help="Fraction of shell peak used to mark shell-window exit after the peak")
+    resonator_layer_parser.add_argument("--exit-hold-samples", type=int, default=10, help="Consecutive below-threshold samples required to mark shell-window exit")
+    resonator_layer_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Default peak threshold; robust report also checks 0.25, 0.35, and 0.40")
+    resonator_layer_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Fraction of first major peak required for later refocus peaks")
+    resonator_layer_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between major lifecycle peaks")
+    resonator_layer_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
+    resonator_layer_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
+    resonator_layer_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
 
     second_pulse_parser = subparsers.add_parser(
         "prototype-3d-second-pulse-control",
@@ -1432,6 +1463,37 @@ def main() -> None:
             ),
         )
         _print_3d_cutoff_phase_map_summary(result)
+        return
+
+    if args.command == "prototype-3d-resonator-layer-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_resonator_layer_control(
+            config,
+            options=ResonatorLayer3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                physical_duration=args.physical_duration,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                fixed_drive_frequency=args.fixed_drive_frequency,
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                min_peak_separation_time=args.min_peak_separation_time,
+                min_refocus_count=args.min_refocus_count,
+                min_width_growth_fraction=args.min_width_growth_fraction,
+                min_decay_rate_magnitude=args.min_decay_rate_magnitude,
+            ),
+        )
+        _print_3d_resonator_layer_summary(result)
         return
 
     if args.command == "prototype-3d-second-pulse-control":
@@ -2287,6 +2349,33 @@ def _print_3d_cutoff_phase_map_summary(result: dict[str, Any]) -> None:
     print(f"summary CSV: {result['summary_csv']}")
     print(f"ranked CSV: {result['ranked_csv']}")
     print(f"timeseries CSV: {result['timeseries_csv']}")
+    print(f"events CSV: {result['events_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_resonator_layer_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D passive resonator layer control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("top conservative rows:")
+    for row in result.get("threshold_robust_scores", [])[:8]:
+        print(
+            f"  - {row['variant']}: "
+            f"resonator={row.get('resonator_variant')}, "
+            f"cutoff={_format_optional(row.get('drive_cutoff_time'))}, "
+            f"strict={row.get('min_major_peaks_across_thresholds')}/{row.get('min_refocus_peaks_across_thresholds')}, "
+            f"default={row.get('default_major_peaks')}/{row.get('default_refocus_peaks')}, "
+            f"ret={_format_optional(row.get('retention_median'))}, "
+            f"outer/shell={_format_optional(row.get('outer_shell_median'))}, "
+            f"score={_format_optional(row.get('conservative_score'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"threshold robust CSV: {result['threshold_robust_csv']}")
+    print(f"energy timeseries CSV: {result['energy_timeseries_csv']}")
+    print(f"coupling exchange CSV: {result['coupling_exchange_csv']}")
     print(f"events CSV: {result['events_csv']}")
     print(f"report: {result['report_path']}")
 

@@ -356,6 +356,14 @@ python main.py prototype-3d-cutoff-phase-map-control --config configs\long_valid
 
 This is sign-flip-only and maps only the narrow phase-lock cluster plus nearby controls at cutoffs `17.920`, `17.925`, `17.930`, `17.935`, `17.940`, `17.945`, and `17.950`. The report adds a `threshold-robust refocusing score` section that evaluates peak thresholds `0.25`, `0.30`, `0.35`, and `0.40`, ranks rows by conservative score first and default-threshold score second, and includes threshold-free shell-energy area, tail area after `t=50`, autocorrelation, spectral concentration, and return timing regularity.
 
+Run the passive 3D resonator-layer control with:
+
+```powershell
+python main.py prototype-3d-resonator-layer-control --config configs\long_validation_peak_0_92.json
+```
+
+This is a narrow mechanism test, not a sweep. It keeps the same `41^3` neutral-lattice, stronger-sponge, inner-sponge-edge sign-flip cubic source, frequency `0.92`, matched-work, radius-5 shell-window setup fixed, maps only cutoffs `17.920` through `17.950`, and compares the no-resonator reference, a weak passive boundary-inner-edge resonator layer tuned near/slightly below/slightly above the drive frequency, a moderate-cubic passive resonator layer, a zero-coupling control, and a high-damping control. The resonator is passive: no external drive is applied to its auxiliary oscillator and the report records post-cutoff external work, resonator energy, lattice energy, coupling exchange, and energy-accounting error.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -784,6 +792,18 @@ When `prototype-3d-cutoff-phase-map-control` is used, the control folder include
 - one lifecycle run folder per cutoff/phase/polarity timing variant
 
 The cutoff-phase report includes a `release phase island stability` section when stability checks are available. It also reports `phase-lock needle width`, an event-threshold sensitivity audit for the best row and nearest neighbors, and a `threshold-robust refocusing score` section for conservative cross-threshold ranking.
+
+When `prototype-3d-resonator-layer-control` is used, the control folder includes:
+
+- `resonator_layer_report.md`
+- `resonator_layer_summary.csv`
+- `resonator_layer_threshold_robust_score.csv`
+- `resonator_energy_timeseries.csv`
+- `coupling_exchange_timeseries.csv`
+- `resonator_layer_events.csv`
+- `resonator_layer_summary.json`
+
+The resonator-layer report includes `threshold-robust refocusing score`, `phase-lock cluster width`, `resonator energy accounting`, `contamination audit`, and `best conservative row` sections. Current project state: the first passive layer run classified as `no_resonator_still_wins`; no-resonator and zero-coupling preserved the strict six-cutoff 9/8 cluster, while coupled resonator rows dropped to strict 8/7 despite zero post-cutoff external work and passing energy accounting.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 

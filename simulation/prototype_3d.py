@@ -80,6 +80,12 @@ class Prototype3DConfig:
     second_pulse_duration: float = 0.0
     second_pulse_amplitude_scale: float = 1.0
     second_pulse_phase_offset: float = 0.0
+    resonator_enabled: bool = False
+    resonator_geometry: str = "none"
+    resonator_k1: float = 0.0
+    resonator_k3: float = 0.0
+    resonator_damping: float = 0.0
+    resonator_coupling: float = 0.0
 
     @property
     def dx(self) -> float:
@@ -123,6 +129,12 @@ class Lattice3D:
         self.coupling_multiplier[self.defect_mask] *= config.defect_coupling_multiplier
         if config.defect_nonlinear_strength is not None:
             self.nonlinear_strength[self.defect_mask] = config.defect_nonlinear_strength
+        self.resonator_mask = self._resonator_mask()
+        self.resonator_q = np.zeros_like(self.u)
+        self.resonator_p = np.zeros_like(self.u)
+        self.last_resonator_coupling_power_lattice = 0.0
+        self.last_resonator_coupling_power_resonator = 0.0
+        self.last_resonator_damping_power = 0.0
 
     def external_force(self, time: float) -> np.ndarray:
         return self.source.force(time)
@@ -130,6 +142,17 @@ class Lattice3D:
     def step(self, time: float, dt: float) -> None:
         lap = _laplacian(self.u, self.config.dx)
         force = self.external_force(time)
+        resonator_active = bool(np.any(self.resonator_mask))
+        if resonator_active:
+            mask = self.resonator_mask
+            q_before = self.resonator_q[mask].copy()
+            p_before = self.resonator_p[mask].copy()
+            u_before = self.u[mask].copy()
+            v_before = self.v[mask].copy()
+            gamma = self.config.resonator_coupling
+            lattice_resonator_force = gamma * (q_before - u_before)
+        else:
+            lattice_resonator_force = np.asarray([], dtype=float)
         acc = (
             self.config.coupling_strength * self.coupling_multiplier * lap
             - self.stiffness * self.u
@@ -137,8 +160,31 @@ class Lattice3D:
             - self.damping * self.v
             + force
         )
+        if resonator_active:
+            acc[self.resonator_mask] += lattice_resonator_force
         self.v += dt * acc
         self.u += dt * self.v
+        if resonator_active:
+            mask = self.resonator_mask
+            resonator_force = (
+                -self.config.resonator_k1 * q_before
+                - self.config.resonator_k3 * q_before**3
+                - self.config.resonator_damping * p_before
+                - lattice_resonator_force
+            )
+            self.resonator_p[mask] += dt * resonator_force
+            self.resonator_q[mask] += dt * self.resonator_p[mask]
+            v_mid = 0.5 * (v_before + self.v[mask])
+            p_mid = 0.5 * (p_before + self.resonator_p[mask])
+            self.last_resonator_coupling_power_lattice = float(np.sum(lattice_resonator_force * v_mid) * self.config.cell_volume)
+            self.last_resonator_coupling_power_resonator = float(np.sum((-lattice_resonator_force) * p_mid) * self.config.cell_volume)
+            self.last_resonator_damping_power = float(
+                np.sum(self.config.resonator_damping * p_mid**2) * self.config.cell_volume
+            )
+        else:
+            self.last_resonator_coupling_power_lattice = 0.0
+            self.last_resonator_coupling_power_resonator = 0.0
+            self.last_resonator_damping_power = 0.0
 
     def energy_density(self) -> np.ndarray:
         neighbor_sum = (
@@ -155,6 +201,42 @@ class Lattice3D:
             + 0.25 * self.nonlinear_strength * self.u**4
             + 0.25 * self.config.coupling_strength * neighbor_sum
         ) * self.config.cell_volume
+
+    def resonator_energy_density(self) -> np.ndarray:
+        out = np.zeros_like(self.u)
+        if not np.any(self.resonator_mask):
+            return out
+        mask = self.resonator_mask
+        q = self.resonator_q[mask]
+        p = self.resonator_p[mask]
+        out[mask] = (
+            0.5 * p**2
+            + 0.5 * self.config.resonator_k1 * q**2
+            + 0.25 * self.config.resonator_k3 * q**4
+        ) * self.config.cell_volume
+        return out
+
+    def resonator_coupling_energy_density(self) -> np.ndarray:
+        out = np.zeros_like(self.u)
+        if not np.any(self.resonator_mask):
+            return out
+        mask = self.resonator_mask
+        delta = self.resonator_q[mask] - self.u[mask]
+        out[mask] = 0.5 * self.config.resonator_coupling * delta**2 * self.config.cell_volume
+        return out
+
+    def resonator_energy(self) -> float:
+        return float(np.sum(self.resonator_energy_density()))
+
+    def resonator_coupling_energy(self) -> float:
+        return float(np.sum(self.resonator_coupling_energy_density()))
+
+    def _resonator_mask(self) -> np.ndarray:
+        if not self.config.resonator_enabled:
+            return np.zeros_like(self.u, dtype=bool)
+        if self.config.resonator_geometry != "boundary_inner_edge":
+            raise ValueError(f"Unsupported 3D resonator geometry: {self.config.resonator_geometry}")
+        return self.source.mask.copy()
 
 
 class Source3D:

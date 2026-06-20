@@ -6,7 +6,7 @@ This file is the project roadmap and should be updated whenever we complete a me
 
 The 3D branch is now structured boundary-interference transport and refocusing, not a defect well or confirmed standing-shell program. Source timing/frequency can improve repeated shell-window returns, the cutoff-frequency map showed the knobs are not simply additive, the tighter cutoff/polarity release-phase map found a supported timing island, and ultra-fine passive refinement found a narrow phase-lock needle rather than a broad timing island.
 
-Recommended next task: active second-pulse controls remain shelved. The threshold-robust confirmation in `runs\cutoff_phase_map_3d_20260619_162240` confirmed the phase-lock cluster is real enough to continue because neighboring cutoffs still reproduce the default 11/10 count, but the exact peak/refocus count is threshold-sensitive. Conservative claim: the cluster preserves or improves the clean 9/8 refocusing family under stricter detection, not that 11/10 is threshold-invariant. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not add traps, rotation, medium shaping, defects, grid changes, frequency combinations, active pulses, or broad sweeps yet.
+Recommended next task: active second-pulse controls remain shelved, and the first passive boundary-inner-edge resonator-layer mechanism test did not help. In `runs\resonator_layer_3d_20260619_175949`, the no-resonator reference and zero-coupling control preserved the strict six-cutoff 9/8 cluster, while all coupled resonator variants dropped to strict 8/7 and failed to widen or stabilize the phase-lock cluster. Keep `41^3`, neutral lattice, stronger sponge, inner-sponge-edge source, matched primary work per physical source area, frequency `0.92`, and radius-5 shell metrics fixed. Do not expand resonator variants, add traps, rotation, medium shaping, defects, grid changes, frequency combinations, active pulses, or broad sweeps without a new mechanism-specific reason.
 
 ## Status
 
@@ -221,6 +221,12 @@ Recommended next task: active second-pulse controls remain shelved. The threshol
 - The top three default rows, cutoffs 17.93, 17.935, and 17.94, still produced 11/10 at peak threshold 0.30 and 12/11 at threshold 0.25, but their strict-threshold minima were 9/8 at thresholds 0.35 and 0.40.
 - Conservative-score ranking kept the same narrow top cluster: `sign_flip_cutoff_minus_0p07`, `sign_flip_cutoff_minus_0p065`, then `sign_flip_cutoff_minus_0p06`. Each had min 9 major peaks, min 8 refocus peaks, no exit, global outer false, retention about 0.314-0.317, outer/shell about 0.631-0.639, shell-energy autocorrelation about 0.9995, spectral concentration about 0.741-0.745, and return timing regularity about 0.847-0.851.
 - Conservative interpretation: the cluster preserves or improves the clean 9/8 refocusing family under stricter detection. Do not claim that 11/10 is threshold-invariant.
+- Added passive resonator support to the 3D lattice plus `prototype-3d-resonator-layer-control`, a fixed 7-cutoff by 7-variant mechanism test for a boundary-inner-edge auxiliary oscillator layer.
+- Ran `python main.py prototype-3d-resonator-layer-control --config configs\long_validation_peak_0_92.json` in `runs\resonator_layer_3d_20260619_175949`; classification was `no_resonator_still_wins`.
+- The no-resonator and zero-coupling rows tied for the best conservative score. Best row: `no_resonator_reference_cutoff_17p930`, cutoff `17.93`, release phase `0.4956`, default 11/10, strict 9/8, retention `0.316689`, outer/shell `0.638587`, decay `-0.0238625`, no exit, and global outer false.
+- The no-resonator reference and zero-coupling control each preserved strict 9/8 across six cutoffs: `17.925`, `17.93`, `17.935`, `17.94`, `17.945`, and `17.95`.
+- All coupled resonator variants, including tuned, slightly below, slightly above, moderate cubic, and high damping, dropped to strict 8/7 across the narrow cluster. Their default counts reached at most 10/9, with retention near `0.289-0.296` and decay near `-0.0262` to `-0.0264`.
+- Energy accounting passed for all rows, and post-cutoff external work was zero, so the result is a passive negative mechanism test rather than active contamination. Do not expand resonator variants unless a new mechanism gives a specific reason.
 
 ### In Progress
 
@@ -230,6 +236,7 @@ Recommended next task: active second-pulse controls remain shelved. The threshol
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
 - Do not keep repeating active second-pulse controls; first-refocus and second-refocus travel-time adjustment did not fix the active-pulse disruption.
+- Do not expand the passive boundary-inner-edge resonator layer yet; the first weak-coupling tuned/below/above/cubic/high-damping pass stored/exchanged energy passively but degraded strict counts.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, grid size 41^3, and the same radius-5 shell window.
 - Treat `sign_flip_cutoff_minus_0p07` as the current best passive row, but describe the 17.93-17.94 pocket as a narrow phase-lock needle, not a broad island.
 - Use the conservative 9/8 threshold-robust result as the floor for the cluster. The default 11/10 count can guide local passive work, but do not present it as threshold-invariant.

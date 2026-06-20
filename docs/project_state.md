@@ -68,8 +68,9 @@ Current interpretation:
 - The event-threshold sensitivity audit classified the best row as `best_count_threshold_sensitive`: the same best row recounts as 12/11, 11/10, or 9/8 as the major-peak threshold moves from `0.25` to `0.30` to `0.35`. Treat 11/10 as detector-sensitive until event traces or threshold logic are hardened.
 - The threshold-robust confirmation classified the same narrow cluster as real enough to continue, but not as threshold-invariant 11/10. Cutoffs `17.93`, `17.935`, and `17.94` preserve a conservative 9/8 count under stricter thresholds `0.35` and `0.40`, while staying no-exit and global-outer false.
 - Conservative claim: the phase-lock cluster preserves or improves the clean 9/8 refocusing family under stricter detection, not that 11/10 is threshold-invariant.
+- The first passive boundary-inner-edge resonator-layer mechanism test classified as `no_resonator_still_wins`. The no-resonator reference and zero-coupling control preserved the six-cutoff strict 9/8 cluster, but all coupled resonator variants dropped to strict 8/7 despite clean no-exit/global-outer flags and zero post-cutoff external work.
 - Do not call this exotic physics.
-- Do not run broad long sweeps or broad 3D sweeps. The next step remains passive narrow-needle interpretation/engineering under the conservative 9/8 floor, not traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second-pulse tests.
+- Do not run broad long sweeps or broad 3D sweeps. The next step remains passive narrow-needle interpretation under the conservative 9/8 floor; do not expand the resonator layer, traps, rotation, medium shaping, defects, grid changes, frequency combinations, or active second-pulse tests without a new mechanism-specific reason.
 
 ## Latest Evidence
 
@@ -1460,9 +1461,42 @@ Interpretation:
 - Conservative claim: the cluster preserves or improves the clean 9/8 refocusing family under stricter detection, not that 11/10 is threshold-invariant.
 - The threshold-free shell-energy areas, tail areas, autocorrelation, spectral concentration, and timing regularity stay tightly clustered across the top 17.93-17.94 rows, supporting a real narrow release-phase packet/refocusing structure behind the threshold-sensitive event count.
 
+### Passive Resonator Layer Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-resonator-layer-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\resonator_layer_3d_20260619_175949\resonator_layer_report.md`
+- Summary CSV: `runs\resonator_layer_3d_20260619_175949\resonator_layer_summary.csv`
+- Threshold-robust score CSV: `runs\resonator_layer_3d_20260619_175949\resonator_layer_threshold_robust_score.csv`
+- Resonator energy timeseries CSV: `runs\resonator_layer_3d_20260619_175949\resonator_energy_timeseries.csv`
+- Coupling exchange timeseries CSV: `runs\resonator_layer_3d_20260619_175949\coupling_exchange_timeseries.csv`
+- Classification: `no_resonator_still_wins`
+- Setup: `41^3`, neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, cutoffs `17.920` through `17.950`
+
+Highlights:
+
+| Group | Strict 9/8 Cutoffs | Best Default Count | Best Strict Count | Best Retention | Best Outer/Shell | Best Decay |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+| no_resonator_reference | 17.925, 17.930, 17.935, 17.940, 17.945, 17.950 | 11/10 | 9/8 | 0.316689 | 0.638587 | -0.0238625 |
+| zero_coupling_control | 17.925, 17.930, 17.935, 17.940, 17.945, 17.950 | 11/10 | 9/8 | 0.316689 | 0.638587 | -0.0238625 |
+| coupled resonator layer variants | none | 10/9 | 8/7 | 0.291557 | 0.658466-0.659886 | about -0.026316 |
+
+Interpretation:
+
+- The passive resonator layer did not widen or stabilize the phase-lock cluster. The coupled tuned, slightly-below, slightly-above, moderate-cubic, and high-damping variants all reduced the conservative cross-threshold count from 9/8 to 8/7.
+- Energy accounting passed for all rows, and post-cutoff external work was exactly zero in the summaries. This is a passive negative mechanism test, not an active-work contamination result.
+- The no-resonator reference remains the current best conservative row: `no_resonator_reference_cutoff_17p930`, cutoff `17.93`, release phase `0.4956` cycles, default 11/10, strict 9/8, retention `0.316689`, outer/shell `0.638587`, decay `-0.0238625`, no exit, and global outer false.
+- Do not expand this resonator-layer family unless a new mechanism specifies why a different passive coupling geometry or parameter scale should avoid the observed strict-count degradation.
+
 ## Current Next Step
 
-Continue passive narrow-needle interpretation/engineering with the conservative threshold-robust floor:
+Continue passive narrow-needle interpretation with the conservative threshold-robust floor:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
@@ -1471,6 +1505,7 @@ Continue passive narrow-needle interpretation/engineering with the conservative 
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
+- Do not expand passive boundary-inner-edge resonator variants yet; the first passive layer pass was energy-accounted but reduced strict counts.
 - Track phase at cutoff for every row.
 - Make near-shell arrival, refocus count, refocus ratio, tail retention, decay, radial stability, and flux balance primary 3D metrics.
 - Rank by major shell-window peak count, refocus count, no shell exit, retention, outer/shell below `1.0`, decay closest to zero, global outer false, and phase at cutoff.
