@@ -428,6 +428,14 @@ python main.py prototype-3d-release-phase-modal-audit
 
 This command runs no physics. It compares the `41^3` proof-cluster rows, the failed `51^3` candidate and controls, and the central-burst best/repeated-contaminated rows using existing CSV artifacts. It reports shell-energy spectra, spectral concentration/bandwidth, autocorrelation decay, return timing jitter, peak widths, radial group velocity, radial packet width/spread, scalar shell-energy phase locking, neighboring radial-window energy proxies, and loose-vs-strict return-count shrinkage. Current project state: `runs\release_phase_modal_audit_3d_20260620_110344` classified as `resolution_blur_mechanism_supported`; it found the same dominant shell band at `41^3` and `51^3`, but the lifted rows have larger spectral bandwidth, outward tail-radius shift, strict 7/6 shrinkage, and no mechanism-derived retry.
 
+Run the read-only dispersion/blur model with:
+
+```powershell
+python main.py prototype-3d-release-phase-dispersion-audit
+```
+
+This command runs no physics. It compares `41^3` proof rows against the failed `51^3` lift rows and reconstructs only deterministic source/shell geometry from the baseline config. It reports dominant shell frequency, modal bandwidth, return peak width, return spacing, tail-radius drift, radial packet width/spread, radial group velocity, shell-window leakage, source discretization, shell-window sampling, and spatial-phase-frame availability. Current project state: `runs\release_phase_dispersion_audit_3d_20260620_150931` classified as `scalable_blur_model_supported`: the blur is consistent and predictable across `51^3` rows, but no source-shaped candidate is recommended because true spatial shell phase frames were not stored.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -960,6 +968,20 @@ When `prototype-3d-release-phase-modal-audit` is used, the read-only output fold
 - `phase_coherence_comparison.csv`
 
 The modal audit report compares the `41^3` proof cluster, failed `51^3` lift rows, and central HF burst contrast without running physics. Current project state: `runs\release_phase_modal_audit_3d_20260620_110344` classified as `resolution_blur_mechanism_supported`: same dominant shell band, larger `51^3` bandwidth, outward tail-radius shift, loose-return recovery, strict-count shrinkage, and no mechanism-derived next candidate.
+
+When `prototype-3d-release-phase-dispersion-audit` is used, the read-only output folder includes:
+
+- `release_phase_dispersion_audit_report.md`
+- `dispersion_blur_model_summary.csv`
+- `dispersion_feature_comparison.csv`
+- `source_discretization_comparison.csv`
+- `shell_window_scaling_comparison.csv`
+- `spatial_phase_coherence_audit.csv`
+- `dispersion_blur_prediction.csv`
+- `return_peak_width_comparison.csv`
+- `release_phase_dispersion_audit_summary.json`
+
+The dispersion audit report asks whether the `51^3` blur is predictable enough to justify a mechanism-derived correction. Current project state: `runs\release_phase_dispersion_audit_3d_20260620_150931` classified as `scalable_blur_model_supported`, but the prediction row remains `none` because true spatial shell phase frames are missing.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

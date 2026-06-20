@@ -1830,6 +1830,59 @@ Interpretation:
 - The central HF contrast does not explain the passive branch. The cleanest central burst is transient, and the 0.92 repeated rows are shell-exiting and outer/shell contaminated.
 - The audit identifies no mechanism-derived next candidate. Do not run a new `51^3` retry, larger grid, or central-burst expansion from this report alone.
 
+### Release-Phase Dispersion Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-release-phase-dispersion-audit
+```
+
+Latest summarized run:
+
+- Local report: `runs\release_phase_dispersion_audit_3d_20260620_150931\release_phase_dispersion_audit_report.md`
+- Summary CSV: `runs\release_phase_dispersion_audit_3d_20260620_150931\dispersion_blur_model_summary.csv`
+- Feature CSV: `runs\release_phase_dispersion_audit_3d_20260620_150931\dispersion_feature_comparison.csv`
+- Source discretization CSV: `runs\release_phase_dispersion_audit_3d_20260620_150931\source_discretization_comparison.csv`
+- Shell-window scaling CSV: `runs\release_phase_dispersion_audit_3d_20260620_150931\shell_window_scaling_comparison.csv`
+- Spatial phase audit CSV: `runs\release_phase_dispersion_audit_3d_20260620_150931\spatial_phase_coherence_audit.csv`
+- Prediction CSV: `runs\release_phase_dispersion_audit_3d_20260620_150931\dispersion_blur_prediction.csv`
+- Classification: `scalable_blur_model_supported`
+- Inputs: `runs\release_phase_proof_pack_3d_20260619_234039`, `runs\release_phase_resolution_lift_3d_20260620_091834`, `runs\release_phase_resolution_postmortem_3d_20260620_100043`, and deterministic geometry reconstructed from `configs\long_validation_peak_0_92.json`
+
+Dispersion/blur checks:
+
+| Check | Value |
+| --- | ---: |
+| Proof dominant frequency mean | 0.0128074 |
+| Lift dominant frequency mean | 0.0128052 |
+| Lift bandwidth relative delta | 0.290751 |
+| Lift bandwidth CV | 0.002802 |
+| Tail radius shift | 1.39071 |
+| Lift tail-radius CV | 0.01655 |
+| Strict major loss | 2 |
+| Lift loose-to-strict recovery | 4 |
+| Source effective-area relative delta | 0.0505 |
+| Source phase-strength delta | -0.0020 |
+| Source width/dx relative delta | 0.25 |
+| Shell width/dx relative delta | 0.25 |
+| True spatial phase frames available | false |
+
+Geometry comparison:
+
+| Grid | dx | Source Width/dx | Source Cells | Effective Source Area | Phase Strength | Shell Width/dx | Shell Cells |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 41 | 1.0 | 1.333 | 8764 | 4463 | 0.8255 | 4.0 | 2556 |
+| 51 | 0.8 | 1.667 | 13084 | 4237.568 | 0.8235 | 5.0 | 5010 |
+
+Interpretation:
+
+- The `51^3` blur is predictable across the candidate and controls: same modal band, consistent bandwidth growth, consistent tail-radius drift, strict 7/6 shrinkage, and loose 11/10 recovery.
+- This is not currently a source-discretization correction: effective source area changed by only about `5%`, source phase circular strength barely changed, and physical source width stayed fixed.
+- This is not currently a shell-window scaling correction: the shell window stayed physically fixed at radius `5` and width `4`; the different width in cells is expected from finer `dx`.
+- The blocker is spatial phase data. Existing lifecycle artifacts do not store true shell phase frames, so the audit cannot design phase pre-compensation or source apodization safely.
+- Prediction remains `none`: do not run a source-shaped `51^3` candidate yet. The safe next infrastructure step is to instrument future proof/lift runs with spatial shell phase frames and neighboring radial-window energy, then rerun this read-only audit.
+
 ### Central HF Scattering Branch
 
 Command:
@@ -1878,7 +1931,7 @@ Interpretation:
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, and read-only modal audit are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, and read-only dispersion audit are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
@@ -1895,6 +1948,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny. The proof-motivated `51^3` scale check failed strict gates, and the postmortem did not recommend a recalibrated retry, so do not escalate to `61^3` without a new explicit mechanism.
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
+- The dispersion audit supports `scalable_blur_model_supported`, but it is not yet actionable. True spatial shell phase frames are missing, and source discretization/shell-window scaling are not isolated as safe corrections.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. The release-phase-recalibrated `51^3` candidate plus two controls has already been run and failed strict gates; the postmortem says no single retry is predicted. Any future scale check should be explicitly justified, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.

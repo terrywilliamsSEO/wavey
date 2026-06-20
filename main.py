@@ -118,6 +118,15 @@ from simulation.prototype_3d_release_phase_modal_audit import (
     ReleasePhaseModalAuditOptions,
     run_3d_release_phase_modal_audit,
 )
+from simulation.prototype_3d_release_phase_dispersion_audit import (
+    DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
+    DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
+    DEFAULT_MODAL_ROOT as DEFAULT_DISPERSION_MODAL_ROOT,
+    DEFAULT_POSTMORTEM_ROOT as DEFAULT_DISPERSION_POSTMORTEM_ROOT,
+    DEFAULT_PROOF_ROOT as DEFAULT_DISPERSION_PROOF_ROOT,
+    ReleasePhaseDispersionAuditOptions,
+    run_3d_release_phase_dispersion_audit,
+)
 from simulation.prototype_3d_central_burst import (
     CentralBurst3DOptions,
     run_3d_central_burst_control,
@@ -950,6 +959,27 @@ def build_parser() -> argparse.ArgumentParser:
     release_phase_modal_audit_parser.add_argument("--blur-bandwidth-growth-threshold", type=float, default=0.05, help="Relative spectral-bandwidth growth threshold for blur classification")
     release_phase_modal_audit_parser.add_argument("--blur-tail-radius-shift-threshold", type=float, default=0.40, help="Tail-radius shift threshold for blur classification")
     release_phase_modal_audit_parser.add_argument("--finite-grid-concentration-ratio", type=float, default=1.20, help="Proof/lift concentration ratio needed for finite-grid-resonance classification")
+
+    release_phase_dispersion_audit_parser = subparsers.add_parser(
+        "prototype-3d-release-phase-dispersion-audit",
+        help="Read-only dispersion/blur model for 41^3 proof rows versus failed 51^3 lift rows",
+    )
+    release_phase_dispersion_audit_parser.add_argument("--output-root", default="runs", help="Directory for release-phase dispersion-audit outputs")
+    release_phase_dispersion_audit_parser.add_argument("--config", default=DEFAULT_DISPERSION_CONFIG_PATH, help="Baseline config used only to reconstruct source/shell geometry")
+    release_phase_dispersion_audit_parser.add_argument("--proof-root", default=DEFAULT_DISPERSION_PROOF_ROOT, help="Existing 41^3 proof-pack run root")
+    release_phase_dispersion_audit_parser.add_argument("--lift-root", default=DEFAULT_DISPERSION_LIFT_ROOT, help="Existing 51^3 resolution-lift run root")
+    release_phase_dispersion_audit_parser.add_argument("--postmortem-root", default=DEFAULT_DISPERSION_POSTMORTEM_ROOT, help="Existing release-phase resolution-postmortem run root")
+    release_phase_dispersion_audit_parser.add_argument("--modal-root", default=DEFAULT_DISPERSION_MODAL_ROOT, help="Existing release-phase modal-audit run root")
+    release_phase_dispersion_audit_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Reference grid used for fixed physical source width")
+    release_phase_dispersion_audit_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Physical shell-window inner radius")
+    release_phase_dispersion_audit_parser.add_argument("--shell-window-width", type=float, default=4.0, help="Physical shell-window width")
+    release_phase_dispersion_audit_parser.add_argument("--same-band-relative-tolerance", type=float, default=0.16, help="Relative tolerance for considering proof/lift shell spectra the same modal band")
+    release_phase_dispersion_audit_parser.add_argument("--min-strict-major-loss", type=float, default=1.0, help="Minimum strict major-peak loss needed for blur classification")
+    release_phase_dispersion_audit_parser.add_argument("--min-loose-recovery", type=float, default=1.0, help="Minimum loose-threshold recovery above strict counts needed for blur classification")
+    release_phase_dispersion_audit_parser.add_argument("--min-bandwidth-growth", type=float, default=0.05, help="Minimum relative bandwidth growth needed for blur classification")
+    release_phase_dispersion_audit_parser.add_argument("--min-tail-radius-shift", type=float, default=0.40, help="Minimum tail-radius shift needed for blur classification")
+    release_phase_dispersion_audit_parser.add_argument("--max-lift-bandwidth-cv", type=float, default=0.02, help="Maximum 51^3 bandwidth CV for a predictable blur model")
+    release_phase_dispersion_audit_parser.add_argument("--max-lift-tail-radius-cv", type=float, default=0.04, help="Maximum 51^3 tail-radius CV for a predictable blur model")
 
     central_burst_parser = subparsers.add_parser(
         "prototype-3d-central-burst-control",
@@ -1967,6 +1997,30 @@ def main() -> None:
             )
         )
         _print_3d_release_phase_modal_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-release-phase-dispersion-audit":
+        result = run_3d_release_phase_dispersion_audit(
+            options=ReleasePhaseDispersionAuditOptions(
+                output_root=args.output_root,
+                config_path=args.config,
+                proof_root=args.proof_root,
+                lift_root=args.lift_root,
+                postmortem_root=args.postmortem_root,
+                modal_root=args.modal_root,
+                reference_source_grid_size=args.reference_source_grid_size,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                same_band_relative_tolerance=args.same_band_relative_tolerance,
+                min_strict_major_loss=args.min_strict_major_loss,
+                min_loose_recovery=args.min_loose_recovery,
+                min_bandwidth_growth=args.min_bandwidth_growth,
+                min_tail_radius_shift=args.min_tail_radius_shift,
+                max_lift_bandwidth_cv=args.max_lift_bandwidth_cv,
+                max_lift_tail_radius_cv=args.max_lift_tail_radius_cv,
+            )
+        )
+        _print_3d_release_phase_dispersion_audit_summary(result)
         return
 
     if args.command in {"prototype-3d-central-burst-control", "central-hf-scattering-branch"}:
@@ -3095,6 +3149,40 @@ def _print_3d_release_phase_modal_audit_summary(result: dict[str, Any]) -> None:
     print(f"jitter CSV: {result['jitter_csv']}")
     print(f"radial CSV: {result['radial_csv']}")
     print(f"phase CSV: {result['phase_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_release_phase_dispersion_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D release-phase dispersion audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("comparison:")
+    for row in result.get("summary_rows", []):
+        print(
+            f"  - same_band={row.get('same_modal_band')}, "
+            f"freq={_format_optional(row.get('proof_dominant_frequency_mean'))}/{_format_optional(row.get('lift_dominant_frequency_mean'))}, "
+            f"bandwidth_delta={_format_optional(row.get('spectral_bandwidth_relative_delta'))}, "
+            f"tail_shift={_format_optional(row.get('tail_radius_shift'))}, "
+            f"strict_loss={_format_optional(row.get('strict_major_loss'))}, "
+            f"loose_recovery={_format_optional(row.get('lift_loose_to_strict_major_recovery'))}, "
+            f"spatial_phase={row.get('true_spatial_phase_frames_available')}"
+        )
+    print("prediction:")
+    for row in result.get("prediction_rows", []):
+        print(f"  - {row.get('recommendation')}: {row.get('reason')}")
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"feature CSV: {result['feature_csv']}")
+    print(f"source CSV: {result['source_csv']}")
+    print(f"shell CSV: {result['shell_csv']}")
+    print(f"phase CSV: {result['phase_csv']}")
+    print(f"prediction CSV: {result['prediction_csv']}")
     print(f"report: {result['report_path']}")
 
 
