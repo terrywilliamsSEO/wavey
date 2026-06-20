@@ -110,6 +110,10 @@ from simulation.prototype_3d_release_phase_resolution_postmortem import (
     ReleasePhaseResolutionPostmortemOptions,
     run_3d_release_phase_resolution_postmortem,
 )
+from simulation.prototype_3d_central_burst import (
+    CentralBurst3DOptions,
+    run_3d_central_burst_control,
+)
 from simulation.prototype_3d_second_pulse import (
     SecondPulse3DOptions,
     run_3d_second_pulse_control,
@@ -921,6 +925,36 @@ def build_parser() -> argparse.ArgumentParser:
     release_phase_resolution_postmortem_parser.add_argument("--strict-peak-threshold-fraction", type=float, default=0.40, help="Strict threshold used for shrinkage comparison")
     release_phase_resolution_postmortem_parser.add_argument("--radial-shift-predict-threshold", type=float, default=0.75, help="Required coherent radial shift before predicting a shell-window retry")
     release_phase_resolution_postmortem_parser.add_argument("--timing-shift-predict-threshold", type=float, default=0.75, help="Required coherent timing shift before predicting a cutoff retry")
+
+    central_burst_parser = subparsers.add_parser(
+        "prototype-3d-central-burst-control",
+        aliases=["central-hf-scattering-branch"],
+        help="Run the firewalled 3D central high-frequency burst scattering branch",
+    )
+    central_burst_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed-domain lattice constants")
+    central_burst_parser.add_argument("--output-root", default="runs", help="Directory for central-burst outputs")
+    central_burst_parser.add_argument("--grid-size", type=int, default=41, help="3D grid size; first pass is fixed at 41^3")
+    central_burst_parser.add_argument("--physical-duration", type=float, default=96.0, help="Physical end time for post-burst return tracking")
+    central_burst_parser.add_argument("--sample-every", type=int, default=10, help="Compatibility sampling interval")
+    central_burst_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense sample interval for lifecycle diagnostics")
+    central_burst_parser.add_argument("--radial-bins", type=int, default=40, help="Number of radial bins for packet radius/width tracking")
+    central_burst_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Inner radius of the measured shell window")
+    central_burst_parser.add_argument("--shell-window-width", type=float, help="Physical width for the measured shell window; defaults to near-shell-width-dx * dx")
+    central_burst_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Fallback shell-window width in dx units")
+    central_burst_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus the original 3D sponge")
+    central_burst_parser.add_argument("--burst-duration", type=float, default=6.0, help="Duration of the central velocity burst")
+    central_burst_parser.add_argument("--burst-radius", type=float, default=1.0, help="Physical radius of the tiny central burst mask")
+    central_burst_parser.add_argument("--frequencies", type=float, nargs="+", default=[0.92, 1.84, 3.68, 5.52, 7.36], help="Central-burst frequency ladder")
+    central_burst_parser.add_argument("--energy-labels", nargs="+", default=["low", "medium", "high", "extreme"], help="Energy-ladder labels")
+    central_burst_parser.add_argument("--burst-acceleration-scales", type=float, nargs="+", default=[0.05, 0.15, 0.35, 0.75], help="Velocity-kick acceleration scales for the energy ladder")
+    central_burst_parser.add_argument("--no-half-dt-check", action="store_true", help="Disable the automatic half-dt check of the best baseline row")
+    central_burst_parser.add_argument("--event-thresholds", type=float, nargs="+", default=[0.25, 0.30, 0.35, 0.40], help="Peak thresholds used for event-count sensitivity")
+    central_burst_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Default peak threshold")
+    central_burst_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Fraction of first major peak required for later refocus peaks")
+    central_burst_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first meaningful shell arrival")
+    central_burst_parser.add_argument("--exit-threshold-fraction", type=float, default=0.12, help="Fraction of shell peak used to mark shell-window exit after the peak")
+    central_burst_parser.add_argument("--exit-hold-samples", type=int, default=10, help="Consecutive below-threshold samples required to mark shell-window exit")
+    central_burst_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between major lifecycle peaks")
 
     second_pulse_parser = subparsers.add_parser(
         "prototype-3d-second-pulse-control",
@@ -1888,6 +1922,39 @@ def main() -> None:
             )
         )
         _print_3d_release_phase_resolution_postmortem_summary(result)
+        return
+
+    if args.command in {"prototype-3d-central-burst-control", "central-hf-scattering-branch"}:
+        config = _load_sim_config(args.config)
+        result = run_3d_central_burst_control(
+            config,
+            options=CentralBurst3DOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                physical_duration=args.physical_duration,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                burst_duration=args.burst_duration,
+                burst_radius=args.burst_radius,
+                frequencies=tuple(args.frequencies),
+                energy_labels=tuple(args.energy_labels),
+                burst_acceleration_scales=tuple(args.burst_acceleration_scales),
+                include_half_dt_check=not args.no_half_dt_check,
+                event_thresholds=tuple(args.event_thresholds),
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                min_peak_separation_time=args.min_peak_separation_time,
+            ),
+        )
+        _print_3d_central_burst_summary(result)
         return
 
     if args.command == "prototype-3d-second-pulse-control":
@@ -2950,6 +3017,34 @@ def _print_3d_release_phase_resolution_postmortem_summary(result: dict[str, Any]
     print(f"summary CSV: {result['summary_csv']}")
     print(f"comparison CSV: {result['comparison_csv']}")
     print(f"prediction CSV: {result['prediction_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_central_burst_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D central HF scattering branch complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print(f"best variant: {classification.get('best_variant', 'n/a')}")
+    print("top rows:")
+    for row in sorted(result.get("variants", []), key=lambda item: float(item.get("central_burst_score") or 0.0), reverse=True)[:6]:
+        print(
+            f"  - {row.get('variant')}: "
+            f"dt={row.get('dt_variant')}, "
+            f"f={_format_optional(row.get('burst_frequency'))}, "
+            f"energy={row.get('energy_label')}, "
+            f"default={row.get('major_peaks_at_0p30')}/{row.get('refocus_peaks_at_0p30')}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"ret={_format_optional(row.get('tail_shell_retention'))}, "
+            f"outer/shell={_format_optional(row.get('tail_outer_to_shell_mean'))}, "
+            f"energy_err={_format_optional(row.get('energy_accounting_error'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"threshold CSV: {result['threshold_csv']}")
+    print(f"timeseries CSV: {result['timeseries_csv']}")
+    print(f"events CSV: {result['events_csv']}")
+    print(f"energy CSV: {result['energy_csv']}")
     print(f"report: {result['report_path']}")
 
 

@@ -420,6 +420,14 @@ python main.py prototype-3d-release-phase-resolution-postmortem
 
 This command runs no physics. It compares the `41^3` proof-pack winning rows against the failed `51^3` candidate and controls using existing summary, threshold-robust, event, and timeseries artifacts. It answers whether `51^3` lost returns outright or whether returns moved/blurred below the frozen gate, then writes a one-row recalibration prediction. Current project state: `runs\release_phase_resolution_postmortem_3d_20260620_100043` classified as `resolution_lift_blurred_returns_no_predictive_recalibration`; it recommends no single recalibrated `51^3` retry from the current evidence.
 
+Run the firewalled central high-frequency scattering branch with:
+
+```powershell
+python main.py prototype-3d-central-burst-control --config configs\long_validation_peak_0_92.json
+```
+
+This is not a phase-rule improvement command. It disables boundary drive, active second pulses, resonators, and defect variants, then runs a neutral `41^3` central tiny-radius velocity-burst ladder across frequencies `0.92`, `1.84`, `3.68`, `5.52`, `7.36` and energy labels `low`, `medium`, `high`, `extreme`. It automatically half-dt checks the best baseline row. Current project state: `runs\central_burst_3d_20260620_103248` classified as `central_burst_transient`; the cleanest row and half-dt check produced only `1/0` returns, while the `0.92` repeated-count rows exited and had high outer/shell contamination.
+
 Run the tiny 3D second-pulse control with:
 
 ```powershell
@@ -933,6 +941,19 @@ When `prototype-3d-release-phase-resolution-postmortem` is used, the read-only o
 - `release_phase_resolution_postmortem_summary.json`
 
 The postmortem report includes event-threshold shrinkage, arrival/refocus timing shifts, peak amplitudes, tail area, autocorrelation, spectral concentration, radial group velocity, shell-window radial alignment, packet width/spread, return phases, and a recalibration recommendation. Current project state: `runs\release_phase_resolution_postmortem_3d_20260620_100043` recommends `no_recalibrated_retry`.
+
+When `prototype-3d-central-burst-control` is used, the control folder includes:
+
+- `central_burst_report.md`
+- `central_burst_summary.csv`
+- `central_burst_threshold_counts.csv`
+- `central_burst_timeseries.csv`
+- `central_burst_events.csv`
+- `central_burst_energy_audit.csv`
+- `central_burst_summary.json`
+- one per-variant central-burst folder with local timeseries/events
+
+The central-burst report tracks energy accounting error, max displacement/velocity, near-shell peak/work, shell retention, thresholded return counts, outer/shell, global outer flag, radial packet width/spread, inward/outward flux, post-burst decay, threshold-free shell/tail area, autocorrelation, spectral concentration, return timing regularity, and the automatic half-dt check.
 
 When `prototype-3d-second-pulse-control` is used, the control folder includes:
 

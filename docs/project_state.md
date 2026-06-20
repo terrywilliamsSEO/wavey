@@ -1793,9 +1793,55 @@ Interpretation:
 - The candidate arrives earlier by about `0.88`, first refocus moves later by about `1.2`, and the tail radius shifts outward by about `1.09`, but the shell-peak radius does not shift and both controls show the same pattern.
 - The postmortem prediction is `no_recalibrated_retry`; do not run the one-candidate 51^3 retry from this evidence alone.
 
+### Central HF Scattering Branch
+
+Command:
+
+```powershell
+python main.py prototype-3d-central-burst-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\central_burst_3d_20260620_103248\central_burst_report.md`
+- Summary CSV: `runs\central_burst_3d_20260620_103248\central_burst_summary.csv`
+- Threshold-count CSV: `runs\central_burst_3d_20260620_103248\central_burst_threshold_counts.csv`
+- Timeseries CSV: `runs\central_burst_3d_20260620_103248\central_burst_timeseries.csv`
+- Events CSV: `runs\central_burst_3d_20260620_103248\central_burst_events.csv`
+- Energy audit CSV: `runs\central_burst_3d_20260620_103248\central_burst_energy_audit.csv`
+- Classification: `central_burst_transient`
+
+Fixed setup:
+
+- Neutral `41^3` lattice.
+- Same physical domain and stronger sponge.
+- No boundary drive.
+- No active second pulse.
+- No resonator layer.
+- No defect variants.
+- Central tiny-radius velocity burst.
+- Frequency ladder: `0.92`, `1.84`, `3.68`, `5.52`, `7.36`.
+- Energy ladder: `low`, `medium`, `high`, `extreme`.
+
+Result summary:
+
+| Row | Frequency | Energy | Work+ | Default | Conservative | Retention | Outer/Shell | Exit | Global Outer | Energy Error |
+| --- | ---: | --- | ---: | --- | --- | ---: | ---: | --- | --- | ---: |
+| best clean-low-outer | 5.52 | medium | 0.000351 | 1/0 | 1/0 | 0.001224 | 0.01786 | true | false | 0.0113 |
+| half-dt check | 5.52 | medium | 0.000405 | 1/0 | 1/0 | 0.001233 | 0.01842 | true | false | 0.00432 |
+| repeated-count example | 0.92 | low | 0.000332 | 4/2 | 3/2 | 0.00785 | 6.85 | true | false | 0.0510 |
+
+Interpretation:
+
+- This branch is separate from the passive release-phase rule and should not be described as an improvement to it.
+- The cleanest central burst produced only a single post-burst shell-window peak, and its half-dt check repeated that single-pass result.
+- The 0.92 rows produced repeated event counts, but they exited the shell window and had heavy outer/shell contamination, so they are not clean central refocusing.
+- Energy accounting was clean across the ladder; the negative result is physical/diagnostic rather than accounting contamination.
+- Do not broaden the central frequency/energy ladder, add defect variants, add resonators, add active pulses, or add boundary release to rescue this branch without a new mechanism-specific reason.
+
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, and read-only postmortem are complete, so do not tune nearby cutoffs based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, and first central HF scattering ladder are complete, so do not tune nearby cutoffs or broaden central-burst controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
@@ -1813,6 +1859,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - Keep the grid tiny. The proof-motivated `51^3` scale check failed strict gates, and the postmortem did not recommend a recalibrated retry, so do not escalate to `61^3` without a new explicit mechanism.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. The release-phase-recalibrated `51^3` candidate plus two controls has already been run and failed strict gates; the postmortem says no single retry is predicted. Any future scale check should be explicitly justified, not automatic.
+- Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.
 - Do not run broad neighboring-frequency long sweeps yet.
 
 ## Documentation Must Stay In Sync
