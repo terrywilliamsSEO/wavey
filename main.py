@@ -148,6 +148,46 @@ from simulation.prototype_3d_off_comb_leakage_audit import (
     OffCombLeakageAuditOptions,
     run_3d_off_comb_leakage_audit,
 )
+from simulation.prototype_3d_return_pattern_symmetry_audit import (
+    DEFAULT_LIFT_ROOT as DEFAULT_RETURN_PATTERN_LIFT_ROOT,
+    DEFAULT_OFF_COMB_ROOT as DEFAULT_RETURN_PATTERN_OFF_COMB_ROOT,
+    DEFAULT_PHASE_CONJUGATE_ROOT as DEFAULT_RETURN_PATTERN_PHASE_CONJUGATE_ROOT,
+    DEFAULT_PROOF_ROOT as DEFAULT_RETURN_PATTERN_PROOF_ROOT,
+    DEFAULT_RETURN_FAMILY_GATE_ROOT as DEFAULT_RETURN_PATTERN_RETURN_FAMILY_GATE_ROOT,
+    DEFAULT_SMOOTH_ROOT as DEFAULT_RETURN_PATTERN_SMOOTH_ROOT,
+    DEFAULT_SPATIAL_PHASE_ROOT as DEFAULT_RETURN_PATTERN_SPATIAL_PHASE_ROOT,
+    ReturnPatternSymmetryAuditOptions,
+    run_3d_return_pattern_symmetry_audit,
+)
+from simulation.prototype_3d_branch_closure_report import (
+    DEFAULT_CENTRAL_BURST_ROOT as DEFAULT_BRANCH_CLOSURE_CENTRAL_BURST_ROOT,
+    DEFAULT_DISPERSION_ROOT as DEFAULT_BRANCH_CLOSURE_DISPERSION_ROOT,
+    DEFAULT_LIFT_ROOT as DEFAULT_BRANCH_CLOSURE_LIFT_ROOT,
+    DEFAULT_MODAL_ROOT as DEFAULT_BRANCH_CLOSURE_MODAL_ROOT,
+    DEFAULT_MODAL_SPARSITY_ROOT as DEFAULT_BRANCH_CLOSURE_MODAL_SPARSITY_ROOT,
+    DEFAULT_OFF_COMB_ROOT as DEFAULT_BRANCH_CLOSURE_OFF_COMB_ROOT,
+    DEFAULT_PHASE_CONJUGATE_ROOT as DEFAULT_BRANCH_CLOSURE_PHASE_CONJUGATE_ROOT,
+    DEFAULT_POSTMORTEM_ROOT as DEFAULT_BRANCH_CLOSURE_POSTMORTEM_ROOT,
+    DEFAULT_PRECOMP_ROOT as DEFAULT_BRANCH_CLOSURE_PRECOMP_ROOT,
+    DEFAULT_PROOF_ROOT as DEFAULT_BRANCH_CLOSURE_PROOF_ROOT,
+    DEFAULT_RESONATOR_ROOT as DEFAULT_BRANCH_CLOSURE_RESONATOR_ROOT,
+    DEFAULT_RETURN_FAMILY_GATE_ROOT as DEFAULT_BRANCH_CLOSURE_RETURN_FAMILY_GATE_ROOT,
+    DEFAULT_RETURN_PATTERN_ROOT as DEFAULT_BRANCH_CLOSURE_RETURN_PATTERN_ROOT,
+    DEFAULT_SECOND_PULSE_ROOTS as DEFAULT_BRANCH_CLOSURE_SECOND_PULSE_ROOTS,
+    DEFAULT_SMOOTH_ROOT as DEFAULT_BRANCH_CLOSURE_SMOOTH_ROOT,
+    DEFAULT_SOURCE_SPECTRUM_ROOT as DEFAULT_BRANCH_CLOSURE_SOURCE_SPECTRUM_ROOT,
+    DEFAULT_SPATIAL_PHASE_ROOT as DEFAULT_BRANCH_CLOSURE_SPATIAL_PHASE_ROOT,
+    BranchClosureReportOptions,
+    run_3d_branch_closure_report,
+)
+from simulation.prototype_3d_spatial_memory_mechanism_lab import (
+    SpatialMemoryMechanismLabOptions,
+    run_3d_spatial_memory_mechanism_lab,
+)
+from simulation.prototype_3d_cubic_memory_tradeoff_map import (
+    CubicMemoryTradeoffMapOptions,
+    run_3d_cubic_memory_tradeoff_map,
+)
 from simulation.prototype_3d_release_phase_dispersion_audit import (
     DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
     DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
@@ -1077,6 +1117,72 @@ def build_parser() -> argparse.ArgumentParser:
     off_comb_leakage_parser.add_argument("--outer-correlation-threshold", type=float, default=0.20, help="Minimum outer/off-comb lag correlation for outer-recycling support")
     off_comb_leakage_parser.add_argument("--modal-sideband-delta-threshold", type=float, default=0.03, help="Minimum 51^3/proof sideband-fraction delta for modal sideband support")
     off_comb_leakage_parser.add_argument("--spatial-pattern-delta-threshold", type=float, default=0.08, help="Minimum 51^3/proof spatial-pattern leakage delta for pattern support")
+
+    return_pattern_parser = subparsers.add_parser(
+        "prototype-3d-return-pattern-symmetry-audit",
+        help="Read-only audit for whether 51^3 pattern scrambling is recoverable symmetry drift",
+    )
+    return_pattern_parser.add_argument("--output-root", default="runs", help="Directory for return-pattern symmetry-audit outputs")
+    return_pattern_parser.add_argument("--proof-root", default=DEFAULT_RETURN_PATTERN_PROOF_ROOT, help="Existing 41^3 proof-pack run root")
+    return_pattern_parser.add_argument("--lift-root", default=DEFAULT_RETURN_PATTERN_LIFT_ROOT, help="Existing 51^3 resolution-lift run root")
+    return_pattern_parser.add_argument("--spatial-phase-root", default=DEFAULT_RETURN_PATTERN_SPATIAL_PHASE_ROOT, help="Existing spatial phase instrumentation run root")
+    return_pattern_parser.add_argument("--smooth-root", default=DEFAULT_RETURN_PATTERN_SMOOTH_ROOT, help="Existing smooth-envelope run root")
+    return_pattern_parser.add_argument("--phase-conjugate-root", default=DEFAULT_RETURN_PATTERN_PHASE_CONJUGATE_ROOT, help="Existing boundary phase-conjugate run root")
+    return_pattern_parser.add_argument("--return-family-gate-root", default=DEFAULT_RETURN_PATTERN_RETURN_FAMILY_GATE_ROOT, help="Existing return-family gate audit root")
+    return_pattern_parser.add_argument("--off-comb-root", default=DEFAULT_RETURN_PATTERN_OFF_COMB_ROOT, help="Existing off-comb leakage audit root")
+    return_pattern_parser.add_argument("--exclude-reflections", action="store_true", help="Disable mirror/reflection variants in the cubic alignment model")
+    return_pattern_parser.add_argument("--sector-permutation-penalty", type=float, default=0.18, help="Penalty per moved-sector fraction for arbitrary sector permutation")
+    return_pattern_parser.add_argument("--min-rescue-margin", type=float, default=0.08, help="Mean alignment gain required for a substantial rescue")
+    return_pattern_parser.add_argument("--marginal-rescue-margin", type=float, default=0.04, help="Mean alignment gain below which true scrambling is supported")
+    return_pattern_parser.add_argument("--proof-memory-tolerance", type=float, default=0.08, help="Allowed aligned 51^3 memory gap below proof raw memory")
+    return_pattern_parser.add_argument("--transform-stability-threshold", type=float, default=0.68, help="Minimum stable-transform score for orientation drift support")
+    return_pattern_parser.add_argument("--source-signature-share-threshold", type=float, default=0.67, help="Minimum source-control agreement on dominant transform signature")
+    return_pattern_parser.add_argument("--phase-vs-spatial-margin", type=float, default=0.03, help="Minimum lead for phase/sign versus spatial-transform rescue")
+    return_pattern_parser.add_argument("--max-pair-count", type=int, default=12, help="Maximum return pairs per variant to compare")
+
+    branch_closure_parser = subparsers.add_parser(
+        "prototype-3d-branch-closure-report",
+        help="Read-only closure packet for the passive 3D scale-lift branch",
+    )
+    branch_closure_parser.add_argument("--output-root", default="runs", help="Directory for branch-closure report outputs")
+    branch_closure_parser.add_argument("--proof-root", default=DEFAULT_BRANCH_CLOSURE_PROOF_ROOT, help="Existing 41^3 proof-pack run root")
+    branch_closure_parser.add_argument("--lift-root", default=DEFAULT_BRANCH_CLOSURE_LIFT_ROOT, help="Existing 51^3 resolution-lift run root")
+    branch_closure_parser.add_argument("--postmortem-root", default=DEFAULT_BRANCH_CLOSURE_POSTMORTEM_ROOT, help="Existing 51^3 postmortem run root")
+    branch_closure_parser.add_argument("--modal-root", default=DEFAULT_BRANCH_CLOSURE_MODAL_ROOT, help="Existing release-phase modal-audit root")
+    branch_closure_parser.add_argument("--dispersion-root", default=DEFAULT_BRANCH_CLOSURE_DISPERSION_ROOT, help="Existing dispersion-audit root")
+    branch_closure_parser.add_argument("--spatial-phase-root", default=DEFAULT_BRANCH_CLOSURE_SPATIAL_PHASE_ROOT, help="Existing spatial phase instrumentation root")
+    branch_closure_parser.add_argument("--precomp-root", default=DEFAULT_BRANCH_CLOSURE_PRECOMP_ROOT, help="Existing spatial phase precompensation design root")
+    branch_closure_parser.add_argument("--source-spectrum-root", default=DEFAULT_BRANCH_CLOSURE_SOURCE_SPECTRUM_ROOT, help="Existing source-spectrum design audit root")
+    branch_closure_parser.add_argument("--smooth-root", default=DEFAULT_BRANCH_CLOSURE_SMOOTH_ROOT, help="Existing smooth-envelope run root")
+    branch_closure_parser.add_argument("--phase-conjugate-root", default=DEFAULT_BRANCH_CLOSURE_PHASE_CONJUGATE_ROOT, help="Existing boundary phase-conjugate run root")
+    branch_closure_parser.add_argument("--modal-sparsity-root", default=DEFAULT_BRANCH_CLOSURE_MODAL_SPARSITY_ROOT, help="Existing modal sparsity audit root")
+    branch_closure_parser.add_argument("--return-family-gate-root", default=DEFAULT_BRANCH_CLOSURE_RETURN_FAMILY_GATE_ROOT, help="Existing return-family gate audit root")
+    branch_closure_parser.add_argument("--off-comb-root", default=DEFAULT_BRANCH_CLOSURE_OFF_COMB_ROOT, help="Existing off-comb leakage audit root")
+    branch_closure_parser.add_argument("--return-pattern-root", default=DEFAULT_BRANCH_CLOSURE_RETURN_PATTERN_ROOT, help="Existing return-pattern symmetry audit root")
+    branch_closure_parser.add_argument("--resonator-root", default=DEFAULT_BRANCH_CLOSURE_RESONATOR_ROOT, help="Existing passive resonator-layer control root")
+    branch_closure_parser.add_argument("--central-burst-root", default=DEFAULT_BRANCH_CLOSURE_CENTRAL_BURST_ROOT, help="Existing central burst contrast root")
+    branch_closure_parser.add_argument(
+        "--second-pulse-roots",
+        nargs="+",
+        default=list(DEFAULT_BRANCH_CLOSURE_SECOND_PULSE_ROOTS),
+        help="Existing active second-pulse control roots",
+    )
+
+    spatial_memory_lab_parser = subparsers.add_parser(
+        "prototype-3d-spatial-memory-mechanism-lab",
+        help="Independent passive 3D mechanism lab for return-to-return spatial-pattern memory",
+    )
+    spatial_memory_lab_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed 41^3 mechanism lab")
+    spatial_memory_lab_parser.add_argument("--output-root", default="runs", help="Directory for spatial-memory mechanism lab outputs")
+    spatial_memory_lab_parser.add_argument("--grid-size", type=int, default=41, help="Fixed 41^3 mechanism-test grid size")
+    spatial_memory_lab_parser.add_argument("--disable-optional-51", action="store_true", help="Disable the gated optional 51^3 follow-up even if 41^3 passes")
+
+    cubic_memory_tradeoff_parser = subparsers.add_parser(
+        "prototype-3d-cubic-memory-tradeoff-map",
+        help="Fixed 41^3 cubic degeneracy-splitting memory/strict-count tradeoff map",
+    )
+    cubic_memory_tradeoff_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed 41^3 cubic memory tradeoff map")
+    cubic_memory_tradeoff_parser.add_argument("--output-root", default="runs", help="Directory for cubic memory tradeoff outputs")
 
     release_phase_dispersion_audit_parser = subparsers.add_parser(
         "prototype-3d-release-phase-dispersion-audit",
@@ -2367,6 +2473,77 @@ def main() -> None:
             )
         )
         _print_3d_off_comb_leakage_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-return-pattern-symmetry-audit":
+        result = run_3d_return_pattern_symmetry_audit(
+            options=ReturnPatternSymmetryAuditOptions(
+                output_root=args.output_root,
+                proof_root=args.proof_root,
+                lift_root=args.lift_root,
+                spatial_phase_root=args.spatial_phase_root,
+                smooth_root=args.smooth_root,
+                phase_conjugate_root=args.phase_conjugate_root,
+                return_family_gate_root=args.return_family_gate_root,
+                off_comb_root=args.off_comb_root,
+                include_reflections=not args.exclude_reflections,
+                sector_permutation_penalty=args.sector_permutation_penalty,
+                min_rescue_margin=args.min_rescue_margin,
+                marginal_rescue_margin=args.marginal_rescue_margin,
+                proof_memory_tolerance=args.proof_memory_tolerance,
+                transform_stability_threshold=args.transform_stability_threshold,
+                source_signature_share_threshold=args.source_signature_share_threshold,
+                phase_vs_spatial_margin=args.phase_vs_spatial_margin,
+                max_pair_count=args.max_pair_count,
+            )
+        )
+        _print_3d_return_pattern_symmetry_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-branch-closure-report":
+        result = run_3d_branch_closure_report(
+            options=BranchClosureReportOptions(
+                output_root=args.output_root,
+                proof_root=args.proof_root,
+                lift_root=args.lift_root,
+                postmortem_root=args.postmortem_root,
+                modal_root=args.modal_root,
+                dispersion_root=args.dispersion_root,
+                spatial_phase_root=args.spatial_phase_root,
+                precomp_root=args.precomp_root,
+                source_spectrum_root=args.source_spectrum_root,
+                smooth_root=args.smooth_root,
+                phase_conjugate_root=args.phase_conjugate_root,
+                modal_sparsity_root=args.modal_sparsity_root,
+                return_family_gate_root=args.return_family_gate_root,
+                off_comb_root=args.off_comb_root,
+                return_pattern_root=args.return_pattern_root,
+                resonator_root=args.resonator_root,
+                central_burst_root=args.central_burst_root,
+                second_pulse_roots=tuple(args.second_pulse_roots),
+            )
+        )
+        _print_3d_branch_closure_report_summary(result)
+        return
+
+    if args.command == "prototype-3d-spatial-memory-mechanism-lab":
+        result = run_3d_spatial_memory_mechanism_lab(
+            _load_sim_config(args.config),
+            options=SpatialMemoryMechanismLabOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                run_51_if_supported=not args.disable_optional_51,
+            ),
+        )
+        _print_3d_spatial_memory_mechanism_lab_summary(result)
+        return
+
+    if args.command == "prototype-3d-cubic-memory-tradeoff-map":
+        result = run_3d_cubic_memory_tradeoff_map(
+            _load_sim_config(args.config),
+            options=CubicMemoryTradeoffMapOptions(output_root=args.output_root),
+        )
+        _print_3d_cubic_memory_tradeoff_map_summary(result)
         return
 
     if args.command == "prototype-3d-release-phase-dispersion-audit":
@@ -3822,6 +3999,127 @@ def _print_3d_off_comb_leakage_audit_summary(result: dict[str, Any]) -> None:
     print(f"outer CSV: {result['outer_csv']}")
     print(f"modal CSV: {result['modal_csv']}")
     print(f"pattern CSV: {result['pattern_csv']}")
+    print("plots:")
+    for name, path in result.get("plots", {}).items():
+        print(f"  - {name}: {path}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_return_pattern_symmetry_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D return-pattern symmetry audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("source-control rows:")
+    for row in result.get("summary_rows", []):
+        if int(float(row.get("grid_size") or 0)) != 51:
+            continue
+        if row.get("available_artifact_kind") == "none":
+            continue
+        print(
+            f"  - {row.get('artifact_source')} / {row.get('prediction_role')}: "
+            f"raw={_format_optional(row.get('raw_pattern_memory_score'))}, "
+            f"aligned={_format_optional(row.get('best_symmetry_aligned_memory_score'))}, "
+            f"rescue={_format_optional(row.get('symmetry_rescue_margin'))}, "
+            f"transform={row.get('dominant_transform_signature')}, "
+            f"stability={_format_optional(row.get('transform_stability_score'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"pair CSV: {result['pair_csv']}")
+    print(f"stability CSV: {result['stability_csv']}")
+    if result.get("harmonic_csv"):
+        print(f"harmonic CSV: {result['harmonic_csv']}")
+    print("plots:")
+    for name, path in result.get("plots", {}).items():
+        print(f"  - {name}: {path}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_branch_closure_report_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D passive branch closure report complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print(f"branch status: {checks.get('branch_status')}")
+        print(f"mechanism candidate: {checks.get('mechanism_candidate')}")
+        if checks.get("missing_required_stages"):
+            print(f"missing required stages: {', '.join(checks['missing_required_stages'])}")
+        if checks.get("mismatched_required_stages"):
+            print("mismatched required stages:")
+            for item in checks["mismatched_required_stages"]:
+                print(f"  - {item}")
+    print("frozen claims:")
+    for row in result.get("claim_rows", []):
+        print(f"  - {row.get('claim_type')}: {row.get('statement')}")
+    print(f"forbidden path count: {len(result.get('forbidden_rows', []))}")
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"evidence CSV: {result['evidence_csv']}")
+    print(f"claims CSV: {result['claims_csv']}")
+    print(f"forbidden CSV: {result['forbidden_csv']}")
+    print(f"reopen CSV: {result['reopen_csv']}")
+    print(f"summary JSON: {result['summary_json']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_spatial_memory_mechanism_lab_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D spatial memory mechanism lab complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    if classification.get("best_variant"):
+        print(f"best variant: {classification['best_variant']}")
+    print("mechanism rows:")
+    for row in result.get("summary_rows", []):
+        print(
+            f"  - {row.get('run_stage')} / {row.get('mechanism_role')}: "
+            f"memory={_format_optional(row.get('pattern_memory_score'))}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"comb={_format_optional(row.get('return_timing_comb_score'))}, "
+            f"off_comb={_format_optional(row.get('off_comb_energy_ratio'))}, "
+            f"clean={row.get('clean_gates_passed')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"by-return CSV: {result['by_return_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
+    print("plots:")
+    for name, path in result.get("plots", {}).items():
+        print(f"  - {name}: {path}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_cubic_memory_tradeoff_map_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D cubic memory tradeoff map complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    if classification.get("best_variant"):
+        print(f"best variant: {classification['best_variant']}")
+    print("tradeoff rows:")
+    for row in result.get("summary_rows", []):
+        print(
+            f"  - {row.get('mechanism_role')}: "
+            f"strength={_format_optional(row.get('mechanism_strength_factor'))}, "
+            f"orientation={row.get('split_orientation')}, "
+            f"memory={_format_optional(row.get('pattern_memory_score'))}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"comb={_format_optional(row.get('return_timing_comb_score'))}, "
+            f"off_comb={_format_optional(row.get('off_comb_energy_ratio'))}, "
+            f"clean={row.get('clean_gates_passed')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"by-return CSV: {result['by_return_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
     print("plots:")
     for name, path in result.get("plots", {}).items():
         print(f"  - {name}: {path}")

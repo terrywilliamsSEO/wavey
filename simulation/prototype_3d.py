@@ -90,6 +90,11 @@ class Prototype3DConfig:
     resonator_k3: float = 0.0
     resonator_damping: float = 0.0
     resonator_coupling: float = 0.0
+    memory_mechanism_profile: str = "none"
+    memory_mechanism_strength: float = 0.0
+    memory_mechanism_seed: int | None = None
+    memory_mechanism_shell_radius: float | None = None
+    memory_mechanism_shell_width: float | None = None
 
     @property
     def dx(self) -> float:
@@ -133,6 +138,7 @@ class Lattice3D:
         self.coupling_multiplier[self.defect_mask] *= config.defect_coupling_multiplier
         if config.defect_nonlinear_strength is not None:
             self.nonlinear_strength[self.defect_mask] = config.defect_nonlinear_strength
+        self._apply_memory_mechanism_profile()
         self.resonator_mask = self._resonator_mask()
         self.resonator_q = np.zeros_like(self.u)
         self.resonator_p = np.zeros_like(self.u)
@@ -241,6 +247,24 @@ class Lattice3D:
         if self.config.resonator_geometry != "boundary_inner_edge":
             raise ValueError(f"Unsupported 3D resonator geometry: {self.config.resonator_geometry}")
         return self.source.mask.copy()
+
+    def _apply_memory_mechanism_profile(self) -> None:
+        profile_name = str(self.config.memory_mechanism_profile or "none")
+        strength = float(self.config.memory_mechanism_strength or 0.0)
+        if profile_name == "none" or abs(strength) <= EPSILON:
+            return
+        profile = _memory_mechanism_profile(self.config, self.coords, profile_name)
+        if profile_name in {"anisotropy_anchor", "cubic_degeneracy_split", "random_equivalent"}:
+            self.stiffness *= np.clip(1.0 + strength * profile, 0.05, None)
+        elif profile_name == "shell_band_isolation":
+            shell = np.clip(profile, 0.0, 1.0)
+            self.coupling_multiplier *= np.clip(1.0 - 0.5 * strength * shell, 0.05, None)
+            self.stiffness *= np.clip(1.0 + 0.5 * strength * shell, 0.05, None)
+        elif profile_name == "nonlinear_phase_memory":
+            shell = np.clip(profile, 0.0, 1.0)
+            self.nonlinear_strength += abs(strength) * shell
+        else:
+            raise ValueError(f"Unsupported passive memory mechanism profile: {profile_name}")
 
 
 class Source3D:
@@ -652,6 +676,70 @@ def _base_3d_config(
         shell_inner_radius=defect_radius + dx,
         shell_outer_radius=defect_radius + 3.0 * dx,
     )
+
+
+def _memory_mechanism_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    profile_name: str,
+) -> np.ndarray:
+    x = coords["x"].astype(float)
+    y = coords["y"].astype(float)
+    z = coords["z"].astype(float)
+    radius = coords["radius"].astype(float)
+    active = coords["boundary_distance"] >= config.sponge_width
+    scale = max(0.5 * config.domain_size, EPSILON)
+    if profile_name == "anisotropy_anchor":
+        raw = 0.65 * x / scale - 0.35 * y / scale + 0.20 * z / scale
+        return _normalized_active_profile(raw, active)
+    if profile_name == "cubic_degeneracy_split":
+        r = np.maximum(radius, config.dx)
+        raw = (x**4 + y**4 + z**4) / np.maximum(r**4, EPSILON)
+        return _normalized_active_profile(raw, active)
+    if profile_name == "shell_band_isolation":
+        center = config.memory_mechanism_shell_radius
+        if center is None:
+            center = float(config.defect_radius + 2.0 * config.dx)
+        width = max(float(config.memory_mechanism_shell_width or (4.0 * config.dx)), config.dx)
+        raw = np.exp(-0.5 * ((radius - center) / width) ** 2)
+        return _rms_normalized_active_profile(raw, active)
+    if profile_name == "nonlinear_phase_memory":
+        center = config.memory_mechanism_shell_radius
+        if center is None:
+            center = float(config.defect_radius + 2.0 * config.dx)
+        width = max(float(config.memory_mechanism_shell_width or (4.0 * config.dx)), config.dx)
+        raw = np.exp(-0.5 * ((radius - center) / width) ** 2)
+        return _rms_normalized_active_profile(raw, active)
+    if profile_name == "random_equivalent":
+        rng = np.random.default_rng(config.memory_mechanism_seed or 0)
+        raw = rng.normal(size=radius.shape)
+        return _normalized_active_profile(raw, active)
+    raise ValueError(f"Unsupported passive memory mechanism profile: {profile_name}")
+
+
+def _normalized_active_profile(raw: np.ndarray, active: np.ndarray) -> np.ndarray:
+    out = np.zeros_like(raw, dtype=float)
+    values = np.asarray(raw[active], dtype=float)
+    if values.size == 0:
+        return out
+    centered = values - float(np.mean(values))
+    rms = float(np.sqrt(np.mean(centered**2)))
+    if rms <= EPSILON:
+        return out
+    out[active] = centered / rms
+    return out
+
+
+def _rms_normalized_active_profile(raw: np.ndarray, active: np.ndarray) -> np.ndarray:
+    out = np.zeros_like(raw, dtype=float)
+    values = np.asarray(raw[active], dtype=float)
+    if values.size == 0:
+        return out
+    rms = float(np.sqrt(np.mean(values**2)))
+    if rms <= EPSILON:
+        return out
+    out[active] = values / rms
+    return out
 
 
 def _run_variant(config: Prototype3DConfig, root: Path, options: Prototype3DOptions) -> dict[str, Any]:

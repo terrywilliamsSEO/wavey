@@ -1,6 +1,6 @@
 # Project State
 
-Last updated: 2026-06-20
+Last updated: 2026-06-21
 
 ## One-Screen Summary
 
@@ -73,6 +73,10 @@ Current interpretation:
 - The read-only modal sparsity audit classified as `common_51_source_signature_supported`: it did not prove a dramatic few-mode-to-broad-wave transition, but hard/smooth/phase-conjugate/shuffled `51^3` controls shared nearly identical sparse-reconstruction/modal-participation signatures and the same strict-count loss. Treat source shaping and patch-level wavefront shaping as exhausted for this branch unless a new mechanism appears.
 - The read-only return-family gate audit classified as `return_family_weakened_not_gate_artifact`: timing and comb occupancy remain organized at `51^3`, but off-comb energy is high and rank-normalized return strength/prominence are not compressed enough to explain strict loss as a detector-only artifact. Treat the `51^3` strict drop as real family weakening under the current gate model.
 - The read-only off-comb leakage audit classified as `spatial_pattern_scrambling_supported`: radial leakage, modal sideband leakage, and delayed outer/sponge recycling did not separate from proof rows, while source-control spatial-pattern leakage was higher (`0.586679` versus proof `0.495788`). Treat the current `51^3` failure localization as return-to-return spatial-pattern scrambling, not a justification for detector tuning, cutoff tuning, new source masks, or larger grids.
+- The read-only return-pattern symmetry audit classified as `pattern_symmetry_inconclusive`: sign/phase/sector/harmonic alignment can raise saved `51^3` pattern-memory scores, but transform stability is low and source controls do not share a coherent transform signature. Do not treat the pattern scrambling as a recoverable orientation drift, cubic-mode hopping, or phase precession without new evidence.
+- The read-only passive branch closure report classified as `passive_scale_lift_branch_closed`: the branch is scientifically useful but not breakthrough-ready. Freeze the `41^3` structured-refocusing claim, freeze the no-`51^3`-scale-validation non-claim, and reopen only if a genuinely new mechanism predicts stable spatial-pattern memory.
+- The independent `spatial_memory_mechanism_lab` run in `runs\spatial_memory_mechanism_lab_3d_20260621_103028` classified as `spatial_memory_mechanism_supported`: weak cubic degeneracy splitting was the best `41^3` spatial-memory row (`0.645969` versus neutral `0.486969` and randomized equivalent-strength `0.505821`) under clean gates. The gated optional `51^3` follow-up did not preserve the memory advantage (`0.544617` versus neutral `0.579914` and randomized control `0.577519`), so this is a 41^3 mechanism clue, not scale validation.
+- The `prototype-3d-cubic-memory-tradeoff-map` run in `runs\cubic_memory_tradeoff_map_3d_20260621_142657` classified as `memory_only_tradeoff_supported`: cubic split rows can beat neutral and matched randomized controls on spatial-pattern memory under clean gates, but no tested cubic strength/orientation preserved strict `9/8`.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2245,6 +2249,233 @@ Interpretation:
 - The audit does not support a radial-window miss, delayed outer/sponge recycling, or modal-sideband leakage as the primary separator under the saved artifacts.
 - The hard `51^3`, smooth-envelope, phase-conjugate, and shuffled-patch rows remain grouped as source-shaping failures. Do not turn this localization into a detector threshold change, source-mask fit, cutoff retune, or `61^3` escalation.
 
+### Return-Pattern Symmetry Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-return-pattern-symmetry-audit
+```
+
+Latest summarized run:
+
+- Local report: `runs\return_pattern_symmetry_audit_3d_20260621_091511\return_pattern_symmetry_report.md`
+- Summary CSV: `runs\return_pattern_symmetry_audit_3d_20260621_091511\return_pattern_symmetry_summary.csv`
+- Pair alignment CSV: `runs\return_pattern_symmetry_audit_3d_20260621_091511\return_pair_alignment.csv`
+- Transform stability CSV: `runs\return_pattern_symmetry_audit_3d_20260621_091511\transform_stability.csv`
+- Harmonic similarity CSV: `runs\return_pattern_symmetry_audit_3d_20260621_091511\harmonic_pattern_similarity.csv`
+- Plots: `raw_vs_aligned_similarity_plot.png`, `transform_stability_plot.png`, `symmetry_rescue_margin_plot.png`
+- Classification: `pattern_symmetry_inconclusive`
+
+Inputs:
+
+- `runs\release_phase_proof_pack_3d_20260619_234039`
+- `runs\release_phase_resolution_lift_3d_20260620_091834`
+- `runs\spatial_phase_instrumentation_3d_20260620_170518`
+- `runs\smooth_envelope_resolution_lift_3d_20260620_192501`
+- `runs\boundary_phase_conjugate_3d_20260620_212918`
+- `runs\return_family_gate_audit_3d_20260621_082543`
+- `runs\off_comb_leakage_audit_3d_20260621_085347`
+
+Key checks:
+
+| Metric | Value |
+| --- | ---: |
+| Proof raw memory mean | 0.425684 |
+| `51^3` source-control raw memory mean | 0.557284 |
+| Proof aligned memory mean | 0.591314 |
+| `51^3` source-control aligned memory mean | 0.868618 |
+| `51^3` source-control rescue margin mean | 0.311334 |
+| `51^3` source-control spatial rescue margin mean | 0.305700 |
+| `51^3` source-control phase/sign rescue margin mean | 0.284976 |
+| `51^3` source-control transform stability mean | 0.313696 |
+| Source transform signature share | 0.363636 |
+
+Interpretation:
+
+- Alignment reduces some saved `51^3` pattern mismatch, so the result is not `true_spatial_scrambling_supported` under the allowed alignment models.
+- The rescue is not stable or source-control coherent: transforms jump across returns, and hard/smooth/phase-conjugate/shuffled controls do not share one dominant transform signature.
+- This does not support `orientation_drift_supported`, `cubic_mode_hopping_supported`, or `phase_precession_supported`. It also does not authorize symmetry/orientation-drift follow-ups, source masks, detector tuning, cutoff tuning, or larger-grid escalation.
+
+### Passive Branch Closure Report
+
+Command:
+
+```powershell
+python main.py prototype-3d-branch-closure-report
+```
+
+Latest summarized run:
+
+- Local report: `runs\branch_closure_report_3d_20260621_093821\branch_closure_report.md`
+- Summary CSV: `runs\branch_closure_report_3d_20260621_093821\branch_closure_summary.csv`
+- Evidence CSV: `runs\branch_closure_report_3d_20260621_093821\branch_closure_evidence_chain.csv`
+- Claims CSV: `runs\branch_closure_report_3d_20260621_093821\branch_closure_claims.csv`
+- Forbidden paths CSV: `runs\branch_closure_report_3d_20260621_093821\branch_closure_forbidden_paths.csv`
+- Reopen criteria CSV: `runs\branch_closure_report_3d_20260621_093821\branch_closure_reopen_criteria.csv`
+- Classification: `passive_scale_lift_branch_closed`
+
+Frozen conclusions:
+
+- Frozen claim: `41^3` structured boundary-interference shell-window refocusing exists under strong controls.
+- Frozen non-claim: the passive release-phase packet-control rule is not scale-validated at `51^3`.
+- Frozen failure explanation: `51^3` retains organized return timing, but loses strict return-family purity and return-to-return spatial-pattern identity.
+- Branch status: scientifically useful, not breakthrough-ready.
+- Mechanism-derived next candidate: none.
+
+Forbidden from current evidence:
+
+- Nearby cutoff/phase tuning.
+- Smooth envelopes or source-shape sweeps.
+- Patch masks, phase-conjugate wavefront fitting, or higher patch counts.
+- Modal-sparsity-derived source variants.
+- Return-gate detector retuning.
+- Off-comb-derived source masks.
+- Symmetry-lock, orientation-drift, cubic-hopping, or phase-precession runs.
+- Active second pulses, passive resonator expansion, central-burst broadening, and `61^3` or larger-grid escalation.
+
+Reopen condition:
+
+- Only reopen the passive scale-lift branch if a genuinely new mechanism predicts stable return-to-return spatial-pattern memory at higher resolution. Better launch timing, smoother source shape, looser gates, or arbitrary alignment gains are not enough.
+
+### Spatial Memory Mechanism Lab
+
+Command:
+
+```powershell
+python main.py prototype-3d-spatial-memory-mechanism-lab --config configs\long_validation_peak_0_92.json
+```
+
+Status:
+
+- Independent research branch: `spatial_memory_mechanism_lab`.
+- Not a continuation of the closed passive scale-lift branch.
+- Latest run: `runs\spatial_memory_mechanism_lab_3d_20260621_103028`.
+- Classification: `spatial_memory_mechanism_supported`.
+- Interpretation: weak passive lattice structure can improve return-to-return spatial-pattern memory at `41^3`, but the optional `51^3` follow-up did not preserve the memory advantage. This does not reopen the old passive scale-lift branch or validate the old `51^3` candidate.
+
+Fixed mechanism set:
+
+- Neutral reference.
+- Weak symmetry-broken anisotropy anchor.
+- Weak cubic degeneracy-splitting anchor.
+- Weak shell-band isolation profile.
+- Weak nonlinear phase-memory variant.
+- Randomized equivalent-strength perturbation negative control.
+
+Primary metric:
+
+- Return-to-return shell spatial-pattern memory from saved shell-node displacement frames.
+
+Secondary metrics:
+
+- Strict/default/loose return counts.
+- Return timing comb score.
+- Off-comb energy ratio.
+- Shell/radial/angular coherence.
+- Modal participation ratio.
+- Energy accounting and post-cutoff work.
+- No-exit, global-outer, and outer/shell gates.
+
+Guardrails:
+
+- Fixed cutoff `17.94`; do not tune cutoff phase.
+- Fixed drive frequency `0.92`; do not add source-shape variants.
+- No active second pulses.
+- No `61^3`.
+- Optional `51^3` follow-up is gated behind a supported `41^3` spatial-memory mechanism and is not the old candidate retry.
+- Do not claim breakthrough unless spatial-pattern memory improves, clean gates pass, and the mechanism beats the randomized equivalent-strength control.
+
+Latest result:
+
+| Stage | Role | Memory | Strict | Comb | Off-comb | Clean |
+| --- | --- | ---: | --- | ---: | ---: | --- |
+| `41^3` | neutral reference | `0.486969` | `9/8` | `0.726785` | `0.156175` | yes |
+| `41^3` | anisotropy anchor | `0.635569` | `7/6` | `0.569054` | `0.101448` | yes |
+| `41^3` | cubic degeneracy splitting | `0.645969` | `8/7` | `0.502308` | `0.127659` | yes |
+| `41^3` | shell-band isolation | `0.629821` | `8/7` | `0.702811` | `0.101152` | yes |
+| `41^3` | nonlinear phase memory | `0.486970` | `9/8` | `0.726785` | `0.156175` | yes |
+| `41^3` | randomized equivalent-strength control | `0.505821` | `9/8` | `0.726034` | `0.156216` | yes |
+| optional `51^3` | neutral reference | `0.579914` | `7/6` | `0.737676` | `0.175780` | yes |
+| optional `51^3` | cubic degeneracy splitting | `0.544617` | `8/7` | `0.751800` | `0.168732` | yes |
+| optional `51^3` | randomized equivalent-strength control | `0.577519` | `7/6` | `0.737815` | `0.175559` | yes |
+
+Key comparisons:
+
+- Best `41^3` mechanism: weak cubic degeneracy splitting.
+- `41^3` cubic memory delta versus neutral: `+0.159000`.
+- `41^3` cubic memory delta versus randomized control: `+0.140148`.
+- Optional `51^3` cubic memory delta versus neutral: `-0.035297`.
+- Optional `51^3` cubic memory delta versus randomized control: `-0.032901`.
+- The `51^3` cubic row improved strict count from `7/6` to `8/7`, but that is secondary; the primary memory metric failed to separate.
+
+### Cubic Memory Tradeoff Map
+
+Command:
+
+```powershell
+python main.py prototype-3d-cubic-memory-tradeoff-map --config configs\long_validation_peak_0_92.json
+```
+
+Status:
+
+- Completed in `runs\cubic_memory_tradeoff_map_3d_20260621_142657`.
+- Classification: `memory_only_tradeoff_supported`.
+- Mechanism-specific local map under the independent spatial-memory branch.
+- `41^3` only by default; no optional `51^3` path exists for this command.
+- Not a continuation or rescue of the closed passive scale-lift branch.
+
+Fixed setup:
+
+- Neutral lattice.
+- Stronger sponge.
+- Inner-sponge-edge sign-flip cubic boundary source.
+- Frequency `0.92`.
+- Cutoff `17.94`; do not tune cutoff phase.
+- Matched work per physical source area.
+- Radius-5 shell metrics.
+- No source-shape variants, active pulses, resonators, `51^3`, or `61^3`.
+
+Fixed variant map:
+
+- Neutral reference.
+- Standard cubic degeneracy split at `0.25x`, `0.5x`, `1.0x`, and `1.5x`.
+- Sign-flipped cubic degeneracy split at `0.5x` and `1.0x`.
+- Randomized equivalent-strength controls at `0.5x` and `1.0x`.
+
+Primary question:
+
+- Can any local cubic split strength/orientation keep the `41^3` spatial-memory advantage while preserving strict `9/8`?
+
+Result:
+
+- Best cubic memory row: `cubic_split_sign_flipped_0p5x`.
+- Memory comparison at `0.5x`: neutral `0.486969`, randomized matched control `0.504878`, best cubic `0.725354`.
+- Best cubic counts: strict `6/5`, default `7/6`, loose `8/7`.
+- Best cubic comb score: `0.487444`; off-comb energy ratio: `0.195688`; clean gates passed.
+- Standard `1.0x` cubic row: memory `0.645969` versus randomized matched control `0.628214`, strict/default/loose `8/7`, `9/8`, `10/9`, comb score `0.502308`, off-comb energy ratio `0.127659`, clean gates passed.
+- Neutral reference: memory `0.486969`, strict/default/loose `9/8`, `10/9`, `11/10`, comb score `0.726785`, off-comb energy ratio `0.156175`, clean gates passed.
+- Randomized matched controls: `0.5x` memory `0.504878`, strict/default/loose `9/8`, `9/8`, `11/10`; `1.0x` memory `0.628214`, strict/default/loose `9/8`, `10/9`, `12/11`. Both passed clean gates.
+- No cubic row achieved `cubic_memory_tradeoff_supported`; the local map supports a memory-only tradeoff.
+
+Classification:
+
+- `cubic_memory_tradeoff_supported`: a cubic row beats neutral and matched randomized control on memory, preserves strict `9/8` or better, and passes clean gates.
+- `memory_only_tradeoff_supported`: cubic memory improves versus neutral/randomized controls, but strict count stays below neutral.
+- `no_cubic_tradeoff`: no cubic row beats both neutral and matched randomized controls on memory.
+- `invalid_tradeoff`: required artifacts, clean gates, work accounting, or controls fail.
+
+Outputs:
+
+- `cubic_memory_tradeoff_summary.csv`
+- `cubic_memory_by_return.csv`
+- `cubic_tradeoff_control_comparison.csv`
+- `cubic_memory_tradeoff_report.md`
+- `memory_vs_strict_count_plot.png`
+- `off_comb_energy_plot.png`
+- `comb_score_plot.png`
+- `modal_participation_plot.png`
+
 ### Central HF Scattering Branch
 
 Command:
@@ -2293,14 +2524,14 @@ Interpretation:
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, precompensation design, source-spectrum design audit, smooth-envelope `51^3` rescue test, measured boundary phase-conjugate mirror, read-only modal sparsity audit, read-only return-family gate audit, and read-only off-comb leakage audit are complete, so do not tune nearby cutoffs or broaden controls based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, precompensation design, source-spectrum design audit, smooth-envelope `51^3` rescue test, measured boundary phase-conjugate mirror, read-only modal sparsity audit, read-only return-family gate audit, read-only off-comb leakage audit, return-pattern symmetry audit, and branch-closure report are complete, so do not tune nearby cutoffs or broaden controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat the frozen proof-pack setup as canonical at `41^3`: neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Treat the failed `51^3` lift as a spatial phase decoherence/scale-loss problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design, the smooth-envelope source-spectrum test did not rescue count or coherence, the measured patch-level boundary phase-conjugate mirror also failed the joint count/coherence gates, the modal sparsity audit found the source-shaped `51^3` rows share the same modal reconstruction/participation signature, the return-family gate audit classified the strict loss as real family weakening rather than a pure threshold artifact, and the off-comb leakage audit localized the strongest supported separator to spatial-pattern scrambling.
+- Treat the failed `51^3` lift as a spatial phase decoherence/scale-loss problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design, the smooth-envelope source-spectrum test did not rescue count or coherence, the measured patch-level boundary phase-conjugate mirror also failed the joint count/coherence gates, the modal sparsity audit found the source-shaped `51^3` rows share the same modal reconstruction/participation signature, the return-family gate audit classified the strict loss as real family weakening rather than a pure threshold artifact, the off-comb leakage audit localized the strongest supported separator to spatial-pattern scrambling, and the symmetry audit found no stable recoverable transform.
 - Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, the half-dt strict-clean window as shifted upward to `17.9375-17.945`, and the quarter-dt proof span as `17.94-17.945` with phase `0.5048-0.5094`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
@@ -2311,9 +2542,11 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - Keep global radial peak as an artifact/boundary-residue check.
 - Keep the grid tiny. The proof-motivated `51^3` scale check failed strict gates, and the postmortem did not recommend a recalibrated retry, so do not escalate to `61^3` without a new explicit mechanism.
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
-- Current conservative state: `41^3` passive release-phase proof supported; scalable passive packet-control law not established.
+- Current conservative state: `41^3` passive release-phase proof supported; scalable passive packet-control law not established; passive scale-lift branch closed until a genuinely new stable spatial-pattern-memory mechanism appears.
+- The `spatial_memory_mechanism_lab` has now produced a control-separated `41^3` memory signal, but its optional `51^3` follow-up did not preserve the memory advantage. Any next mechanism work must explain that split directly; do not convert this into cutoff tuning, source shaping, or grid escalation.
+- The fixed `prototype-3d-cubic-memory-tradeoff-map` has now judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. Do not widen this into a tuning map without a new mechanism explaining the memory/count tradeoff.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
-- Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, modal-sparsity-derived source variants, return-gate-derived detector tuning, off-comb-derived source masks, or patch-mask tuning. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, measured phase-conjugate patches failed, the modal sparsity audit did not identify a separating source-control signature, the return-family gate audit did not support detector-only rescue, and the off-comb leakage audit did not identify a safe correction axis. Any future scale check should be explicitly justified, not automatic.
+- Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, modal-sparsity-derived source variants, return-gate-derived detector tuning, off-comb-derived source masks, patch-mask tuning, symmetry-lock runs, or `61^3` escalation. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, measured phase-conjugate patches failed, the modal sparsity audit did not identify a separating source-control signature, the return-family gate audit did not support detector-only rescue, the off-comb leakage audit did not identify a safe correction axis, and the closure report archived the branch. Any future scale check should be explicitly justified by a new stable-memory mechanism, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.
 - Do not run broad neighboring-frequency long sweeps yet.
 

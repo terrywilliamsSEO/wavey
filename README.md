@@ -500,6 +500,40 @@ python main.py prototype-3d-off-comb-leakage-audit
 
 This command runs no physics. It consumes the same proof/lift/spatial/smooth/phase-conjugate/modal-sparsity artifacts plus the return-family gate audit, then localizes the off-comb loss across radial, angular, outer-recycling, modal-sideband, spatial-pattern, and flux channels. Current project state: `runs\off_comb_leakage_audit_3d_20260621_085347` classified as `spatial_pattern_scrambling_supported`: radial leakage, modal sidebands, and delayed outer recycling did not separate from proof rows, while source-control spatial-pattern leakage rose from `0.495788` to `0.586679`.
 
+Run the read-only return-pattern symmetry audit with:
+
+```powershell
+python main.py prototype-3d-return-pattern-symmetry-audit
+```
+
+This command runs no physics. It consumes the proof/lift/spatial/smooth/phase-conjugate/return-family/off-comb artifacts, then tests whether return-to-return pattern loss is rescued by sign, global phase, cubic rotation/reflection, angular sector shift, penalized sector permutation, or harmonic alignment. Current project state: `runs\return_pattern_symmetry_audit_3d_20260621_091511` classified as `pattern_symmetry_inconclusive`: alignment raises some `51^3` memory scores, but transform stability is low (`0.313696` mean) and source controls do not share one signature (`0.363636` share), so there is no mechanism-derived orientation, hopping, or phase-precession rescue.
+
+Run the read-only passive branch closure report with:
+
+```powershell
+python main.py prototype-3d-branch-closure-report
+```
+
+This command runs no physics. It compiles the `41^3` proof evidence, failed `51^3` lift, negative source-shaping and patch-mask controls, modal sparsity, gate artifact, off-comb leakage, return-pattern symmetry, active-pulse, resonator, and central-burst evidence into one closure packet. Current project state: `runs\branch_closure_report_3d_20260621_093821` classified as `passive_scale_lift_branch_closed`: the branch is scientifically useful but not breakthrough-ready; the frozen claim is `41^3` structured refocusing, the frozen non-claim is no `51^3` scale validation, and future reopening requires a genuinely new stable spatial-pattern-memory mechanism.
+
+Run the independent passive spatial-memory mechanism lab with:
+
+```powershell
+python main.py prototype-3d-spatial-memory-mechanism-lab --config configs\long_validation_peak_0_92.json
+```
+
+This is a new research branch, not a rescue of the closed passive scale-lift branch. It starts with a fixed `41^3` passive mechanism test over a neutral reference, weak anisotropy anchor, weak cubic degeneracy-splitting anchor, weak shell-band isolation profile, weak nonlinear phase-memory variant, and randomized equivalent-strength control. The primary metric is return-to-return shell spatial-pattern memory. The command exposes no cutoff/source-shape tuning surface and only runs an optional fixed `51^3` follow-up if the `41^3` mechanism test classifies as `spatial_memory_mechanism_supported`. Current project state: `runs\spatial_memory_mechanism_lab_3d_20260621_103028` classified as `spatial_memory_mechanism_supported` at `41^3`, with `cubic_degeneracy_split` best (`0.645969` memory versus neutral `0.486969` and randomized control `0.505821`), but the gated `51^3` follow-up did not preserve the advantage (`0.544617` versus neutral `0.579914` and randomized control `0.577519`), so this is a mechanism clue rather than scale validation.
+
+Run the fixed 41^3 cubic-memory tradeoff map with:
+
+```powershell
+python main.py prototype-3d-cubic-memory-tradeoff-map --config configs\long_validation_peak_0_92.json
+```
+
+This command is a mechanism-specific local map, not a continuation of the closed passive scale-lift branch. It keeps the neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic source, frequency `0.92`, cutoff `17.94`, matched work, and radius-5 shell metrics fixed. It tests neutral, cubic degeneracy split strengths `0.25x/0.5x/1.0x/1.5x`, sign-flipped cubic split at `0.5x/1.0x`, and randomized matched-strength controls at `0.5x/1.0x`. It runs `41^3` only by default and does not expose a `51^3`, `61^3`, cutoff, source-shape, active-pulse, or resonator path.
+
+Current project state: `runs\cubic_memory_tradeoff_map_3d_20260621_142657` classified as `memory_only_tradeoff_supported`. The best memory row was `cubic_split_sign_flipped_0p5x` with memory `0.725354` versus neutral `0.486969` and randomized `0.504878`, but it fell to strict/default/loose `6/5`, `7/6`, `8/7`. The standard `1.0x` cubic split reproduced the earlier cleaner memory signal (`0.645969` versus randomized `0.628214`) but stayed at strict/default/loose `8/7`, `9/8`, `10/9`. All clean gates and energy accounting passed; no cubic row achieved `cubic_memory_tradeoff_supported`.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1176,6 +1210,64 @@ When `prototype-3d-off-comb-leakage-audit` is used, the control folder includes:
 - `pattern_similarity_decay_plot.png`
 
 The off-comb leakage audit is read-only. Current project state: `runs\off_comb_leakage_audit_3d_20260621_085347` classified as `spatial_pattern_scrambling_supported`: the strongest supported separator is return-to-return spatial-pattern leakage, not radial drift, modal sidebands, or outer-window recycling. Treat this as failure localization, not permission to tune detector gates or source masks.
+
+When `prototype-3d-return-pattern-symmetry-audit` is used, the control folder includes:
+
+- `return_pattern_symmetry_report.md`
+- `return_pattern_symmetry_summary.csv`
+- `return_pair_alignment.csv`
+- `transform_stability.csv`
+- `harmonic_pattern_similarity.csv` when angular sector artifacts are available
+- `return_pattern_symmetry_summary.json`
+- `raw_vs_aligned_similarity_plot.png`
+- `transform_stability_plot.png`
+- `symmetry_rescue_margin_plot.png`
+
+The return-pattern symmetry audit is read-only. Current project state: `runs\return_pattern_symmetry_audit_3d_20260621_091511` classified as `pattern_symmetry_inconclusive`: sign/phase/sector/harmonic alignment can improve some saved `51^3` return-pair similarities, but the chosen transforms are unstable and source controls do not share a coherent transform signature. Treat this as no permission to run orientation-drift, cubic-hopping, phase-precession, source-mask, cutoff, detector, or larger-grid follow-ups.
+
+When `prototype-3d-branch-closure-report` is used, the control folder includes:
+
+- `branch_closure_report.md`
+- `branch_closure_summary.csv`
+- `branch_closure_evidence_chain.csv`
+- `branch_closure_claims.csv`
+- `branch_closure_forbidden_paths.csv`
+- `branch_closure_reopen_criteria.csv`
+- `branch_closure_summary.json`
+
+The branch-closure report is read-only. Current project state: `runs\branch_closure_report_3d_20260621_093821` classified as `passive_scale_lift_branch_closed`: keep the `41^3` proof claim, keep the `51^3` non-claim, treat the failure explanation as organized timing with lost spatial-pattern identity/return-family purity, and do not run cutoff tuning, source shaping, patch masks, smooth envelopes, active pulses, resonators, central bursts, `61^3`, detector retuning, or symmetry-lock runs from the current evidence.
+
+When `prototype-3d-spatial-memory-mechanism-lab` is used, the control folder includes:
+
+- `spatial_memory_mechanism_report.md`
+- `spatial_memory_mechanism_summary.csv`
+- `spatial_memory_by_return.csv`
+- `mechanism_control_comparison.csv`
+- `spatial_memory_mechanism_summary.json`
+- `pattern_memory_plot.png`
+- `off_comb_energy_plot.png`
+- `comb_score_plot.png`
+- `modal_participation_plot.png`
+- supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `spatial_memory_`
+
+The spatial-memory mechanism lab is a separate passive research branch. It must not be described as a direct `51^3` rescue unless a fixed mechanism first improves `41^3` return-to-return spatial-pattern memory, preserves clean gates, and beats the randomized equivalent-strength control.
+
+When `prototype-3d-cubic-memory-tradeoff-map` is used, the control folder includes:
+
+- `cubic_memory_tradeoff_report.md`
+- `cubic_memory_tradeoff_summary.csv`
+- `cubic_memory_by_return.csv`
+- `cubic_tradeoff_control_comparison.csv`
+- `cubic_memory_tradeoff_summary.json`
+- `memory_vs_strict_count_plot.png`
+- `off_comb_energy_plot.png`
+- `comb_score_plot.png`
+- `modal_participation_plot.png`
+- supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `cubic_memory_`
+
+The cubic-memory tradeoff map is `41^3` only by default. It asks whether cubic degeneracy splitting can keep the spatial-memory advantage while preserving strict `9/8`; it does not authorize cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, or resonators.
+
+Current result: `runs\cubic_memory_tradeoff_map_3d_20260621_142657` classified as `memory_only_tradeoff_supported`. Cubic splitting can improve spatial-pattern memory against neutral and matched randomized controls, but the tested local strengths/orientations did not preserve the strict `9/8` floor.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 
