@@ -484,6 +484,14 @@ python main.py prototype-3d-modal-sparsity-audit
 
 This command runs no physics. It consumes the existing `41^3` proof pack, failed `51^3` lift, spatial phase instrumentation, smooth-envelope, and boundary phase-conjugate artifacts, then compares return timing regularity, sparse spectral reconstruction, modal participation ratio, peak width versus modal density, and the hard/smooth/phase-conjugate/shuffled `51^3` controls. Current project state: `runs\modal_sparsity_audit_3d_20260620_231602` classified as `common_51_source_signature_supported`: the dramatic few-mode-to-20-plus-mode split was not proven, but the `51^3` source-shaping controls shared a tight reconstruction/participation signature and the same strict-count loss.
 
+Run the read-only return-family gate audit with:
+
+```powershell
+python main.py prototype-3d-return-family-gate-audit
+```
+
+This command runs no physics. It consumes the proof pack, failed `51^3` lift, spatial phase instrumentation, smooth-envelope, phase-conjugate, and modal-sparsity artifacts, then asks whether strict `51^3` count loss is a real return-family weakening or a fixed-threshold/gate artifact. Current project state: `runs\return_family_gate_audit_3d_20260621_082543` classified as `return_family_weakened_not_gate_artifact`: return timing and comb occupancy remain coherent, but source-control off-comb energy ratio is high (`1.13162` mean) and rank-normalized strength is not compressed enough to explain the strict loss as a detector-only artifact.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1127,6 +1135,21 @@ When `prototype-3d-modal-sparsity-audit` is used, the control folder includes:
 - `modal_sparsity_audit_summary.json`
 
 The modal sparsity audit is read-only. Current project state: `runs\modal_sparsity_audit_3d_20260620_231602` classified as `common_51_source_signature_supported`: proof rows averaged `9` modes for 99% reconstruction, all `51^3` rows averaged `17.46`, and the source-control modal-participation CV was only `0.00242`, so the fixed source-shaping attempts do not separate from the hard `51^3` failure.
+
+When `prototype-3d-return-family-gate-audit` is used, the control folder includes:
+
+- `return_family_gate_report.md`
+- `return_family_gate_summary.csv`
+- `return_window_occupancy.csv`
+- `threshold_crossing_table.csv`
+- `return_amplitude_by_index.csv`
+- `return_family_gate_summary.json`
+- `indexed_return_strength_plot.png`
+- `threshold_crossings_plot.png`
+- `comb_score_plot.png`
+- `off_comb_energy_ratio_plot.png`
+
+The return-family gate audit is read-only. Current project state: `runs\return_family_gate_audit_3d_20260621_082543` classified as `return_family_weakened_not_gate_artifact`: strict major count drops by `1.63333` on average, period timing remains coherent, occupancy is preserved relative to proof, but off-comb energy is too high and late-return area survival is lower, so strict loss should not be treated as a pure fixed-threshold artifact.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

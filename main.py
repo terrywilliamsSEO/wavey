@@ -127,6 +127,16 @@ from simulation.prototype_3d_modal_sparsity_audit import (
     ModalSparsityAuditOptions,
     run_3d_modal_sparsity_audit,
 )
+from simulation.prototype_3d_return_family_gate_audit import (
+    DEFAULT_LIFT_ROOT as DEFAULT_RETURN_FAMILY_LIFT_ROOT,
+    DEFAULT_MODAL_SPARSITY_ROOT as DEFAULT_RETURN_FAMILY_MODAL_SPARSITY_ROOT,
+    DEFAULT_PHASE_CONJUGATE_ROOT as DEFAULT_RETURN_FAMILY_PHASE_CONJUGATE_ROOT,
+    DEFAULT_PROOF_ROOT as DEFAULT_RETURN_FAMILY_PROOF_ROOT,
+    DEFAULT_SMOOTH_ROOT as DEFAULT_RETURN_FAMILY_SMOOTH_ROOT,
+    DEFAULT_SPATIAL_PHASE_ROOT as DEFAULT_RETURN_FAMILY_SPATIAL_PHASE_ROOT,
+    ReturnFamilyGateAuditOptions,
+    run_3d_return_family_gate_audit,
+)
 from simulation.prototype_3d_release_phase_dispersion_audit import (
     DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
     DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
@@ -1013,6 +1023,29 @@ def build_parser() -> argparse.ArgumentParser:
     modal_sparsity_parser.add_argument("--preserved-period-relative-tolerance", type=float, default=0.15, help="Return-period tolerance for preserved beat timing")
     modal_sparsity_parser.add_argument("--blurred-peak-width-growth", type=float, default=0.10, help="Peak-width relative growth threshold for blur")
     modal_sparsity_parser.add_argument("--source-signature-cv-threshold", type=float, default=0.12, help="Maximum CV for source controls to count as the same modal signature")
+
+    return_family_gate_parser = subparsers.add_parser(
+        "prototype-3d-return-family-gate-audit",
+        help="Read-only audit for whether 51^3 strict-count loss is a return-family loss or fixed-gate artifact",
+    )
+    return_family_gate_parser.add_argument("--output-root", default="runs", help="Directory for return-family gate-audit outputs")
+    return_family_gate_parser.add_argument("--proof-root", default=DEFAULT_RETURN_FAMILY_PROOF_ROOT, help="Existing 41^3 proof-pack run root")
+    return_family_gate_parser.add_argument("--lift-root", default=DEFAULT_RETURN_FAMILY_LIFT_ROOT, help="Existing 51^3 resolution-lift run root")
+    return_family_gate_parser.add_argument("--spatial-phase-root", default=DEFAULT_RETURN_FAMILY_SPATIAL_PHASE_ROOT, help="Existing spatial phase instrumentation run root")
+    return_family_gate_parser.add_argument("--smooth-root", default=DEFAULT_RETURN_FAMILY_SMOOTH_ROOT, help="Existing smooth-envelope run root")
+    return_family_gate_parser.add_argument("--phase-conjugate-root", default=DEFAULT_RETURN_FAMILY_PHASE_CONJUGATE_ROOT, help="Existing boundary phase-conjugate run root")
+    return_family_gate_parser.add_argument("--modal-sparsity-root", default=DEFAULT_RETURN_FAMILY_MODAL_SPARSITY_ROOT, help="Existing modal sparsity audit root")
+    return_family_gate_parser.add_argument("--early-interval-count", type=int, default=4, help="Number of early return intervals used to estimate the return period")
+    return_family_gate_parser.add_argument("--window-half-width-fraction", type=float, default=0.24, help="Predicted return-window half-width as a fraction of return period")
+    return_family_gate_parser.add_argument("--min-window-half-width", type=float, default=0.75, help="Minimum predicted return-window half-width")
+    return_family_gate_parser.add_argument("--max-return-windows", type=int, default=12, help="Maximum predicted return windows per row")
+    return_family_gate_parser.add_argument("--low-off-comb-ratio", type=float, default=0.45, help="Maximum off/on comb energy ratio for gate-artifact support")
+    return_family_gate_parser.add_argument("--high-off-comb-ratio", type=float, default=0.75, help="Off/on comb ratio treated as real return-family weakening")
+    return_family_gate_parser.add_argument("--min-occupancy-fraction", type=float, default=0.78, help="Minimum return-window occupancy for gate-artifact support")
+    return_family_gate_parser.add_argument("--min-comb-score-ratio", type=float, default=0.70, help="Minimum 51^3/proof comb-score ratio for gate-artifact support")
+    return_family_gate_parser.add_argument("--amplitude-compression-threshold", type=float, default=0.85, help="Maximum 51^3/proof strength or prominence ratio for amplitude-compression support")
+    return_family_gate_parser.add_argument("--min-strict-major-loss", type=float, default=1.0, help="Minimum strict major-count loss for classification")
+    return_family_gate_parser.add_argument("--period-cv-threshold", type=float, default=0.14, help="Maximum period CV for coherent return timing")
 
     release_phase_dispersion_audit_parser = subparsers.add_parser(
         "prototype-3d-release-phase-dispersion-audit",
@@ -2254,6 +2287,32 @@ def main() -> None:
             )
         )
         _print_3d_modal_sparsity_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-return-family-gate-audit":
+        result = run_3d_return_family_gate_audit(
+            options=ReturnFamilyGateAuditOptions(
+                output_root=args.output_root,
+                proof_root=args.proof_root,
+                lift_root=args.lift_root,
+                spatial_phase_root=args.spatial_phase_root,
+                smooth_root=args.smooth_root,
+                phase_conjugate_root=args.phase_conjugate_root,
+                modal_sparsity_root=args.modal_sparsity_root,
+                early_interval_count=args.early_interval_count,
+                window_half_width_fraction=args.window_half_width_fraction,
+                min_window_half_width=args.min_window_half_width,
+                max_return_windows=args.max_return_windows,
+                low_off_comb_ratio=args.low_off_comb_ratio,
+                high_off_comb_ratio=args.high_off_comb_ratio,
+                min_occupancy_fraction=args.min_occupancy_fraction,
+                min_comb_score_ratio=args.min_comb_score_ratio,
+                amplitude_compression_threshold=args.amplitude_compression_threshold,
+                min_strict_major_loss=args.min_strict_major_loss,
+                period_cv_threshold=args.period_cv_threshold,
+            )
+        )
+        _print_3d_return_family_gate_audit_summary(result)
         return
 
     if args.command == "prototype-3d-release-phase-dispersion-audit":
@@ -3638,6 +3697,41 @@ def _print_3d_modal_sparsity_audit_summary(result: dict[str, Any]) -> None:
     print(f"participation CSV: {result['participation_csv']}")
     print(f"timing CSV: {result['timing_csv']}")
     print(f"relation CSV: {result['relation_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_return_family_gate_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D return-family gate audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("source-control rows:")
+    for row in result.get("summary_rows", []):
+        if int(float(row.get("grid_size") or 0)) != 51:
+            continue
+        if row.get("artifact_source") not in {"resolution_lift", "smooth_envelope", "boundary_phase_conjugate"}:
+            continue
+        print(
+            f"  - {row.get('artifact_source')} / {row.get('prediction_role')}: "
+            f"strict={row.get('strict_major_peaks')}/{row.get('strict_refocus_peaks')}, "
+            f"occupancy={_format_optional(row.get('return_window_occupancy_fraction'))}, "
+            f"comb={_format_optional(row.get('return_comb_score'))}, "
+            f"off_comb={_format_optional(row.get('off_comb_energy_ratio'))}, "
+            f"strength={_format_optional(row.get('mean_rank_normalized_return_strength'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"occupancy CSV: {result['occupancy_csv']}")
+    print(f"threshold CSV: {result['threshold_csv']}")
+    print(f"amplitude CSV: {result['amplitude_csv']}")
+    print("plots:")
+    for name, path in result.get("plots", {}).items():
+        print(f"  - {name}: {path}")
     print(f"report: {result['report_path']}")
 
 
