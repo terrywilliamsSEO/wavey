@@ -12,6 +12,8 @@ New independent research branch: `spatial_memory_mechanism_lab`. This branch ask
 
 The mechanism-specific local tradeoff map in `runs\cubic_memory_tradeoff_map_3d_20260621_142657` classified as `memory_only_tradeoff_supported`. Cubic degeneracy splitting still gives a real 41^3 spatial-memory signal, but the tested local strength/orientation settings did not preserve the strict `9/8` floor. The best memory row was sign-flipped cubic split `0.5x` (`0.725354` memory versus neutral `0.486969` and randomized `0.504878`) but dropped to strict/default/loose `6/5`, `7/6`, `8/7`. The standard `1.0x` cubic split stayed closer to the original mechanism clue (`0.645969` versus matched randomized `0.628214`) but remained strict/default/loose `8/7`, `9/8`, `10/9`. All gates and work accounting passed, so this is a clean memory/count tradeoff rather than an invalid run. No cubic row achieved `cubic_memory_tradeoff_supported`.
 
+The read-only survivor-bias audit in `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`. Standard cubic rows retain some matched neutral-window memory gain, but the largest sign-flipped memory gains coincide with low neutral-window coverage. The audit therefore does not support a clean claim that cubic memory is purely same-window improvement, nor a clean claim that it is entirely survivor bias.
+
 ## Status
 
 ### Done
@@ -308,18 +310,21 @@ The mechanism-specific local tradeoff map in `runs\cubic_memory_tradeoff_map_3d_
 - Added `prototype-3d-cubic-memory-tradeoff-map`, a fixed 41^3-only local strength/orientation map for cubic degeneracy splitting. It exports cubic-memory summary, by-return, matched-control comparison, Markdown report, JSON, and plots for memory versus strict count, off-comb energy, comb score, and modal participation.
 - Ran `python main.py prototype-3d-cubic-memory-tradeoff-map --config configs\long_validation_peak_0_92.json` in `runs\cubic_memory_tradeoff_map_3d_20260621_142657`; classification was `memory_only_tradeoff_supported`.
 - Cubic-memory tradeoff result: best cubic memory was sign-flipped `0.5x` (`0.725354`), beating neutral (`0.486969`) and matched randomized `0.5x` (`0.504878`) but falling to strict/default/loose `6/5`, `7/6`, `8/7`. Standard `1.0x` cubic also beat neutral and matched randomized `1.0x` (`0.645969` versus `0.628214`) but stayed strict/default/loose `8/7`, `9/8`, `10/9`. Clean gates and energy accounting passed for all rows; no tested cubic row preserved strict `9/8`.
+- Added and ran `prototype-3d-cubic-memory-survivor-bias-audit` in `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538`; classification was `cubic_memory_tradeoff_inconclusive`.
+- Cubic survivor-bias audit result: neutral surviving/neutral-window memory was `0.486969`. Standard cubic `0.5x` scored surviving `0.548333`, first-N `0.610478`, and neutral-window `0.561309` with `0.818182` pair coverage versus randomized `0.5x` neutral-window `0.504878`. Sign-flipped `0.5x` scored the largest surviving memory (`0.725354`) but only `0.454545` neutral-window pair coverage. The memory gain is partially same-window, but the strongest gain is inflated by missing/surviving return windows.
 
 ### In Progress
 
 - Passive scale-lift closure is complete. No passive scale-lift physics step is currently justified. The allowed smooth-envelope candidate and the measured patch-level phase-conjugate mirror both failed the joint count-plus-coherence gates, the read-only modal sparsity audit found the source-shaped `51^3` rows share the same reconstruction/participation signature, the return-family gate audit did not support detector-only rescue, the off-comb audit localized the weakness to spatial-pattern scrambling, the symmetry audit did not find a stable recoverable transform, and the closure report archived the branch as scientifically useful but not breakthrough-ready.
 - The separate `spatial_memory_mechanism_lab` branch has a supported `41^3` mechanism signal, but the optional `51^3` follow-up did not preserve the memory advantage. It should not be used to tune the old `51^3` row or reopen the closed passive scale-lift branch by implication.
 - The fixed `prototype-3d-cubic-memory-tradeoff-map` run is complete. It supports a memory-only local tradeoff, not a strict-count-preserving cubic setting and not a scale-lift path.
+- The read-only survivor-bias audit is complete. It left the cubic-memory interpretation mixed: some standard cubic memory survives neutral-window matching, while sign-flipped high-memory rows are coverage-limited.
 
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
 - If pursuing the new spatial-memory branch, design the next step around why weak passive structure improves memory at `41^3` but fails the optional `51^3` memory comparison. Do not tune cutoff, source shape, or grid size from this result.
-- No follow-up physics command is currently justified by the cubic tradeoff map alone. Any next mechanism work must explain why the cubic memory gain trades away strict returns at `41^3` and why the optional `51^3` follow-up lost the memory advantage, rather than widening the local map or tuning the old phase row.
+- No follow-up physics command is currently justified by the cubic tradeoff or survivor-bias audit alone. Any next mechanism work must explain why cubic memory improves some matched windows, why the strongest gain appears in coverage-limited survivor rows, why strict returns drop at `41^3`, and why the optional `51^3` follow-up lost the memory advantage.
 - Do not keep repeating active second-pulse controls; first-refocus and second-refocus travel-time adjustment did not fix the active-pulse disruption.
 - Do not expand the passive boundary-inner-edge resonator layer yet; the first weak-coupling tuned/below/above/cubic/high-damping pass stored/exchanged energy passively but degraded strict counts.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, and the same radius-5 physical shell window when interpreting any follow-up.

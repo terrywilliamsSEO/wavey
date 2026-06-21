@@ -534,6 +534,14 @@ This command is a mechanism-specific local map, not a continuation of the closed
 
 Current project state: `runs\cubic_memory_tradeoff_map_3d_20260621_142657` classified as `memory_only_tradeoff_supported`. The best memory row was `cubic_split_sign_flipped_0p5x` with memory `0.725354` versus neutral `0.486969` and randomized `0.504878`, but it fell to strict/default/loose `6/5`, `7/6`, `8/7`. The standard `1.0x` cubic split reproduced the earlier cleaner memory signal (`0.645969` versus randomized `0.628214`) but stayed at strict/default/loose `8/7`, `9/8`, `10/9`. All clean gates and energy accounting passed; no cubic row achieved `cubic_memory_tradeoff_supported`.
 
+Run the read-only cubic-memory survivor-bias audit with:
+
+```powershell
+python main.py prototype-3d-cubic-memory-survivor-bias-audit
+```
+
+This command runs no physics. It reads the completed cubic-memory tradeoff map and compares spatial-pattern memory over surviving return peaks, equal first-N return indices, and neutral-predicted return windows with missing-window coverage tracked. Current project state: `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`: standard cubic rows still show some matched-window memory gain, but the highest-memory sign-flipped rows have low neutral-window coverage, so the saved artifacts do not cleanly separate real same-window gain from survivor bias.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1268,6 +1276,19 @@ When `prototype-3d-cubic-memory-tradeoff-map` is used, the control folder includ
 The cubic-memory tradeoff map is `41^3` only by default. It asks whether cubic degeneracy splitting can keep the spatial-memory advantage while preserving strict `9/8`; it does not authorize cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, or resonators.
 
 Current result: `runs\cubic_memory_tradeoff_map_3d_20260621_142657` classified as `memory_only_tradeoff_supported`. Cubic splitting can improve spatial-pattern memory against neutral and matched randomized controls, but the tested local strengths/orientations did not preserve the strict `9/8` floor.
+
+When `prototype-3d-cubic-memory-survivor-bias-audit` is used, the audit folder includes:
+
+- `cubic_memory_survivor_bias_report.md`
+- `cubic_memory_survivor_bias_summary.csv`
+- `matched_return_memory.csv`
+- `memory_by_return_index.csv`
+- `cubic_memory_survivor_bias_summary.json`
+- `memory_by_return_index_plot.png`
+- `matched_window_memory_plot.png`
+- `memory_vs_strict_count_plot.png`
+
+The survivor-bias audit is read-only. Current result: `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`: standard cubic `0.5x` kept a matched neutral-window gain (`0.561309` versus neutral `0.486969` and randomized `0.504878`) with `0.818182` pair coverage, while sign-flipped `0.5x` had the largest surviving memory (`0.725354`) but only `0.454545` neutral-window pair coverage. Treat the cubic memory gain as partially real but not free of survivor-window inflation.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

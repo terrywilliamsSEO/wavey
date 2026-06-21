@@ -77,6 +77,7 @@ Current interpretation:
 - The read-only passive branch closure report classified as `passive_scale_lift_branch_closed`: the branch is scientifically useful but not breakthrough-ready. Freeze the `41^3` structured-refocusing claim, freeze the no-`51^3`-scale-validation non-claim, and reopen only if a genuinely new mechanism predicts stable spatial-pattern memory.
 - The independent `spatial_memory_mechanism_lab` run in `runs\spatial_memory_mechanism_lab_3d_20260621_103028` classified as `spatial_memory_mechanism_supported`: weak cubic degeneracy splitting was the best `41^3` spatial-memory row (`0.645969` versus neutral `0.486969` and randomized equivalent-strength `0.505821`) under clean gates. The gated optional `51^3` follow-up did not preserve the memory advantage (`0.544617` versus neutral `0.579914` and randomized control `0.577519`), so this is a 41^3 mechanism clue, not scale validation.
 - The `prototype-3d-cubic-memory-tradeoff-map` run in `runs\cubic_memory_tradeoff_map_3d_20260621_142657` classified as `memory_only_tradeoff_supported`: cubic split rows can beat neutral and matched randomized controls on spatial-pattern memory under clean gates, but no tested cubic strength/orientation preserved strict `9/8`.
+- The read-only `prototype-3d-cubic-memory-survivor-bias-audit` run in `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`: standard cubic rows retain some neutral-window matched memory gain, but the strongest sign-flipped gains have low neutral-window coverage, so the artifact set cannot cleanly separate same-window mechanism from survivor bias.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2476,6 +2477,61 @@ Outputs:
 - `comb_score_plot.png`
 - `modal_participation_plot.png`
 
+### Cubic Memory Survivor-Bias Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-cubic-memory-survivor-bias-audit
+```
+
+Status:
+
+- Completed in `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538`.
+- Classification: `cubic_memory_tradeoff_inconclusive`.
+- Read-only audit; no new physics was run.
+- Source artifacts: `runs\cubic_memory_tradeoff_map_3d_20260621_142657`.
+
+Question:
+
+- Is the cubic-memory gain a real same-return-window pattern-memory improvement, or is it inflated because cubic rows lose strict peaks and compare fewer cleaner surviving returns?
+
+Metrics:
+
+- Surviving-peak memory over all available return pairs.
+- Equal first-N return-index memory.
+- Neutral-predicted-window memory with missing-window coverage.
+- Memory by return index.
+- Late-return memory decay.
+- Strict/default/loose count versus memory relationship.
+- Comb score versus memory relationship.
+
+Result:
+
+- Neutral: surviving memory `0.486969`, first-N memory `0.439650`, neutral-window memory `0.486969`, neutral-window pair coverage `1.0`.
+- Random `0.5x`: neutral-window memory `0.504878`, coverage `1.0`.
+- Standard cubic `0.5x`: surviving `0.548333`, first-N `0.610478`, neutral-window `0.561309`, coverage `0.818182`; this preserves a matched-window gain versus neutral and matched random.
+- Standard cubic `1.0x`: surviving `0.645969`, first-N `0.632972`, neutral-window `0.668909`, coverage `0.818182`, but its surviving gain over matched random `1.0x` is small.
+- Sign-flipped cubic `0.5x`: highest surviving memory `0.725354`, first-N `0.663780`, neutral-window `0.690250`, but coverage is only `0.454545`.
+- Sign-flipped cubic `1.0x`: neutral-window memory `0.861517`, but coverage is only `0.181818`.
+- Strict-vs-surviving-memory correlation was `-0.748880`; strict-vs-neutral-window-memory correlation was `-0.893468`, consistent with memory rising as strict count falls.
+
+Interpretation:
+
+- The standard cubic rows argue against a pure survivor-bias-only explanation.
+- The sign-flipped high-memory rows are too coverage-limited to count as clean same-window mechanism support.
+- Treat the current cubic-memory result as mixed: partially real same-window signal, partially inflated by return-window survival/coverage effects.
+
+Outputs:
+
+- `cubic_memory_survivor_bias_summary.csv`
+- `matched_return_memory.csv`
+- `memory_by_return_index.csv`
+- `cubic_memory_survivor_bias_report.md`
+- `memory_by_return_index_plot.png`
+- `matched_window_memory_plot.png`
+- `memory_vs_strict_count_plot.png`
+
 ### Central HF Scattering Branch
 
 Command:
@@ -2544,7 +2600,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
 - Current conservative state: `41^3` passive release-phase proof supported; scalable passive packet-control law not established; passive scale-lift branch closed until a genuinely new stable spatial-pattern-memory mechanism appears.
 - The `spatial_memory_mechanism_lab` has now produced a control-separated `41^3` memory signal, but its optional `51^3` follow-up did not preserve the memory advantage. Any next mechanism work must explain that split directly; do not convert this into cutoff tuning, source shaping, or grid escalation.
-- The fixed `prototype-3d-cubic-memory-tradeoff-map` has now judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. Do not widen this into a tuning map without a new mechanism explaining the memory/count tradeoff.
+- The fixed `prototype-3d-cubic-memory-tradeoff-map` judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. The read-only survivor-bias audit then showed mixed evidence: standard cubic rows retain some neutral-window memory gain, while strongest sign-flipped gains are coverage-limited. Do not widen this into a tuning map without a new mechanism explaining both the memory/count tradeoff and the survivor-window bias.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, modal-sparsity-derived source variants, return-gate-derived detector tuning, off-comb-derived source masks, patch-mask tuning, symmetry-lock runs, or `61^3` escalation. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, measured phase-conjugate patches failed, the modal sparsity audit did not identify a separating source-control signature, the return-family gate audit did not support detector-only rescue, the off-comb leakage audit did not identify a safe correction axis, and the closure report archived the branch. Any future scale check should be explicitly justified by a new stable-memory mechanism, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.

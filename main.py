@@ -188,6 +188,12 @@ from simulation.prototype_3d_cubic_memory_tradeoff_map import (
     CubicMemoryTradeoffMapOptions,
     run_3d_cubic_memory_tradeoff_map,
 )
+from simulation.prototype_3d_cubic_memory_survivor_bias_audit import (
+    DEFAULT_SPATIAL_MEMORY_LAB_ROOT as DEFAULT_CUBIC_MEMORY_SURVIVOR_SPATIAL_MEMORY_LAB_ROOT,
+    DEFAULT_TRADEOFF_ROOT as DEFAULT_CUBIC_MEMORY_SURVIVOR_TRADEOFF_ROOT,
+    CubicMemorySurvivorBiasAuditOptions,
+    run_3d_cubic_memory_survivor_bias_audit,
+)
 from simulation.prototype_3d_release_phase_dispersion_audit import (
     DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
     DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
@@ -1183,6 +1189,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cubic_memory_tradeoff_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed 41^3 cubic memory tradeoff map")
     cubic_memory_tradeoff_parser.add_argument("--output-root", default="runs", help="Directory for cubic memory tradeoff outputs")
+
+    cubic_memory_survivor_parser = subparsers.add_parser(
+        "prototype-3d-cubic-memory-survivor-bias-audit",
+        help="Read-only audit for survivor bias in the cubic-memory tradeoff map",
+    )
+    cubic_memory_survivor_parser.add_argument("--output-root", default="runs", help="Directory for cubic memory survivor-bias audit outputs")
+    cubic_memory_survivor_parser.add_argument("--tradeoff-root", default=DEFAULT_CUBIC_MEMORY_SURVIVOR_TRADEOFF_ROOT, help="Existing cubic-memory tradeoff map root")
+    cubic_memory_survivor_parser.add_argument("--spatial-memory-lab-root", default=DEFAULT_CUBIC_MEMORY_SURVIVOR_SPATIAL_MEMORY_LAB_ROOT, help="Existing spatial-memory mechanism lab root, for documentation context only")
+    cubic_memory_survivor_parser.add_argument("--min-same-window-gain", type=float, default=0.025, help="Minimum matched-window memory gain for real same-window support")
+    cubic_memory_survivor_parser.add_argument("--survivor-gain-fraction-threshold", type=float, default=0.35, help="Minimum same-window/all-gain fraction below which survivor bias is supported")
+    cubic_memory_survivor_parser.add_argument("--min-neutral-window-pair-coverage", type=float, default=0.50, help="Minimum neutral-window pair coverage for same-window support")
 
     release_phase_dispersion_audit_parser = subparsers.add_parser(
         "prototype-3d-release-phase-dispersion-audit",
@@ -2544,6 +2561,20 @@ def main() -> None:
             options=CubicMemoryTradeoffMapOptions(output_root=args.output_root),
         )
         _print_3d_cubic_memory_tradeoff_map_summary(result)
+        return
+
+    if args.command == "prototype-3d-cubic-memory-survivor-bias-audit":
+        result = run_3d_cubic_memory_survivor_bias_audit(
+            options=CubicMemorySurvivorBiasAuditOptions(
+                output_root=args.output_root,
+                tradeoff_root=args.tradeoff_root,
+                spatial_memory_lab_root=args.spatial_memory_lab_root,
+                min_same_window_gain=args.min_same_window_gain,
+                survivor_gain_fraction_threshold=args.survivor_gain_fraction_threshold,
+                min_neutral_window_pair_coverage=args.min_neutral_window_pair_coverage,
+            )
+        )
+        _print_3d_cubic_memory_survivor_bias_audit_summary(result)
         return
 
     if args.command == "prototype-3d-release-phase-dispersion-audit":
@@ -4120,6 +4151,35 @@ def _print_3d_cubic_memory_tradeoff_map_summary(result: dict[str, Any]) -> None:
     print(f"summary CSV: {result['summary_csv']}")
     print(f"by-return CSV: {result['by_return_csv']}")
     print(f"comparison CSV: {result['comparison_csv']}")
+    print("plots:")
+    for name, path in result.get("plots", {}).items():
+        print(f"  - {name}: {path}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_cubic_memory_survivor_bias_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D cubic memory survivor-bias audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    if classification.get("best_variant"):
+        print(f"best variant: {classification['best_variant']}")
+    print("survivor-bias rows:")
+    for row in result.get("summary_rows", []):
+        print(
+            f"  - {row.get('mechanism_role')}: "
+            f"surviving={_format_optional(row.get('all_available_memory'))}, "
+            f"first_n={_format_optional(row.get('first_n_return_index_memory'))}, "
+            f"neutral_window={_format_optional(row.get('neutral_predicted_window_memory'))}, "
+            f"coverage={_format_optional(row.get('neutral_window_pair_coverage'))}, "
+            f"strict={row.get('strict_major_peaks')}/{row.get('strict_refocus_peaks')}, "
+            f"comb={_format_optional(row.get('return_timing_comb_score'))}, "
+            f"clean={row.get('clean_gates_passed')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"matched-return CSV: {result['matched_return_memory_csv']}")
+    print(f"memory-by-return CSV: {result['memory_by_return_index_csv']}")
     print("plots:")
     for name, path in result.get("plots", {}).items():
         print(f"  - {name}: {path}")
