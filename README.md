@@ -542,6 +542,14 @@ python main.py prototype-3d-cubic-memory-survivor-bias-audit
 
 This command runs no physics. It reads the completed cubic-memory tradeoff map and compares spatial-pattern memory over surviving return peaks, equal first-N return indices, and neutral-predicted return windows with missing-window coverage tracked. Current project state: `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`: standard cubic rows still show some matched-window memory gain, but the highest-memory sign-flipped rows have low neutral-window coverage, so the saved artifacts do not cleanly separate real same-window gain from survivor bias.
 
+Run the fixed 41^3 isochronous cubic-memory anchor test with:
+
+```powershell
+python main.py prototype-3d-isochronous-cubic-memory-anchor --config configs\long_validation_peak_0_92.json
+```
+
+This command tests whether a weak cubic degeneracy split plus a fixed smooth radial compensation profile can preserve spatial-pattern memory while keeping return timing/comb score closer to the neutral reference. It runs a fixed `41^3` row set only: neutral reference, standard cubic split `0.5x/1.0x`, radial compensation only, isochronous cubic anchor `0.5x/1.0x`, and randomized matched-strength controls `0.5x/1.0x`. It does not expose cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, resonators, or old-branch rescue logic. Current project state: command implemented but not yet run.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1289,6 +1297,21 @@ When `prototype-3d-cubic-memory-survivor-bias-audit` is used, the audit folder i
 - `memory_vs_strict_count_plot.png`
 
 The survivor-bias audit is read-only. Current result: `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`: standard cubic `0.5x` kept a matched neutral-window gain (`0.561309` versus neutral `0.486969` and randomized `0.504878`) with `0.818182` pair coverage, while sign-flipped `0.5x` had the largest surviving memory (`0.725354`) but only `0.454545` neutral-window pair coverage. Treat the cubic memory gain as partially real but not free of survivor-window inflation.
+
+When `prototype-3d-isochronous-cubic-memory-anchor` is used, the control folder includes:
+
+- `isochronous_cubic_anchor_report.md`
+- `isochronous_cubic_anchor_summary.csv`
+- `isochronous_cubic_anchor_by_return.csv`
+- `isochronous_anchor_control_comparison.csv`
+- `isochronous_cubic_anchor_summary.json`
+- `memory_vs_strict_count_plot.png`
+- `off_comb_energy_plot.png`
+- `comb_score_plot.png`
+- `modal_participation_plot.png`
+- supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `isochronous_anchor_`
+
+The isochronous cubic-memory anchor is a small fixed `41^3` mechanism test. It asks whether radial compensation can decouple the cubic memory gain from strict-count and comb penalties; it does not authorize cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, or resonators. Current project state: command implemented but not yet run.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

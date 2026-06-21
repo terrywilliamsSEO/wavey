@@ -254,7 +254,13 @@ class Lattice3D:
         if profile_name == "none" or abs(strength) <= EPSILON:
             return
         profile = _memory_mechanism_profile(self.config, self.coords, profile_name)
-        if profile_name in {"anisotropy_anchor", "cubic_degeneracy_split", "random_equivalent"}:
+        if profile_name in {
+            "anisotropy_anchor",
+            "cubic_degeneracy_split",
+            "radial_compensation",
+            "isochronous_cubic_anchor",
+            "random_equivalent",
+        }:
             self.stiffness *= np.clip(1.0 + strength * profile, 0.05, None)
         elif profile_name == "shell_band_isolation":
             shell = np.clip(profile, 0.0, 1.0)
@@ -693,9 +699,13 @@ def _memory_mechanism_profile(
         raw = 0.65 * x / scale - 0.35 * y / scale + 0.20 * z / scale
         return _normalized_active_profile(raw, active)
     if profile_name == "cubic_degeneracy_split":
-        r = np.maximum(radius, config.dx)
-        raw = (x**4 + y**4 + z**4) / np.maximum(r**4, EPSILON)
-        return _normalized_active_profile(raw, active)
+        return _cubic_degeneracy_profile(config, coords, active)
+    if profile_name == "radial_compensation":
+        return _radial_compensation_profile(config, coords, active)
+    if profile_name == "isochronous_cubic_anchor":
+        cubic = _cubic_degeneracy_profile(config, coords, active)
+        radial = _radial_compensation_profile(config, coords, active)
+        return _normalized_active_profile(cubic + 0.45 * radial, active)
     if profile_name == "shell_band_isolation":
         center = config.memory_mechanism_shell_radius
         if center is None:
@@ -715,6 +725,35 @@ def _memory_mechanism_profile(
         raw = rng.normal(size=radius.shape)
         return _normalized_active_profile(raw, active)
     raise ValueError(f"Unsupported passive memory mechanism profile: {profile_name}")
+
+
+def _cubic_degeneracy_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+) -> np.ndarray:
+    x = coords["x"].astype(float)
+    y = coords["y"].astype(float)
+    z = coords["z"].astype(float)
+    radius = np.maximum(coords["radius"].astype(float), config.dx)
+    raw = (x**4 + y**4 + z**4) / np.maximum(radius**4, EPSILON)
+    return _normalized_active_profile(raw, active)
+
+
+def _radial_compensation_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+) -> np.ndarray:
+    radius = coords["radius"].astype(float)
+    center = config.memory_mechanism_shell_radius
+    if center is None:
+        center = float(config.defect_radius + 2.0 * config.dx)
+    width = max(float(config.memory_mechanism_shell_width or (4.0 * config.dx)), config.dx)
+    shell = np.exp(-0.5 * ((radius - center) / width) ** 2)
+    broad = np.exp(-0.5 * ((radius - center) / max(2.5 * width, config.dx)) ** 2)
+    raw = broad - shell
+    return _normalized_active_profile(raw, active)
 
 
 def _normalized_active_profile(raw: np.ndarray, active: np.ndarray) -> np.ndarray:

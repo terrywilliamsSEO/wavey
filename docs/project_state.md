@@ -78,6 +78,7 @@ Current interpretation:
 - The independent `spatial_memory_mechanism_lab` run in `runs\spatial_memory_mechanism_lab_3d_20260621_103028` classified as `spatial_memory_mechanism_supported`: weak cubic degeneracy splitting was the best `41^3` spatial-memory row (`0.645969` versus neutral `0.486969` and randomized equivalent-strength `0.505821`) under clean gates. The gated optional `51^3` follow-up did not preserve the memory advantage (`0.544617` versus neutral `0.579914` and randomized control `0.577519`), so this is a 41^3 mechanism clue, not scale validation.
 - The `prototype-3d-cubic-memory-tradeoff-map` run in `runs\cubic_memory_tradeoff_map_3d_20260621_142657` classified as `memory_only_tradeoff_supported`: cubic split rows can beat neutral and matched randomized controls on spatial-pattern memory under clean gates, but no tested cubic strength/orientation preserved strict `9/8`.
 - The read-only `prototype-3d-cubic-memory-survivor-bias-audit` run in `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`: standard cubic rows retain some neutral-window matched memory gain, but the strongest sign-flipped gains have low neutral-window coverage, so the artifact set cannot cleanly separate same-window mechanism from survivor bias.
+- The `prototype-3d-isochronous-cubic-memory-anchor` command is available as a small fixed `41^3` mechanism test for whether a weak cubic split plus smooth radial compensation can preserve spatial memory without the strict-count/comb penalty; it has not been run yet.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2532,6 +2533,67 @@ Outputs:
 - `matched_window_memory_plot.png`
 - `memory_vs_strict_count_plot.png`
 
+### Isochronous Cubic Memory Anchor
+
+Command:
+
+```powershell
+python main.py prototype-3d-isochronous-cubic-memory-anchor --config configs\long_validation_peak_0_92.json
+```
+
+Status:
+
+- Implemented but not yet run.
+- Fixed `41^3` mechanism test under the independent spatial-memory branch.
+- Not a continuation or rescue of the closed passive scale-lift branch.
+- No optional `51^3` path exists for this command.
+
+Mechanism:
+
+- Combines weak cubic degeneracy splitting with a smooth radial compensation profile.
+- The intent is to pin angular/spatial pattern identity while keeping average return timing/comb close to neutral.
+- This is implemented as passive lattice stiffness profiles only; it does not add source shaping, active pulses, resonators, or medium-shaping sweeps.
+
+Fixed setup:
+
+- Neutral lattice.
+- Stronger sponge.
+- Inner-sponge-edge sign-flip cubic boundary source.
+- Frequency `0.92`.
+- Cutoff `17.94`; do not tune cutoff phase.
+- Matched work per physical source area.
+- Radius-5 shell metrics.
+- No `51^3`, `61^3`, source-shape variants, active pulses, or resonators.
+
+Fixed rows:
+
+- Neutral reference.
+- Standard cubic split `0.5x`.
+- Standard cubic split `1.0x`.
+- Radial compensation only.
+- Isochronous cubic anchor `0.5x`.
+- Isochronous cubic anchor `1.0x`.
+- Randomized matched-strength control `0.5x`.
+- Randomized matched-strength control `1.0x`.
+
+Classification:
+
+- `isochronous_cubic_anchor_supported`: anchor beats neutral/randomized on memory, preserves strict `9/8` or better, keeps comb score near neutral, and passes clean gates.
+- `memory_only_anchor_tradeoff`: anchor improves memory but still sacrifices strict count or comb score.
+- `no_isochronous_anchor_signal`: anchor does not beat controls.
+- `invalid_anchor_test`: artifacts, accounting, or clean gates fail.
+
+Expected outputs:
+
+- `isochronous_cubic_anchor_summary.csv`
+- `isochronous_cubic_anchor_by_return.csv`
+- `isochronous_anchor_control_comparison.csv`
+- `isochronous_cubic_anchor_report.md`
+- `memory_vs_strict_count_plot.png`
+- `off_comb_energy_plot.png`
+- `comb_score_plot.png`
+- `modal_participation_plot.png`
+
 ### Central HF Scattering Branch
 
 Command:
@@ -2600,7 +2662,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
 - Current conservative state: `41^3` passive release-phase proof supported; scalable passive packet-control law not established; passive scale-lift branch closed until a genuinely new stable spatial-pattern-memory mechanism appears.
 - The `spatial_memory_mechanism_lab` has now produced a control-separated `41^3` memory signal, but its optional `51^3` follow-up did not preserve the memory advantage. Any next mechanism work must explain that split directly; do not convert this into cutoff tuning, source shaping, or grid escalation.
-- The fixed `prototype-3d-cubic-memory-tradeoff-map` judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. The read-only survivor-bias audit then showed mixed evidence: standard cubic rows retain some neutral-window memory gain, while strongest sign-flipped gains are coverage-limited. Do not widen this into a tuning map without a new mechanism explaining both the memory/count tradeoff and the survivor-window bias.
+- The fixed `prototype-3d-cubic-memory-tradeoff-map` judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. The read-only survivor-bias audit then showed mixed evidence: standard cubic rows retain some neutral-window memory gain, while strongest sign-flipped gains are coverage-limited. The fixed isochronous cubic anchor command is available to test one explicit decoupling mechanism; do not widen it into a tuning map without a result-driven mechanism explaining both the memory/count tradeoff and survivor-window bias.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, modal-sparsity-derived source variants, return-gate-derived detector tuning, off-comb-derived source masks, patch-mask tuning, symmetry-lock runs, or `61^3` escalation. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, measured phase-conjugate patches failed, the modal sparsity audit did not identify a separating source-control signature, the return-family gate audit did not support detector-only rescue, the off-comb leakage audit did not identify a safe correction axis, and the closure report archived the branch. Any future scale check should be explicitly justified by a new stable-memory mechanism, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.
