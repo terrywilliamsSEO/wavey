@@ -75,6 +75,8 @@ class SpatialPhaseInstrumentationOptions:
     radial_phase_bins: int = 12
     angular_theta_bins: int = 8
     angular_polar_bins: int = 4
+    capture_node_frame_rows: bool = True
+    progress_interval_steps: int = 0
     coherence_drop_threshold: float = 0.12
     radial_coherence_drop_threshold: float = 0.12
     angular_coherence_drop_threshold: float = 0.12
@@ -439,6 +441,12 @@ def _run_spatial_phase_variant(
     cumulative_outward_flux = 0.0
     for step in range(config.steps):
         time = step * config.dt
+        if (
+            spatial_options.progress_interval_steps > 0
+            and step > 0
+            and step % spatial_options.progress_interval_steps == 0
+        ):
+            print(f"{config.name}: lifecycle step {step}/{config.steps}", flush=True)
         force = lattice.external_force(time)
         velocity_before = lattice.v.copy()
         lattice.step(time, config.dt)
@@ -505,8 +513,16 @@ def _run_spatial_phase_variant(
     frame_peaks = _frame_peaks(config, timeseries, spatial_options)
     accepted_frames = _capture_peak_frames(config, frame_peaks, shell_geometry, radial_phase_bins, spatial_options)
     frame_index_rows = [_frame_index_row(config, frame) for frame in accepted_frames]
-    displacement_rows = _node_frame_rows(config, accepted_frames, shell_geometry, field="u")
-    velocity_rows = _node_frame_rows(config, accepted_frames, shell_geometry, field="v")
+    displacement_rows = (
+        _node_frame_rows(config, accepted_frames, shell_geometry, field="u")
+        if spatial_options.capture_node_frame_rows
+        else []
+    )
+    velocity_rows = (
+        _node_frame_rows(config, accepted_frames, shell_geometry, field="v")
+        if spatial_options.capture_node_frame_rows
+        else []
+    )
     radial_frame_rows = _radial_frame_rows(config, accepted_frames, radial_phase_bins)
     radial_coherence_rows = _radial_coherence_rows(config, radial_frame_rows, spatial_options)
     angular_rows = _angular_rows(config, accepted_frames, spatial_options)
@@ -656,6 +672,12 @@ def _capture_peak_frames(
     frames: list[dict[str, Any]] = []
     for step in range(config.steps):
         time = step * config.dt
+        if (
+            options.progress_interval_steps > 0
+            and step > 0
+            and step % options.progress_interval_steps == 0
+        ):
+            print(f"{config.name}: frame replay step {step}/{config.steps}", flush=True)
         lattice.step(time, config.dt)
         peak = target_by_step.get(step)
         if peak is None:

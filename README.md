@@ -458,7 +458,15 @@ Run the read-only source-spectrum design audit with:
 python main.py prototype-3d-source-spectrum-design-audit
 ```
 
-This command runs no physics. It asks whether the current continuous hard-cutoff source window injects carrier sidebands that could plausibly explain the `51^3` modal bandwidth growth and spatial decoherence, and whether a same-frequency, same-cutoff-phase, same-work smooth temporal envelope would theoretically narrow the source spectrum. Current project state: `runs\source_spectrum_design_audit_3d_20260620_181010` classified as `source_spectrum_narrowing_candidate_supported`; it supports at most one future `51^3` smooth-envelope candidate plus two controls, not a sweep.
+This command runs no physics. It asks whether the current continuous hard-cutoff source window injects carrier sidebands that could plausibly explain the `51^3` modal bandwidth growth and spatial decoherence, and whether a same-frequency, same-cutoff-phase, same-work smooth temporal envelope would theoretically narrow the source spectrum. Current project state: `runs\source_spectrum_design_audit_3d_20260620_181010` classified as `source_spectrum_narrowing_candidate_supported`; it authorized the completed fixed smooth-envelope test, not a sweep.
+
+Run the fixed smooth-envelope `51^3` resolution-lift rescue test with:
+
+```powershell
+python main.py prototype-3d-smooth-envelope-resolution-lift --config configs\long_validation_peak_0_92.json
+```
+
+This is a fixed three-row physics test, not a source-shape sweep. It compares a same-command hard-cutoff reproduction at cutoff `17.9425`, a same-cutoff smooth `sin^2` candidate, and a smooth weak-side control at cutoff `17.915`, while keeping frequency `0.92`, release phase, work per physical source area, neutral lattice, stronger sponge, sign-flip cubic boundary source, `51^3`, and the radius-5 shell window fixed. Current project state: `runs\smooth_envelope_resolution_lift_3d_20260620_192501` classified as `smooth_envelope_no_rescue`: source sidebands were reduced, but strict counts and shell/radial/angular coherence worsened versus the hard control.
 
 Run the firewalled central high-frequency scattering branch with:
 
@@ -1047,7 +1055,28 @@ When `prototype-3d-source-spectrum-design-audit` is used, the control folder inc
 - `rejected_source_spectrum_options.csv`
 - `source_spectrum_design_audit_summary.json`
 
-The source-spectrum design report is a theory gate, not a physics run. Current project state: `runs\source_spectrum_design_audit_3d_20260620_181010` classified as `source_spectrum_narrowing_candidate_supported`: hard-cutoff far sideband fraction was `0.049396`, the same-release smooth envelope reduced it to `0.000516`, and `smooth_envelope_candidate.json` is marked `"recommended": true`.
+The source-spectrum design report is a theory gate, not a physics run. Current project state: `runs\source_spectrum_design_audit_3d_20260620_181010` classified as `source_spectrum_narrowing_candidate_supported`: hard-cutoff far sideband fraction was `0.049396`, the same-release smooth envelope reduced it to `0.000516`, and `smooth_envelope_candidate.json` authorized the now-completed fixed smooth-envelope test.
+
+When `prototype-3d-smooth-envelope-resolution-lift` is used, the control folder includes:
+
+- `smooth_envelope_resolution_lift_report.md`
+- `smooth_envelope_resolution_lift_summary.csv`
+- `smooth_envelope_threshold_robust_score.csv`
+- `smooth_envelope_spatial_comparison.csv`
+- `smooth_envelope_resolution_lift_gates.csv`
+- `smooth_envelope_source_spectrum_check.csv`
+- `smooth_envelope_event_threshold_counts.csv`
+- `smooth_envelope_lifecycle_timeseries.csv`
+- `smooth_envelope_lifecycle_events.csv`
+- `smooth_envelope_spatial_phase_frame_index.csv`
+- `smooth_envelope_radial_shell_phase_frames.csv`
+- `smooth_envelope_shell_phase_coherence_by_radius.csv`
+- `smooth_envelope_angular_shell_phase_coherence.csv`
+- `smooth_envelope_node_antinode_stability_maps.csv`
+- `smooth_envelope_phase_drift_across_return_peaks.csv`
+- `smooth_envelope_resolution_lift_summary.json`
+
+The smooth-envelope rescue report is a physics result, not a design gate. Current project state: `runs\smooth_envelope_resolution_lift_3d_20260620_192501` classified as `smooth_envelope_no_rescue`: source bandwidth ratio fell to `0.301083`, but the candidate dropped to default `9/8` and strict `7/6`, coherence moved away from the hard-control and `41^3` proof values, and the weak-side smooth control performed similarly.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

@@ -144,6 +144,11 @@ from simulation.prototype_3d_source_spectrum_design_audit import (
     SourceSpectrumDesignAuditOptions,
     run_3d_source_spectrum_design_audit,
 )
+from simulation.prototype_3d_smooth_envelope_resolution_lift import (
+    DEFAULT_PROOF_REFERENCE_ROOT as DEFAULT_SMOOTH_ENVELOPE_PROOF_ROOT,
+    SmoothEnvelopeResolutionLiftOptions,
+    run_3d_smooth_envelope_resolution_lift,
+)
 from simulation.prototype_3d_central_burst import (
     CentralBurst3DOptions,
     run_3d_central_burst_control,
@@ -1083,6 +1088,52 @@ def build_parser() -> argparse.ArgumentParser:
     source_spectrum_parser.add_argument("--min-current-far-sideband-fraction", type=float, default=0.01, help="Minimum hard-window far-sideband fraction for support")
     source_spectrum_parser.add_argument("--min-smoothing-sideband-reduction", type=float, default=0.50, help="Minimum theoretical sideband reduction for support")
     source_spectrum_parser.add_argument("--max-smooth-bandwidth-ratio", type=float, default=1.05, help="Maximum smooth/hard source bandwidth ratio for support")
+
+    smooth_lift_parser = subparsers.add_parser(
+        "prototype-3d-smooth-envelope-resolution-lift",
+        help="Run the fixed 51^3 smooth-envelope source-spectrum rescue candidate plus two controls",
+    )
+    smooth_lift_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed-domain lattice constants")
+    smooth_lift_parser.add_argument("--output-root", default="runs", help="Directory for smooth-envelope resolution-lift outputs")
+    smooth_lift_parser.add_argument("--grid-size", type=int, default=51, help="Fixed lift grid size")
+    smooth_lift_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define fixed physical source-layer width")
+    smooth_lift_parser.add_argument("--physical-duration", type=float, default=96.0, help="Physical end time")
+    smooth_lift_parser.add_argument("--sample-every", type=int, default=10, help="Compatibility sample interval")
+    smooth_lift_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense lifecycle/sample interval")
+    smooth_lift_parser.add_argument("--radial-bins", type=int, default=40, help="Number of lifecycle radial bins")
+    smooth_lift_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Physical shell-window inner radius")
+    smooth_lift_parser.add_argument("--shell-window-width", type=float, default=4.0, help="Physical shell-window width")
+    smooth_lift_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Fallback shell-window width in dx units")
+    smooth_lift_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus original 3D sponge")
+    smooth_lift_parser.add_argument("--target-work-per-source-area", type=float, help="Override matched work per physical source area")
+    smooth_lift_parser.add_argument("--fixed-drive-frequency", type=float, default=0.92, help="Fixed carrier frequency")
+    smooth_lift_parser.add_argument("--hard-control-cutoff", type=float, default=17.9425, help="Hard-cutoff 51^3 reproduction cutoff")
+    smooth_lift_parser.add_argument("--candidate-cutoff", type=float, default=17.9425, help="Smooth-envelope candidate cutoff")
+    smooth_lift_parser.add_argument("--negative-control-cutoff", type=float, default=17.915, help="Smooth-envelope weak/negative phase control cutoff")
+    smooth_lift_parser.add_argument("--dt-scale", type=float, default=0.25, help="Quarter-dt scale")
+    smooth_lift_parser.add_argument("--proof-reference-root", default=DEFAULT_SMOOTH_ENVELOPE_PROOF_ROOT, help="Existing spatial-phase proof-reference root")
+    smooth_lift_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first arrival")
+    smooth_lift_parser.add_argument("--exit-threshold-fraction", type=float, default=0.12, help="Fraction of shell peak used to mark shell-window exit")
+    smooth_lift_parser.add_argument("--exit-hold-samples", type=int, default=10, help="Consecutive below-threshold samples required for exit")
+    smooth_lift_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Default event peak threshold")
+    smooth_lift_parser.add_argument("--frame-peak-threshold-fraction", type=float, default=0.20, help="Loose threshold used only for storing spatial return frames")
+    smooth_lift_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Fraction of first peak required for refocus peaks")
+    smooth_lift_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between return peaks")
+    smooth_lift_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
+    smooth_lift_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
+    smooth_lift_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
+    smooth_lift_parser.add_argument("--max-return-frames", type=int, default=12, help="Maximum loose return-peak frames to export per row")
+    smooth_lift_parser.add_argument("--radial-phase-bins", type=int, default=12, help="Number of radial shell phase bins")
+    smooth_lift_parser.add_argument("--angular-theta-bins", type=int, default=8, help="Number of azimuth bins for spherical shell phase coherence")
+    smooth_lift_parser.add_argument("--angular-polar-bins", type=int, default=4, help="Number of polar bins for spherical shell phase coherence")
+    smooth_lift_parser.add_argument("--target-dominant-shell-frequency", type=float, default=0.012806, help="Expected dominant shell-energy band")
+    smooth_lift_parser.add_argument("--dominant-frequency-tolerance", type=float, default=0.002, help="Tolerance for the dominant shell-energy band")
+    smooth_lift_parser.add_argument("--min-source-sideband-reduction", type=float, default=0.90, help="Minimum source sideband reduction versus hard control")
+    smooth_lift_parser.add_argument("--max-smooth-source-bandwidth-ratio", type=float, default=0.40, help="Maximum smooth/hard source bandwidth ratio")
+    smooth_lift_parser.add_argument("--min-coherence-improvement", type=float, default=0.02, help="Minimum shell/radial/angular coherence gain versus hard control")
+    smooth_lift_parser.add_argument("--max-tail-radius-worsening", type=float, default=0.10, help="Allowed tail-radius shift worsening versus hard control")
+    smooth_lift_parser.add_argument("--max-work-per-area-relative-error", type=float, default=0.02, help="Maximum work/area calibration error")
+    smooth_lift_parser.add_argument("--max-post-cutoff-positive-work", type=float, default=1.0e-6, help="Maximum post-cutoff positive external work")
 
     central_burst_parser = subparsers.add_parser(
         "prototype-3d-central-burst-control",
@@ -2220,6 +2271,56 @@ def main() -> None:
             )
         )
         _print_3d_source_spectrum_design_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-smooth-envelope-resolution-lift":
+        config = _load_sim_config(args.config)
+        result = run_3d_smooth_envelope_resolution_lift(
+            config,
+            options=SmoothEnvelopeResolutionLiftOptions(
+                output_root=args.output_root,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                physical_duration=args.physical_duration,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                target_work_per_source_area=args.target_work_per_source_area,
+                fixed_drive_frequency=args.fixed_drive_frequency,
+                hard_control_cutoff=args.hard_control_cutoff,
+                candidate_cutoff=args.candidate_cutoff,
+                negative_control_cutoff=args.negative_control_cutoff,
+                dt_scale=args.dt_scale,
+                proof_reference_root=args.proof_reference_root,
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                frame_peak_threshold_fraction=args.frame_peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                min_peak_separation_time=args.min_peak_separation_time,
+                min_refocus_count=args.min_refocus_count,
+                min_width_growth_fraction=args.min_width_growth_fraction,
+                min_decay_rate_magnitude=args.min_decay_rate_magnitude,
+                max_return_frames=args.max_return_frames,
+                radial_phase_bins=args.radial_phase_bins,
+                angular_theta_bins=args.angular_theta_bins,
+                angular_polar_bins=args.angular_polar_bins,
+                target_dominant_shell_frequency=args.target_dominant_shell_frequency,
+                dominant_frequency_tolerance=args.dominant_frequency_tolerance,
+                min_source_sideband_reduction=args.min_source_sideband_reduction,
+                max_smooth_source_bandwidth_ratio=args.max_smooth_source_bandwidth_ratio,
+                min_coherence_improvement=args.min_coherence_improvement,
+                max_tail_radius_worsening=args.max_tail_radius_worsening,
+                max_work_per_area_relative_error=args.max_work_per_area_relative_error,
+                max_post_cutoff_positive_work=args.max_post_cutoff_positive_work,
+            ),
+        )
+        _print_3d_smooth_envelope_resolution_lift_summary(result)
         return
 
     if args.command in {"prototype-3d-central-burst-control", "central-hf-scattering-branch"}:
@@ -3525,6 +3626,58 @@ def _print_3d_source_spectrum_design_audit_summary(result: dict[str, Any]) -> No
     print(f"report: {result['report_path']}")
 
 
+def _print_3d_smooth_envelope_resolution_lift_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D smooth-envelope resolution lift complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("rows:")
+    for row in result.get("variants", []):
+        print(
+            f"  - {row.get('prediction_role')} / {row.get('envelope_kind')}: "
+            f"cutoff={_format_optional(row.get('drive_cutoff_time'))}, "
+            f"phase={_format_optional(row.get('cutoff_phase_cycles'))}, "
+            f"default={row.get('default_major_peaks_at_0p30')}/{row.get('default_refocus_peaks_at_0p30')}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"loose0.20={row.get('loose_major_peaks_at_0p20')}/{row.get('loose_refocus_peaks_at_0p20')}, "
+            f"shell_coh={_format_optional(row.get('shell_phase_coherence_mean'))}, "
+            f"radial_coh={_format_optional(row.get('radial_phase_coherence_mean'))}, "
+            f"angular_coh={_format_optional(row.get('angular_phase_coherence_mean'))}, "
+            f"band={_format_optional(row.get('dominant_shell_frequency'))}, "
+            f"source_bw_ratio={_format_optional(row.get('source_bandwidth_ratio_to_hard'))}, "
+            f"outer/shell={_format_optional(row.get('outer_shell'))}, "
+            f"no_exit={row.get('no_exit')}"
+        )
+    print("comparisons:")
+    for row in result.get("comparison_rows", []):
+        print(
+            f"  - {row.get('comparison')}: "
+            f"strict_delta={row.get('strict_major_delta', '')}/{row.get('strict_refocus_delta', '')}, "
+            f"shell_delta={_format_optional(row.get('shell_phase_coherence_delta'))}, "
+            f"radial_delta={_format_optional(row.get('radial_phase_coherence_delta'))}, "
+            f"angular_delta={_format_optional(row.get('angular_phase_coherence_delta'))}, "
+            f"proof_distance_reduction={_format_optional(row.get('coherence_distance_reduction_mean'))}"
+        )
+    print("gates:")
+    for row in result.get("gate_rows", []):
+        print(f"  - {row.get('gate')}: {row.get('pass')} ({_format_optional(row.get('value'))})")
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"threshold robust CSV: {result['robust_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
+    print(f"gates CSV: {result['gates_csv']}")
+    print(f"source CSV: {result['source_csv']}")
+    print(f"frame index CSV: {result['frame_index_csv']}")
+    print(f"radial phase CSV: {result['radial_frames_csv']}")
+    print(f"angular phase CSV: {result['angular_csv']}")
+    print(f"report: {result['report_path']}")
+
+
 def _print_3d_central_burst_summary(result: dict[str, Any]) -> None:
     classification = result["classification"]
     print("3D central HF scattering branch complete")
@@ -3599,9 +3752,12 @@ def _diagnostic_labels(diagnostics: dict[str, Any]) -> list[str]:
 
 
 def _format_optional(value: Any) -> str:
-    if value is None:
+    if value is None or value == "":
         return "n/a"
-    return f"{float(value):.6g}"
+    try:
+        return f"{float(value):.6g}"
+    except (TypeError, ValueError):
+        return str(value)
 
 
 if __name__ == "__main__":

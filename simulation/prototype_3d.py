@@ -813,13 +813,14 @@ def _audit_work(config: Prototype3DConfig) -> float:
     total = 0.0
     for step in range(config.steps):
         time = step * config.dt
+        if time > config.drive_cutoff_time:
+            break
         force = lattice.external_force(time)
         velocity_before = lattice.v.copy()
         lattice.step(time, config.dt)
         velocity_mid = 0.5 * (velocity_before + lattice.v)
         power = float(np.sum(force * velocity_mid) * config.cell_volume)
-        if time <= config.drive_cutoff_time:
-            total += max(0.0, power) * config.dt
+        total += max(0.0, power) * config.dt
     return total
 
 
