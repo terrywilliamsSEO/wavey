@@ -69,6 +69,7 @@ Current interpretation:
 - The read-only spatial phase precompensation design classified as `no_safe_phase_correction`: the allowed global/per-face/cubic/harmonic/release-nudge basis explained almost none of the matched shell-sector phase error (`R2=0.00531`) and per-return phase drift was unstable (`1.04098` rad), so no precompensated `51^3` candidate should run from the current frames.
 - The read-only source-spectrum design audit classified as `source_spectrum_narrowing_candidate_supported`: the current continuous hard-cutoff source has a nontrivial far sideband fraction (`0.049396`), and a same-frequency/same-cutoff-phase/same-work smooth `sin^2` envelope theoretically reduces it to `0.000516`. It authorized the completed fixed smooth-envelope test, not any broad source-shaping sweep.
 - The fixed smooth-envelope `51^3` source-spectrum rescue test classified as `smooth_envelope_no_rescue`: sideband reduction succeeded, but the smooth candidate dropped to default `9/8` and conservative strict `7/6`, worsened shell/radial/angular coherence versus the hard `51^3` control, matched the weak-side smooth control, and worsened tail-radius shift despite clean work/no-exit/global-outer gates.
+- The fixed measured boundary phase-conjugate mirror classified as `boundary_phase_conjugate_no_rescue`: a frozen 96-patch boundary mask derived from the `41^3` proof row did not restore the `51^3` scale gate. Candidate, hard control, shuffled-patch, amplitude-only, phase-only, and wrong-return rows all stayed default `9/8`, strict `7/6`, and loose `11/10`; the candidate slightly worsened shell/radial coherence versus hard control and the shuffled patch control did not fail. Clean gates passed, so this is a wavefront-control negative result rather than contamination.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2035,6 +2036,51 @@ Interpretation:
 - The same-command hard control at the same cutoff/phase still failed strict 9/8 scale proof, but it was better than the smooth candidate: default `12/11`, strict `8/7`, loose `12/11`, and shell/radial/angular coherence `0.765266` / `0.812159` / `0.771228`.
 - Do not continue with smooth-envelope variants, cutoff tuning, frequency tuning, spatial phase precompensation, source geometry changes, grid-size escalation, or medium changes from this result.
 
+### Boundary Phase-Conjugate Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-boundary-phase-conjugate-control --config configs\long_validation_peak_0_92.json
+```
+
+Latest summarized run:
+
+- Local report: `runs\boundary_phase_conjugate_3d_20260620_212918\boundary_phase_conjugate_report.md`
+- Summary CSV: `runs\boundary_phase_conjugate_3d_20260620_212918\boundary_phase_conjugate_summary.csv`
+- Threshold-robust CSV: `runs\boundary_phase_conjugate_3d_20260620_212918\boundary_phase_conjugate_threshold_robust_score.csv`
+- Spatial comparison CSV: `runs\boundary_phase_conjugate_3d_20260620_212918\boundary_phase_conjugate_spatial_comparison.csv`
+- Candidate JSON: `runs\boundary_phase_conjugate_3d_20260620_212918\boundary_phase_conjugate_candidate.json`
+- Classification: `boundary_phase_conjugate_no_rescue`
+
+Fixed setup:
+
+- 41^3 proof row used only to derive the shell phase pattern.
+- 51^3 hard control, phase-conjugate candidate, shuffled-patch phase control, amplitude-only control, phase-only control, and wrong-return-target control.
+- Neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source.
+- Frequency `0.92`, cutoff `17.9425`, release phase `0.5071`, matched work per physical source area, radius-5 shell window, quarter dt.
+- No active second pulses, no resonator, no defects/traps/medium changes, no grid or cutoff tuning after seeing the result.
+- Boundary mask is deliberately coarse: `6` faces x `4` x `4` patches = `96` patches, frozen before 51^3 rows run.
+
+Result summary:
+
+| Row | Default | Strict | Loose 0.20 | Shell Coh | Radial Coh | Angular Coh | Outer/Shell | Exit | Global Outer |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+| hard control | 9/8 | 7/6 | 11/10 | 0.497980 | 0.564139 | 0.512359 | 0.692066 | false | false |
+| phase-conjugate candidate | 9/8 | 7/6 | 11/10 | 0.495393 | 0.560093 | 0.513604 | 0.691673 | false | false |
+| shuffled patch control | 9/8 | 7/6 | 11/10 | 0.495189 | 0.559831 | 0.513422 | 0.692670 | false | false |
+| amplitude-only control | 9/8 | 7/6 | 11/10 | 0.495996 | 0.560556 | 0.514064 | 0.690480 | false | false |
+| phase-only control | 9/8 | 7/6 | 11/10 | 0.497618 | 0.563974 | 0.512359 | 0.693785 | false | false |
+| wrong-return control | 9/8 | 7/6 | 11/10 | 0.495892 | 0.560622 | 0.513578 | 0.689568 | false | false |
+
+Interpretation:
+
+- The measured boundary mirror did not restore strict 9/8 at 51^3 and did not improve spatial coherence toward the 41^3 proof row.
+- The candidate slightly worsened shell and radial coherence versus the hard control; angular coherence improved only by about `0.00125`, below the predeclared gate.
+- Shuffled patches did not fail, so the measured patch wavefront did not show a meaningful phase-conjugate signal in this basis.
+- Cleanliness gates passed: no shell exit, global outer false, outer/shell below `1.0`, zero post-cutoff work, and matched work/area error around `3.5e-8`.
+- This is a clean negative mechanism test, not active contamination. Do not continue into patch-mask tuning, higher patch counts, cell-by-cell masks, new source-shape variants, cutoff tuning, or larger-grid escalation from this result.
+
 ### Central HF Scattering Branch
 
 Command:
@@ -2083,14 +2129,14 @@ Interpretation:
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, precompensation design, source-spectrum design audit, and smooth-envelope `51^3` rescue test are complete, so do not tune nearby cutoffs or broaden controls based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, precompensation design, source-spectrum design audit, smooth-envelope `51^3` rescue test, and measured boundary phase-conjugate mirror are complete, so do not tune nearby cutoffs or broaden controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat the frozen proof-pack setup as canonical at `41^3`: neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Treat the failed `51^3` lift as a spatial phase decoherence/scale-loss problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design, and the smooth-envelope source-spectrum test did not rescue count or coherence.
+- Treat the failed `51^3` lift as a spatial phase decoherence/scale-loss problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design, the smooth-envelope source-spectrum test did not rescue count or coherence, and the measured patch-level boundary phase-conjugate mirror also failed the joint count/coherence gates.
 - Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, the half-dt strict-clean window as shifted upward to `17.9375-17.945`, and the quarter-dt proof span as `17.94-17.945` with phase `0.5048-0.5094`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
@@ -2103,7 +2149,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
 - Current conservative state: `41^3` passive release-phase proof supported; scalable passive packet-control law not established.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
-- Do not add traps, rotation, medium shaping, defects, frequency combinations, or active second pulses. The release-phase-recalibrated `51^3` candidate plus two controls has already been run and failed strict gates; the postmortem says no single retry is predicted. Any future scale check should be explicitly justified, not automatic.
+- Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, or patch-mask tuning. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, and measured phase-conjugate patches failed. Any future scale check should be explicitly justified, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.
 - Do not run broad neighboring-frequency long sweeps yet.
 

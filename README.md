@@ -468,6 +468,14 @@ python main.py prototype-3d-smooth-envelope-resolution-lift --config configs\lon
 
 This is a fixed three-row physics test, not a source-shape sweep. It compares a same-command hard-cutoff reproduction at cutoff `17.9425`, a same-cutoff smooth `sin^2` candidate, and a smooth weak-side control at cutoff `17.915`, while keeping frequency `0.92`, release phase, work per physical source area, neutral lattice, stronger sponge, sign-flip cubic boundary source, `51^3`, and the radius-5 shell window fixed. Current project state: `runs\smooth_envelope_resolution_lift_3d_20260620_192501` classified as `smooth_envelope_no_rescue`: source sidebands were reduced, but strict counts and shell/radial/angular coherence worsened versus the hard control.
 
+Run the fixed boundary phase-conjugate `51^3` mechanism test with:
+
+```powershell
+python main.py prototype-3d-boundary-phase-conjugate-control --config configs\long_validation_peak_0_92.json
+```
+
+This is a fixed measured-wavefront test, not patch-mask tuning. It reruns one `41^3` proof row to capture shell phase frames, freezes a coarse 96-patch boundary phase/amplitude candidate before running any `51^3` rows, then compares hard control, phase-conjugate candidate, shuffled-patch phase control, amplitude-only control, phase-only control, and wrong-return-target control at the same cutoff `17.9425`, release phase `0.5071`, frequency `0.92`, work per physical source area, neutral lattice, stronger sponge, sign-flip cubic boundary source, and radius-5 shell window. Current project state: `runs\boundary_phase_conjugate_3d_20260620_212918` classified as `boundary_phase_conjugate_no_rescue`: the candidate stayed default `9/8`, strict `7/6`, and loose `11/10`, did not improve shell/radial/angular coherence, and the shuffled patch control did not fail.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1077,6 +1085,28 @@ When `prototype-3d-smooth-envelope-resolution-lift` is used, the control folder 
 - `smooth_envelope_resolution_lift_summary.json`
 
 The smooth-envelope rescue report is a physics result, not a design gate. Current project state: `runs\smooth_envelope_resolution_lift_3d_20260620_192501` classified as `smooth_envelope_no_rescue`: source bandwidth ratio fell to `0.301083`, but the candidate dropped to default `9/8` and strict `7/6`, coherence moved away from the hard-control and `41^3` proof values, and the weak-side smooth control performed similarly.
+
+When `prototype-3d-boundary-phase-conjugate-control` is used, the control folder includes:
+
+- `boundary_phase_conjugate_report.md`
+- `boundary_phase_conjugate_summary.csv`
+- `boundary_phase_conjugate_threshold_robust_score.csv`
+- `boundary_phase_conjugate_spatial_comparison.csv`
+- `boundary_phase_conjugate_gates.csv`
+- `boundary_phase_conjugate_event_threshold_counts.csv`
+- `boundary_phase_conjugate_lifecycle_timeseries.csv`
+- `boundary_phase_conjugate_lifecycle_events.csv`
+- `boundary_phase_conjugate_spatial_phase_frame_index.csv`
+- `boundary_phase_conjugate_proof_spatial_phase_frame_index.csv`
+- `boundary_phase_conjugate_proof_shell_displacement_frames.csv`
+- `boundary_phase_conjugate_proof_shell_velocity_frames.csv`
+- `boundary_phase_conjugate_shell_phase_coherence_by_radius.csv`
+- `boundary_phase_conjugate_angular_shell_phase_coherence.csv`
+- `boundary_phase_conjugate_design.csv`
+- `boundary_phase_conjugate_candidate.json`
+- `boundary_phase_conjugate_summary.json`
+
+The boundary phase-conjugate report is a fixed mechanism result. Current project state: `runs\boundary_phase_conjugate_3d_20260620_212918` classified as `boundary_phase_conjugate_no_rescue`: the 96-patch candidate did not improve strict `7/6` counts or shell/radial/angular coherence versus the hard `51^3` control, while clean no-exit/global-outer/work gates passed.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

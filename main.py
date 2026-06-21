@@ -149,6 +149,10 @@ from simulation.prototype_3d_smooth_envelope_resolution_lift import (
     SmoothEnvelopeResolutionLiftOptions,
     run_3d_smooth_envelope_resolution_lift,
 )
+from simulation.prototype_3d_boundary_phase_conjugate import (
+    BoundaryPhaseConjugateOptions,
+    run_3d_boundary_phase_conjugate_control,
+)
 from simulation.prototype_3d_central_burst import (
     CentralBurst3DOptions,
     run_3d_central_burst_control,
@@ -1134,6 +1138,55 @@ def build_parser() -> argparse.ArgumentParser:
     smooth_lift_parser.add_argument("--max-tail-radius-worsening", type=float, default=0.10, help="Allowed tail-radius shift worsening versus hard control")
     smooth_lift_parser.add_argument("--max-work-per-area-relative-error", type=float, default=0.02, help="Maximum work/area calibration error")
     smooth_lift_parser.add_argument("--max-post-cutoff-positive-work", type=float, default=1.0e-6, help="Maximum post-cutoff positive external work")
+
+    boundary_phase_conjugate_parser = subparsers.add_parser(
+        "prototype-3d-boundary-phase-conjugate-control",
+        help="Run one patch-level boundary phase-conjugate 51^3 rescue candidate plus controls",
+    )
+    boundary_phase_conjugate_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed-domain lattice constants")
+    boundary_phase_conjugate_parser.add_argument("--output-root", default="runs", help="Directory for boundary phase-conjugate outputs")
+    boundary_phase_conjugate_parser.add_argument("--proof-grid-size", type=int, default=41, help="41^3 proof source grid")
+    boundary_phase_conjugate_parser.add_argument("--grid-size", type=int, default=51, help="51^3 lift/control grid")
+    boundary_phase_conjugate_parser.add_argument("--reference-source-grid-size", type=int, default=31, help="Grid size used to define fixed physical source-layer width")
+    boundary_phase_conjugate_parser.add_argument("--physical-duration", type=float, default=96.0, help="Physical end time")
+    boundary_phase_conjugate_parser.add_argument("--sample-every", type=int, default=10, help="Compatibility sample interval")
+    boundary_phase_conjugate_parser.add_argument("--diagnostic-sample-every", type=int, default=4, help="Dense lifecycle/sample interval")
+    boundary_phase_conjugate_parser.add_argument("--radial-bins", type=int, default=40, help="Number of lifecycle radial bins")
+    boundary_phase_conjugate_parser.add_argument("--shell-window-radius", type=float, default=5.0, help="Physical shell-window inner radius")
+    boundary_phase_conjugate_parser.add_argument("--shell-window-width", type=float, default=4.0, help="Physical shell-window width")
+    boundary_phase_conjugate_parser.add_argument("--near-shell-width-dx", type=float, default=4.0, help="Fallback shell-window width in dx units")
+    boundary_phase_conjugate_parser.add_argument("--sponge-strength-multiplier", type=float, default=3.0, help="Sponge strength multiplier versus original 3D sponge")
+    boundary_phase_conjugate_parser.add_argument("--target-work-per-source-area", type=float, help="Override matched work per physical source area")
+    boundary_phase_conjugate_parser.add_argument("--fixed-drive-frequency", type=float, default=0.92, help="Fixed carrier frequency")
+    boundary_phase_conjugate_parser.add_argument("--proof-cutoff", type=float, default=17.94, help="41^3 proof-row cutoff used to derive the wavefront")
+    boundary_phase_conjugate_parser.add_argument("--lift-cutoff", type=float, default=17.9425, help="51^3 candidate/control cutoff")
+    boundary_phase_conjugate_parser.add_argument("--dt-scale", type=float, default=0.25, help="Quarter-dt scale")
+    boundary_phase_conjugate_parser.add_argument("--patch-u-bins", type=int, default=4, help="Per-face patch bins along first face axis")
+    boundary_phase_conjugate_parser.add_argument("--patch-v-bins", type=int, default=4, help="Per-face patch bins along second face axis")
+    boundary_phase_conjugate_parser.add_argument("--target-return-count", type=int, default=4, help="Number of proof return peaks used to derive the candidate")
+    boundary_phase_conjugate_parser.add_argument("--wrong-return-rank", type=int, default=4, help="Single return rank used for the wrong-return control")
+    boundary_phase_conjugate_parser.add_argument("--patch-amplitude-strength", type=float, default=0.30, help="Strength of proof-sector energy weighting in patch amplitudes")
+    boundary_phase_conjugate_parser.add_argument("--min-patch-amplitude-scale", type=float, default=0.75, help="Minimum patch amplitude scale")
+    boundary_phase_conjugate_parser.add_argument("--max-patch-amplitude-scale", type=float, default=1.25, help="Maximum patch amplitude scale")
+    boundary_phase_conjugate_parser.add_argument("--shuffled-seed", type=int, default=5103, help="Seed for shuffled patch phase control")
+    boundary_phase_conjugate_parser.add_argument("--arrival-threshold-fraction", type=float, default=0.10, help="Fraction of shell peak used to mark first arrival")
+    boundary_phase_conjugate_parser.add_argument("--exit-threshold-fraction", type=float, default=0.12, help="Fraction of shell peak used to mark shell-window exit")
+    boundary_phase_conjugate_parser.add_argument("--exit-hold-samples", type=int, default=10, help="Consecutive below-threshold samples required for exit")
+    boundary_phase_conjugate_parser.add_argument("--peak-threshold-fraction", type=float, default=0.30, help="Default event peak threshold")
+    boundary_phase_conjugate_parser.add_argument("--frame-peak-threshold-fraction", type=float, default=0.20, help="Loose threshold used only for storing spatial return frames")
+    boundary_phase_conjugate_parser.add_argument("--refocus-threshold-fraction", type=float, default=0.35, help="Fraction of first peak required for refocus peaks")
+    boundary_phase_conjugate_parser.add_argument("--min-peak-separation-time", type=float, default=5.0, help="Minimum time separation between return peaks")
+    boundary_phase_conjugate_parser.add_argument("--min-refocus-count", type=int, default=2, help="Minimum major-peak count for repeated-refocusing classification")
+    boundary_phase_conjugate_parser.add_argument("--min-width-growth-fraction", type=float, default=0.30, help="Minimum tail width/spread growth for diffusive classification")
+    boundary_phase_conjugate_parser.add_argument("--min-decay-rate-magnitude", type=float, default=0.01, help="Minimum post-peak log decay-rate magnitude for diffusive classification")
+    boundary_phase_conjugate_parser.add_argument("--max-return-frames", type=int, default=4, help="Number of proof/control return frames retained for phase analysis")
+    boundary_phase_conjugate_parser.add_argument("--radial-phase-bins", type=int, default=12, help="Number of radial shell phase bins")
+    boundary_phase_conjugate_parser.add_argument("--angular-theta-bins", type=int, default=8, help="Number of azimuth bins for spherical shell phase coherence")
+    boundary_phase_conjugate_parser.add_argument("--angular-polar-bins", type=int, default=4, help="Number of polar bins for spherical shell phase coherence")
+    boundary_phase_conjugate_parser.add_argument("--progress-interval-steps", type=int, default=1000, help="Lifecycle progress print interval; set 0 to disable")
+    boundary_phase_conjugate_parser.add_argument("--min-coherence-improvement", type=float, default=0.02, help="Minimum shell/radial/angular coherence gain versus hard control")
+    boundary_phase_conjugate_parser.add_argument("--max-work-per-area-relative-error", type=float, default=0.02, help="Maximum work/area calibration error")
+    boundary_phase_conjugate_parser.add_argument("--max-post-cutoff-positive-work", type=float, default=1.0e-6, help="Maximum post-cutoff positive external work")
 
     central_burst_parser = subparsers.add_parser(
         "prototype-3d-central-burst-control",
@@ -2321,6 +2374,59 @@ def main() -> None:
             ),
         )
         _print_3d_smooth_envelope_resolution_lift_summary(result)
+        return
+
+    if args.command == "prototype-3d-boundary-phase-conjugate-control":
+        config = _load_sim_config(args.config)
+        result = run_3d_boundary_phase_conjugate_control(
+            config,
+            options=BoundaryPhaseConjugateOptions(
+                output_root=args.output_root,
+                proof_grid_size=args.proof_grid_size,
+                grid_size=args.grid_size,
+                reference_source_grid_size=args.reference_source_grid_size,
+                physical_duration=args.physical_duration,
+                sample_every=args.sample_every,
+                diagnostic_sample_every=args.diagnostic_sample_every,
+                radial_bins=args.radial_bins,
+                shell_window_radius=args.shell_window_radius,
+                shell_window_width=args.shell_window_width,
+                near_shell_width_dx=args.near_shell_width_dx,
+                sponge_strength_multiplier=args.sponge_strength_multiplier,
+                target_work_per_source_area=args.target_work_per_source_area,
+                fixed_drive_frequency=args.fixed_drive_frequency,
+                proof_cutoff=args.proof_cutoff,
+                lift_cutoff=args.lift_cutoff,
+                dt_scale=args.dt_scale,
+                patch_u_bins=args.patch_u_bins,
+                patch_v_bins=args.patch_v_bins,
+                target_return_count=args.target_return_count,
+                wrong_return_rank=args.wrong_return_rank,
+                patch_amplitude_strength=args.patch_amplitude_strength,
+                min_patch_amplitude_scale=args.min_patch_amplitude_scale,
+                max_patch_amplitude_scale=args.max_patch_amplitude_scale,
+                shuffled_seed=args.shuffled_seed,
+                arrival_threshold_fraction=args.arrival_threshold_fraction,
+                exit_threshold_fraction=args.exit_threshold_fraction,
+                exit_hold_samples=args.exit_hold_samples,
+                peak_threshold_fraction=args.peak_threshold_fraction,
+                frame_peak_threshold_fraction=args.frame_peak_threshold_fraction,
+                refocus_threshold_fraction=args.refocus_threshold_fraction,
+                min_peak_separation_time=args.min_peak_separation_time,
+                min_refocus_count=args.min_refocus_count,
+                min_width_growth_fraction=args.min_width_growth_fraction,
+                min_decay_rate_magnitude=args.min_decay_rate_magnitude,
+                max_return_frames=args.max_return_frames,
+                radial_phase_bins=args.radial_phase_bins,
+                angular_theta_bins=args.angular_theta_bins,
+                angular_polar_bins=args.angular_polar_bins,
+                progress_interval_steps=args.progress_interval_steps,
+                min_coherence_improvement=args.min_coherence_improvement,
+                max_work_per_area_relative_error=args.max_work_per_area_relative_error,
+                max_post_cutoff_positive_work=args.max_post_cutoff_positive_work,
+            ),
+        )
+        _print_3d_boundary_phase_conjugate_summary(result)
         return
 
     if args.command in {"prototype-3d-central-burst-control", "central-hf-scattering-branch"}:
@@ -3675,6 +3781,67 @@ def _print_3d_smooth_envelope_resolution_lift_summary(result: dict[str, Any]) ->
     print(f"frame index CSV: {result['frame_index_csv']}")
     print(f"radial phase CSV: {result['radial_frames_csv']}")
     print(f"angular phase CSV: {result['angular_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_boundary_phase_conjugate_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D boundary phase-conjugate control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    proof = result.get("proof_summary", {})
+    print("proof design source:")
+    print(
+        "  - "
+        f"{proof.get('variant')}: "
+        f"strict={proof.get('conservative_major_peaks')}/{proof.get('conservative_refocus_peaks')}, "
+        f"shell_coh={_format_optional(proof.get('shell_phase_coherence_mean'))}, "
+        f"radial_coh={_format_optional(proof.get('radial_phase_coherence_mean'))}, "
+        f"angular_coh={_format_optional(proof.get('angular_phase_coherence_mean'))}"
+    )
+    print("rows:")
+    for row in result.get("variants", []):
+        print(
+            f"  - {row.get('prediction_role')} / {row.get('patch_mode')}: "
+            f"cutoff={_format_optional(row.get('drive_cutoff_time'))}, "
+            f"phase={_format_optional(row.get('cutoff_phase_cycles'))}, "
+            f"default={row.get('default_major_peaks_at_0p30')}/{row.get('default_refocus_peaks_at_0p30')}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"loose0.20={row.get('loose_major_peaks_at_0p20')}/{row.get('loose_refocus_peaks_at_0p20')}, "
+            f"shell_coh={_format_optional(row.get('shell_phase_coherence_mean'))}, "
+            f"radial_coh={_format_optional(row.get('radial_phase_coherence_mean'))}, "
+            f"angular_coh={_format_optional(row.get('angular_phase_coherence_mean'))}, "
+            f"outer/shell={_format_optional(row.get('outer_shell'))}, "
+            f"no_exit={row.get('no_exit')}"
+        )
+    print("comparisons:")
+    for row in result.get("comparison_rows", []):
+        print(
+            f"  - {row.get('comparison')}: "
+            f"strict_delta={row.get('strict_major_delta', '')}/{row.get('strict_refocus_delta', '')}, "
+            f"shell_delta={_format_optional(row.get('shell_phase_coherence_delta'))}, "
+            f"radial_delta={_format_optional(row.get('radial_phase_coherence_delta'))}, "
+            f"angular_delta={_format_optional(row.get('angular_phase_coherence_delta'))}, "
+            f"proof_distance_reduction={_format_optional(row.get('coherence_distance_reduction_mean'))}"
+        )
+    print("gates:")
+    for row in result.get("gate_rows", []):
+        print(f"  - {row.get('gate')}: {row.get('pass')} ({_format_optional(row.get('value'))})")
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"threshold robust CSV: {result['robust_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
+    print(f"gates CSV: {result['gates_csv']}")
+    print(f"candidate JSON: {result['candidate_json']}")
+    print(f"proof frame index CSV: {result['proof_frame_index_csv']}")
+    print(f"proof displacement CSV: {result['proof_displacement_csv']}")
+    print(f"proof velocity CSV: {result['proof_velocity_csv']}")
+    print(f"51^3 frame index CSV: {result['frame_index_csv']}")
     print(f"report: {result['report_path']}")
 
 

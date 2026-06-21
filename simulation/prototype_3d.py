@@ -73,6 +73,10 @@ class Prototype3DConfig:
     boundary_phase_offset: float = 0.0
     boundary_cubic_phase_sign: float = 1.0
     boundary_face_amplitude_scales: dict[str, float] | None = None
+    boundary_patch_u_bins: int = 4
+    boundary_patch_v_bins: int = 4
+    boundary_patch_phase_offsets: dict[str, float] | None = None
+    boundary_patch_amplitude_scales: dict[str, float] | None = None
     boundary_random_phase_seed: int | None = None
     defect_inner_radius: float | None = None
     defect_nonlinear_strength: float | None = None
@@ -267,7 +271,11 @@ class Source3D:
             scales = config.boundary_face_amplitude_scales or {}
             for face, coverage in self.face_coverages.items():
                 scaled.append(coverage * float(scales.get(face, 1.0)))
-            return np.maximum.reduce(scaled)
+            weights = np.maximum.reduce(scaled)
+            patch_scales = config.boundary_patch_amplitude_scales or getattr(config, "_boundary_patch_amplitude_scales", None)
+            if patch_scales:
+                weights = weights * self._patch_scalar_map(patch_scales, default=1.0)
+            return weights
         if config.drive_location == "core":
             return (radius <= config.defect_radius + config.dx).astype(float)
         if config.drive_location == "shell":
@@ -314,7 +322,8 @@ class Source3D:
         r = np.maximum(self.coords["radius"], config.dx)
         cubic = (x**4 + y**4 + z**4) / (r**4) - 0.6
         scale = np.max(np.abs(cubic[self.mask])) if np.any(self.mask) else 1.0
-        return config.boundary_phase_offset + config.boundary_cubic_phase_sign * 0.5 * np.pi * cubic / (scale + EPSILON)
+        phase_map = config.boundary_phase_offset + config.boundary_cubic_phase_sign * 0.5 * np.pi * cubic / (scale + EPSILON)
+        return phase_map + self._patch_phase_offset_map()
 
     def _random_phase_map(self) -> np.ndarray:
         rng = np.random.default_rng(self.config.boundary_random_phase_seed or 0)
@@ -333,6 +342,55 @@ class Source3D:
             imag += coverage * np.sin(phase)
         phase_map = np.zeros_like(self.weights)
         phase_map[self.mask] = np.arctan2(imag[self.mask], real[self.mask])
+        return phase_map
+
+    def _patch_scalar_map(self, values: dict[str, float], *, default: float) -> np.ndarray:
+        out = np.full_like(self.coords["radius"], float(default), dtype=float)
+        if not values or not self.face_coverages:
+            return out
+        numerator = np.zeros_like(out)
+        denominator = np.zeros_like(out)
+        for face, coverage in self.face_coverages.items():
+            u_bin, v_bin = _boundary_patch_bins(self.config, self.coords, face)
+            for patch_id, value in values.items():
+                parsed = _parse_boundary_patch_id(patch_id)
+                if parsed is None:
+                    continue
+                patch_face, patch_u, patch_v = parsed
+                if patch_face != face:
+                    continue
+                mask = (u_bin == patch_u) & (v_bin == patch_v)
+                weighted = coverage * mask.astype(float)
+                numerator += weighted * float(value)
+                denominator += weighted
+        active = denominator > EPSILON
+        out[active] = numerator[active] / denominator[active]
+        return out
+
+    def _patch_phase_offset_map(self) -> np.ndarray:
+        offsets = self.config.boundary_patch_phase_offsets or getattr(self.config, "_boundary_patch_phase_offsets", None)
+        phase_map = np.zeros_like(self.weights)
+        if not offsets or not self.face_coverages:
+            return phase_map
+        real = np.zeros_like(self.weights)
+        imag = np.zeros_like(self.weights)
+        denominator = np.zeros_like(self.weights)
+        for face, coverage in self.face_coverages.items():
+            u_bin, v_bin = _boundary_patch_bins(self.config, self.coords, face)
+            for patch_id, value in offsets.items():
+                parsed = _parse_boundary_patch_id(patch_id)
+                if parsed is None:
+                    continue
+                patch_face, patch_u, patch_v = parsed
+                if patch_face != face:
+                    continue
+                mask = (u_bin == patch_u) & (v_bin == patch_v)
+                weighted = coverage * mask.astype(float)
+                real += weighted * np.cos(float(value))
+                imag += weighted * np.sin(float(value))
+                denominator += weighted
+        active = denominator > EPSILON
+        phase_map[active] = np.arctan2(imag[active], real[active])
         return phase_map
 
     def _boundary_area(self) -> float:
@@ -869,6 +927,35 @@ def _normalize_boundary_faces(faces: tuple[str, ...] | list[str] | str | None) -
         if canonical not in normalized:
             normalized.append(canonical)
     return tuple(normalized)
+
+
+def _parse_boundary_patch_id(patch_id: str) -> tuple[str, int, int] | None:
+    parts = str(patch_id).split(":")
+    if len(parts) != 3:
+        return None
+    face = parts[0]
+    try:
+        return face, int(parts[1]), int(parts[2])
+    except ValueError:
+        return None
+
+
+def _boundary_patch_bins(config: Prototype3DConfig, coords: dict[str, np.ndarray], face: str) -> tuple[np.ndarray, np.ndarray]:
+    half = 0.5 * float(config.domain_size)
+    u_bins = max(1, int(getattr(config, "boundary_patch_u_bins", 4)))
+    v_bins = max(1, int(getattr(config, "boundary_patch_v_bins", 4)))
+    if face in {"x_min", "x_max"}:
+        u_coord = coords["y"]
+        v_coord = coords["z"]
+    elif face in {"y_min", "y_max"}:
+        u_coord = coords["x"]
+        v_coord = coords["z"]
+    else:
+        u_coord = coords["x"]
+        v_coord = coords["y"]
+    u_index = np.floor(np.clip((u_coord + half) / max(config.domain_size, EPSILON), 0.0, 1.0 - EPSILON) * u_bins)
+    v_index = np.floor(np.clip((v_coord + half) / max(config.domain_size, EPSILON), 0.0, 1.0 - EPSILON) * v_bins)
+    return u_index.astype(int), v_index.astype(int)
 
 
 def _sponge_extra(config: Prototype3DConfig, coords: dict[str, np.ndarray]) -> np.ndarray:
