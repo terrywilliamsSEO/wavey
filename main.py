@@ -137,6 +137,17 @@ from simulation.prototype_3d_return_family_gate_audit import (
     ReturnFamilyGateAuditOptions,
     run_3d_return_family_gate_audit,
 )
+from simulation.prototype_3d_off_comb_leakage_audit import (
+    DEFAULT_LIFT_ROOT as DEFAULT_OFF_COMB_LEAKAGE_LIFT_ROOT,
+    DEFAULT_MODAL_SPARSITY_ROOT as DEFAULT_OFF_COMB_LEAKAGE_MODAL_SPARSITY_ROOT,
+    DEFAULT_PHASE_CONJUGATE_ROOT as DEFAULT_OFF_COMB_LEAKAGE_PHASE_CONJUGATE_ROOT,
+    DEFAULT_PROOF_ROOT as DEFAULT_OFF_COMB_LEAKAGE_PROOF_ROOT,
+    DEFAULT_RETURN_FAMILY_GATE_ROOT as DEFAULT_OFF_COMB_LEAKAGE_RETURN_FAMILY_GATE_ROOT,
+    DEFAULT_SMOOTH_ROOT as DEFAULT_OFF_COMB_LEAKAGE_SMOOTH_ROOT,
+    DEFAULT_SPATIAL_PHASE_ROOT as DEFAULT_OFF_COMB_LEAKAGE_SPATIAL_PHASE_ROOT,
+    OffCombLeakageAuditOptions,
+    run_3d_off_comb_leakage_audit,
+)
 from simulation.prototype_3d_release_phase_dispersion_audit import (
     DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
     DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
@@ -1046,6 +1057,26 @@ def build_parser() -> argparse.ArgumentParser:
     return_family_gate_parser.add_argument("--amplitude-compression-threshold", type=float, default=0.85, help="Maximum 51^3/proof strength or prominence ratio for amplitude-compression support")
     return_family_gate_parser.add_argument("--min-strict-major-loss", type=float, default=1.0, help="Minimum strict major-count loss for classification")
     return_family_gate_parser.add_argument("--period-cv-threshold", type=float, default=0.14, help="Maximum period CV for coherent return timing")
+
+    off_comb_leakage_parser = subparsers.add_parser(
+        "prototype-3d-off-comb-leakage-audit",
+        help="Read-only audit for where 51^3 return-family energy leaks off the predicted return comb",
+    )
+    off_comb_leakage_parser.add_argument("--output-root", default="runs", help="Directory for off-comb leakage-audit outputs")
+    off_comb_leakage_parser.add_argument("--proof-root", default=DEFAULT_OFF_COMB_LEAKAGE_PROOF_ROOT, help="Existing 41^3 proof-pack run root")
+    off_comb_leakage_parser.add_argument("--lift-root", default=DEFAULT_OFF_COMB_LEAKAGE_LIFT_ROOT, help="Existing 51^3 resolution-lift run root")
+    off_comb_leakage_parser.add_argument("--spatial-phase-root", default=DEFAULT_OFF_COMB_LEAKAGE_SPATIAL_PHASE_ROOT, help="Existing spatial phase instrumentation run root")
+    off_comb_leakage_parser.add_argument("--smooth-root", default=DEFAULT_OFF_COMB_LEAKAGE_SMOOTH_ROOT, help="Existing smooth-envelope run root")
+    off_comb_leakage_parser.add_argument("--phase-conjugate-root", default=DEFAULT_OFF_COMB_LEAKAGE_PHASE_CONJUGATE_ROOT, help="Existing boundary phase-conjugate run root")
+    off_comb_leakage_parser.add_argument("--modal-sparsity-root", default=DEFAULT_OFF_COMB_LEAKAGE_MODAL_SPARSITY_ROOT, help="Existing modal sparsity audit root")
+    off_comb_leakage_parser.add_argument("--return-family-gate-root", default=DEFAULT_OFF_COMB_LEAKAGE_RETURN_FAMILY_GATE_ROOT, help="Existing return-family gate audit root")
+    off_comb_leakage_parser.add_argument("--shell-window-center-radius", type=float, default=7.0, help="Physical center of the radius-5 shell window")
+    off_comb_leakage_parser.add_argument("--shell-window-half-width", type=float, default=2.0, help="Physical half-width of the radius-5 shell window")
+    off_comb_leakage_parser.add_argument("--radial-ratio-support-delta", type=float, default=0.12, help="Minimum 51^3/proof radial-leakage mean delta for radial support")
+    off_comb_leakage_parser.add_argument("--angular-coherence-drop-threshold", type=float, default=0.10, help="Minimum proof-to-51^3 angular coherence drop for angular support")
+    off_comb_leakage_parser.add_argument("--outer-correlation-threshold", type=float, default=0.20, help="Minimum outer/off-comb lag correlation for outer-recycling support")
+    off_comb_leakage_parser.add_argument("--modal-sideband-delta-threshold", type=float, default=0.03, help="Minimum 51^3/proof sideband-fraction delta for modal sideband support")
+    off_comb_leakage_parser.add_argument("--spatial-pattern-delta-threshold", type=float, default=0.08, help="Minimum 51^3/proof spatial-pattern leakage delta for pattern support")
 
     release_phase_dispersion_audit_parser = subparsers.add_parser(
         "prototype-3d-release-phase-dispersion-audit",
@@ -2313,6 +2344,29 @@ def main() -> None:
             )
         )
         _print_3d_return_family_gate_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-off-comb-leakage-audit":
+        result = run_3d_off_comb_leakage_audit(
+            options=OffCombLeakageAuditOptions(
+                output_root=args.output_root,
+                proof_root=args.proof_root,
+                lift_root=args.lift_root,
+                spatial_phase_root=args.spatial_phase_root,
+                smooth_root=args.smooth_root,
+                phase_conjugate_root=args.phase_conjugate_root,
+                modal_sparsity_root=args.modal_sparsity_root,
+                return_family_gate_root=args.return_family_gate_root,
+                shell_window_center_radius=args.shell_window_center_radius,
+                shell_window_half_width=args.shell_window_half_width,
+                radial_ratio_support_delta=args.radial_ratio_support_delta,
+                angular_coherence_drop_threshold=args.angular_coherence_drop_threshold,
+                outer_correlation_threshold=args.outer_correlation_threshold,
+                modal_sideband_delta_threshold=args.modal_sideband_delta_threshold,
+                spatial_pattern_delta_threshold=args.spatial_pattern_delta_threshold,
+            )
+        )
+        _print_3d_off_comb_leakage_audit_summary(result)
         return
 
     if args.command == "prototype-3d-release-phase-dispersion-audit":
@@ -3729,6 +3783,45 @@ def _print_3d_return_family_gate_audit_summary(result: dict[str, Any]) -> None:
     print(f"occupancy CSV: {result['occupancy_csv']}")
     print(f"threshold CSV: {result['threshold_csv']}")
     print(f"amplitude CSV: {result['amplitude_csv']}")
+    print("plots:")
+    for name, path in result.get("plots", {}).items():
+        print(f"  - {name}: {path}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_off_comb_leakage_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D off-comb leakage audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("source-control rows:")
+    for row in result.get("summary_rows", []):
+        if int(float(row.get("grid_size") or 0)) != 51:
+            continue
+        if row.get("artifact_source") not in {"resolution_lift", "smooth_envelope", "boundary_phase_conjugate"}:
+            continue
+        print(
+            f"  - {row.get('artifact_source')} / {row.get('prediction_role')}: "
+            f"strict={row.get('strict_major_peaks')}/{row.get('strict_refocus_peaks')}, "
+            f"off_comb={_format_optional(row.get('off_comb_energy_ratio'))}, "
+            f"radial={_format_optional(row.get('radial_leakage_ratio'))}, "
+            f"angular={_format_optional(row.get('angular_sector_coherence_mean'))}, "
+            f"outer_corr={_format_optional(row.get('outer_off_comb_best_correlation'))}, "
+            f"sideband={_format_optional(row.get('modal_sideband_fraction'))}, "
+            f"pattern={_format_optional(row.get('spatial_pattern_leakage_score'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"radial CSV: {result['radial_csv']}")
+    print(f"angular CSV: {result['angular_csv']}")
+    print(f"outer CSV: {result['outer_csv']}")
+    print(f"modal CSV: {result['modal_csv']}")
+    print(f"pattern CSV: {result['pattern_csv']}")
     print("plots:")
     for name, path in result.get("plots", {}).items():
         print(f"  - {name}: {path}")

@@ -492,6 +492,14 @@ python main.py prototype-3d-return-family-gate-audit
 
 This command runs no physics. It consumes the proof pack, failed `51^3` lift, spatial phase instrumentation, smooth-envelope, phase-conjugate, and modal-sparsity artifacts, then asks whether strict `51^3` count loss is a real return-family weakening or a fixed-threshold/gate artifact. Current project state: `runs\return_family_gate_audit_3d_20260621_082543` classified as `return_family_weakened_not_gate_artifact`: return timing and comb occupancy remain coherent, but source-control off-comb energy ratio is high (`1.13162` mean) and rank-normalized strength is not compressed enough to explain the strict loss as a detector-only artifact.
 
+Run the read-only off-comb leakage audit with:
+
+```powershell
+python main.py prototype-3d-off-comb-leakage-audit
+```
+
+This command runs no physics. It consumes the same proof/lift/spatial/smooth/phase-conjugate/modal-sparsity artifacts plus the return-family gate audit, then localizes the off-comb loss across radial, angular, outer-recycling, modal-sideband, spatial-pattern, and flux channels. Current project state: `runs\off_comb_leakage_audit_3d_20260621_085347` classified as `spatial_pattern_scrambling_supported`: radial leakage, modal sidebands, and delayed outer recycling did not separate from proof rows, while source-control spatial-pattern leakage rose from `0.495788` to `0.586679`.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1150,6 +1158,24 @@ When `prototype-3d-return-family-gate-audit` is used, the control folder include
 - `off_comb_energy_ratio_plot.png`
 
 The return-family gate audit is read-only. Current project state: `runs\return_family_gate_audit_3d_20260621_082543` classified as `return_family_weakened_not_gate_artifact`: strict major count drops by `1.63333` on average, period timing remains coherent, occupancy is preserved relative to proof, but off-comb energy is too high and late-return area survival is lower, so strict loss should not be treated as a pure fixed-threshold artifact.
+
+When `prototype-3d-off-comb-leakage-audit` is used, the control folder includes:
+
+- `off_comb_leakage_report.md`
+- `off_comb_leakage_summary.csv`
+- `radial_leakage_by_window.csv`
+- `angular_leakage_by_sector.csv`
+- `outer_recycling_correlation.csv`
+- `modal_sideband_leakage.csv`
+- `spatial_pattern_leakage.csv`
+- `off_comb_leakage_summary.json`
+- `radial_leakage_plot.png`
+- `angular_coherence_plot.png`
+- `outer_recycling_plot.png`
+- `modal_sidebands_plot.png`
+- `pattern_similarity_decay_plot.png`
+
+The off-comb leakage audit is read-only. Current project state: `runs\off_comb_leakage_audit_3d_20260621_085347` classified as `spatial_pattern_scrambling_supported`: the strongest supported separator is return-to-return spatial-pattern leakage, not radial drift, modal sidebands, or outer-window recycling. Treat this as failure localization, not permission to tune detector gates or source masks.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 
