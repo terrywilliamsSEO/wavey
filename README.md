@@ -476,6 +476,14 @@ python main.py prototype-3d-boundary-phase-conjugate-control --config configs\lo
 
 This is a fixed measured-wavefront test, not patch-mask tuning. It reruns one `41^3` proof row to capture shell phase frames, freezes a coarse 96-patch boundary phase/amplitude candidate before running any `51^3` rows, then compares hard control, phase-conjugate candidate, shuffled-patch phase control, amplitude-only control, phase-only control, and wrong-return-target control at the same cutoff `17.9425`, release phase `0.5071`, frequency `0.92`, work per physical source area, neutral lattice, stronger sponge, sign-flip cubic boundary source, and radius-5 shell window. Current project state: `runs\boundary_phase_conjugate_3d_20260620_212918` classified as `boundary_phase_conjugate_no_rescue`: the candidate stayed default `9/8`, strict `7/6`, and loose `11/10`, did not improve shell/radial/angular coherence, and the shuffled patch control did not fail.
 
+Run the read-only modal sparsity audit with:
+
+```powershell
+python main.py prototype-3d-modal-sparsity-audit
+```
+
+This command runs no physics. It consumes the existing `41^3` proof pack, failed `51^3` lift, spatial phase instrumentation, smooth-envelope, and boundary phase-conjugate artifacts, then compares return timing regularity, sparse spectral reconstruction, modal participation ratio, peak width versus modal density, and the hard/smooth/phase-conjugate/shuffled `51^3` controls. Current project state: `runs\modal_sparsity_audit_3d_20260620_231602` classified as `common_51_source_signature_supported`: the dramatic few-mode-to-20-plus-mode split was not proven, but the `51^3` source-shaping controls shared a tight reconstruction/participation signature and the same strict-count loss.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1107,6 +1115,18 @@ When `prototype-3d-boundary-phase-conjugate-control` is used, the control folder
 - `boundary_phase_conjugate_summary.json`
 
 The boundary phase-conjugate report is a fixed mechanism result. Current project state: `runs\boundary_phase_conjugate_3d_20260620_212918` classified as `boundary_phase_conjugate_no_rescue`: the 96-patch candidate did not improve strict `7/6` counts or shell/radial/angular coherence versus the hard `51^3` control, while clean no-exit/global-outer/work gates passed.
+
+When `prototype-3d-modal-sparsity-audit` is used, the control folder includes:
+
+- `modal_sparsity_audit_report.md`
+- `modal_sparsity_summary.csv`
+- `sparse_spectral_reconstruction.csv`
+- `modal_participation_ratio.csv`
+- `return_timing_width_comparison.csv`
+- `peak_width_modal_density_relation.csv`
+- `modal_sparsity_audit_summary.json`
+
+The modal sparsity audit is read-only. Current project state: `runs\modal_sparsity_audit_3d_20260620_231602` classified as `common_51_source_signature_supported`: proof rows averaged `9` modes for 99% reconstruction, all `51^3` rows averaged `17.46`, and the source-control modal-participation CV was only `0.00242`, so the fixed source-shaping attempts do not separate from the hard `51^3` failure.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

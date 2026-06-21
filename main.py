@@ -118,6 +118,15 @@ from simulation.prototype_3d_release_phase_modal_audit import (
     ReleasePhaseModalAuditOptions,
     run_3d_release_phase_modal_audit,
 )
+from simulation.prototype_3d_modal_sparsity_audit import (
+    DEFAULT_LIFT_ROOT as DEFAULT_MODAL_SPARSITY_LIFT_ROOT,
+    DEFAULT_PHASE_CONJUGATE_ROOT as DEFAULT_MODAL_SPARSITY_PHASE_CONJUGATE_ROOT,
+    DEFAULT_PROOF_ROOT as DEFAULT_MODAL_SPARSITY_PROOF_ROOT,
+    DEFAULT_SMOOTH_ROOT as DEFAULT_MODAL_SPARSITY_SMOOTH_ROOT,
+    DEFAULT_SPATIAL_PHASE_ROOT as DEFAULT_MODAL_SPARSITY_SPATIAL_PHASE_ROOT,
+    ModalSparsityAuditOptions,
+    run_3d_modal_sparsity_audit,
+)
 from simulation.prototype_3d_release_phase_dispersion_audit import (
     DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
     DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
@@ -985,6 +994,25 @@ def build_parser() -> argparse.ArgumentParser:
     release_phase_modal_audit_parser.add_argument("--blur-bandwidth-growth-threshold", type=float, default=0.05, help="Relative spectral-bandwidth growth threshold for blur classification")
     release_phase_modal_audit_parser.add_argument("--blur-tail-radius-shift-threshold", type=float, default=0.40, help="Tail-radius shift threshold for blur classification")
     release_phase_modal_audit_parser.add_argument("--finite-grid-concentration-ratio", type=float, default=1.20, help="Proof/lift concentration ratio needed for finite-grid-resonance classification")
+
+    modal_sparsity_parser = subparsers.add_parser(
+        "prototype-3d-modal-sparsity-audit",
+        help="Read-only sparse spectral reconstruction audit for 41^3 proof rows versus 51^3 source-shaping controls",
+    )
+    modal_sparsity_parser.add_argument("--output-root", default="runs", help="Directory for modal sparsity audit outputs")
+    modal_sparsity_parser.add_argument("--proof-root", default=DEFAULT_MODAL_SPARSITY_PROOF_ROOT, help="Existing 41^3 proof-pack run root")
+    modal_sparsity_parser.add_argument("--lift-root", default=DEFAULT_MODAL_SPARSITY_LIFT_ROOT, help="Existing 51^3 resolution-lift run root")
+    modal_sparsity_parser.add_argument("--spatial-phase-root", default=DEFAULT_MODAL_SPARSITY_SPATIAL_PHASE_ROOT, help="Existing spatial phase instrumentation run root")
+    modal_sparsity_parser.add_argument("--smooth-root", default=DEFAULT_MODAL_SPARSITY_SMOOTH_ROOT, help="Existing smooth-envelope resolution-lift run root")
+    modal_sparsity_parser.add_argument("--phase-conjugate-root", default=DEFAULT_MODAL_SPARSITY_PHASE_CONJUGATE_ROOT, help="Existing boundary phase-conjugate run root")
+    modal_sparsity_parser.add_argument("--max-reported-modes", type=int, default=40, help="Maximum top spectral modes written per row")
+    modal_sparsity_parser.add_argument("--few-mode-99-threshold", type=int, default=8, help="Maximum modes for 99% reconstruction considered few-mode")
+    modal_sparsity_parser.add_argument("--broad-mode-99-threshold", type=int, default=20, help="Minimum modes for 99% reconstruction considered broad")
+    modal_sparsity_parser.add_argument("--broad-participation-threshold", type=float, default=12.0, help="Modal participation ratio considered broad")
+    modal_sparsity_parser.add_argument("--min-strict-major-loss", type=float, default=1.0, help="Minimum strict major-peak loss for a scale-loss classification")
+    modal_sparsity_parser.add_argument("--preserved-period-relative-tolerance", type=float, default=0.15, help="Return-period tolerance for preserved beat timing")
+    modal_sparsity_parser.add_argument("--blurred-peak-width-growth", type=float, default=0.10, help="Peak-width relative growth threshold for blur")
+    modal_sparsity_parser.add_argument("--source-signature-cv-threshold", type=float, default=0.12, help="Maximum CV for source controls to count as the same modal signature")
 
     release_phase_dispersion_audit_parser = subparsers.add_parser(
         "prototype-3d-release-phase-dispersion-audit",
@@ -2204,6 +2232,28 @@ def main() -> None:
             )
         )
         _print_3d_release_phase_modal_audit_summary(result)
+        return
+
+    if args.command == "prototype-3d-modal-sparsity-audit":
+        result = run_3d_modal_sparsity_audit(
+            options=ModalSparsityAuditOptions(
+                output_root=args.output_root,
+                proof_root=args.proof_root,
+                lift_root=args.lift_root,
+                spatial_phase_root=args.spatial_phase_root,
+                smooth_root=args.smooth_root,
+                phase_conjugate_root=args.phase_conjugate_root,
+                max_reported_modes=args.max_reported_modes,
+                few_mode_99_threshold=args.few_mode_99_threshold,
+                broad_mode_99_threshold=args.broad_mode_99_threshold,
+                broad_participation_threshold=args.broad_participation_threshold,
+                min_strict_major_loss=args.min_strict_major_loss,
+                preserved_period_relative_tolerance=args.preserved_period_relative_tolerance,
+                blurred_peak_width_growth=args.blurred_peak_width_growth,
+                source_signature_cv_threshold=args.source_signature_cv_threshold,
+            )
+        )
+        _print_3d_modal_sparsity_audit_summary(result)
         return
 
     if args.command == "prototype-3d-release-phase-dispersion-audit":
@@ -3555,6 +3605,39 @@ def _print_3d_release_phase_modal_audit_summary(result: dict[str, Any]) -> None:
     print(f"jitter CSV: {result['jitter_csv']}")
     print(f"radial CSV: {result['radial_csv']}")
     print(f"phase CSV: {result['phase_csv']}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_modal_sparsity_audit_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D modal sparsity audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    checks = classification.get("checks", {})
+    if checks:
+        print("checks:")
+        for key, value in checks.items():
+            print(f"  - {key}: {_format_optional(value) if isinstance(value, (int, float)) else value}")
+    print("source-control rows:")
+    for row in result.get("summary_rows", []):
+        if int(float(row.get("grid_size") or 0)) != 51:
+            continue
+        if row.get("artifact_source") not in {"resolution_lift", "smooth_envelope", "boundary_phase_conjugate"}:
+            continue
+        print(
+            f"  - {row.get('artifact_source')} / {row.get('prediction_role')}: "
+            f"strict={row.get('strict_major_peaks')}/{row.get('strict_refocus_peaks')}, "
+            f"modes99={row.get('modes_for_99pct')}, "
+            f"participation={_format_optional(row.get('modal_participation_ratio'))}, "
+            f"period={_format_optional(row.get('mean_return_period'))}, "
+            f"width={_format_optional(row.get('mean_peak_width_time'))}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"reconstruction CSV: {result['reconstruction_csv']}")
+    print(f"participation CSV: {result['participation_csv']}")
+    print(f"timing CSV: {result['timing_csv']}")
+    print(f"relation CSV: {result['relation_csv']}")
     print(f"report: {result['report_path']}")
 
 

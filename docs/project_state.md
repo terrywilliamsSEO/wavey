@@ -70,6 +70,7 @@ Current interpretation:
 - The read-only source-spectrum design audit classified as `source_spectrum_narrowing_candidate_supported`: the current continuous hard-cutoff source has a nontrivial far sideband fraction (`0.049396`), and a same-frequency/same-cutoff-phase/same-work smooth `sin^2` envelope theoretically reduces it to `0.000516`. It authorized the completed fixed smooth-envelope test, not any broad source-shaping sweep.
 - The fixed smooth-envelope `51^3` source-spectrum rescue test classified as `smooth_envelope_no_rescue`: sideband reduction succeeded, but the smooth candidate dropped to default `9/8` and conservative strict `7/6`, worsened shell/radial/angular coherence versus the hard `51^3` control, matched the weak-side smooth control, and worsened tail-radius shift despite clean work/no-exit/global-outer gates.
 - The fixed measured boundary phase-conjugate mirror classified as `boundary_phase_conjugate_no_rescue`: a frozen 96-patch boundary mask derived from the `41^3` proof row did not restore the `51^3` scale gate. Candidate, hard control, shuffled-patch, amplitude-only, phase-only, and wrong-return rows all stayed default `9/8`, strict `7/6`, and loose `11/10`; the candidate slightly worsened shell/radial coherence versus hard control and the shuffled patch control did not fail. Clean gates passed, so this is a wavefront-control negative result rather than contamination.
+- The read-only modal sparsity audit classified as `common_51_source_signature_supported`: it did not prove a dramatic few-mode-to-broad-wave transition, but hard/smooth/phase-conjugate/shuffled `51^3` controls shared nearly identical sparse-reconstruction/modal-participation signatures and the same strict-count loss. Treat source shaping and patch-level wavefront shaping as exhausted for this branch unless a new mechanism appears.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2081,6 +2082,62 @@ Interpretation:
 - Cleanliness gates passed: no shell exit, global outer false, outer/shell below `1.0`, zero post-cutoff work, and matched work/area error around `3.5e-8`.
 - This is a clean negative mechanism test, not active contamination. Do not continue into patch-mask tuning, higher patch counts, cell-by-cell masks, new source-shape variants, cutoff tuning, or larger-grid escalation from this result.
 
+### Modal Sparsity Audit
+
+Command:
+
+```powershell
+python main.py prototype-3d-modal-sparsity-audit
+```
+
+Latest summarized run:
+
+- Local report: `runs\modal_sparsity_audit_3d_20260620_231602\modal_sparsity_audit_report.md`
+- Summary CSV: `runs\modal_sparsity_audit_3d_20260620_231602\modal_sparsity_summary.csv`
+- Sparse reconstruction CSV: `runs\modal_sparsity_audit_3d_20260620_231602\sparse_spectral_reconstruction.csv`
+- Modal participation CSV: `runs\modal_sparsity_audit_3d_20260620_231602\modal_participation_ratio.csv`
+- Timing/width CSV: `runs\modal_sparsity_audit_3d_20260620_231602\return_timing_width_comparison.csv`
+- Peak-width/modal-density CSV: `runs\modal_sparsity_audit_3d_20260620_231602\peak_width_modal_density_relation.csv`
+- Classification: `common_51_source_signature_supported`
+
+Inputs:
+
+- `runs\release_phase_proof_pack_3d_20260619_234039`
+- `runs\release_phase_resolution_lift_3d_20260620_091834`
+- `runs\spatial_phase_instrumentation_3d_20260620_170518`
+- `runs\smooth_envelope_resolution_lift_3d_20260620_192501`
+- `runs\boundary_phase_conjugate_3d_20260620_212918`
+
+Key checks:
+
+| Metric | 41^3 proof mean | 51^3 mean/control value |
+| --- | ---: | ---: |
+| Modes for 99% reconstruction | 9 | 17.4615 |
+| Modal participation ratio | 1.7086 | 1.42156 |
+| Strict major peaks | 8.8 | 7.07692 |
+| Mean return period | 6.54178 | 6.07755 |
+| Mean peak width | 67.5005 | 58.5318 |
+| Source-control modes-for-99% CV | n/a | 0.06217 |
+| Source-control participation CV | n/a | 0.00242 |
+
+Control comparison:
+
+| Control | Strict | Modes 90/95/99 | Participation | Period |
+| --- | --- | --- | ---: | ---: |
+| `51^3` release-lift candidate | 7/6 | 2/3/18 | 1.42908 | 6.055 |
+| smooth-envelope hard control | 8/7 | 2/2/15 | 1.42664 | 6.33818 |
+| smooth-envelope candidate | 7/6 | 2/3/18 | 1.42908 | 6.055 |
+| phase-conjugate hard control | 7/6 | 2/3/18 | 1.42908 | 6.055 |
+| phase-conjugate candidate | 7/6 | 2/3/17 | 1.42071 | 6.055 |
+| shuffled patch control | 7/6 | 2/3/17 | 1.42220 | 6.055 |
+
+Interpretation:
+
+- The audit did not support the dramatic hypothesis that the `41^3` proof needs only `3-8` modes while `51^3` requires `20+`; the proof mean was `9`, and the `51^3` mean was below `20`.
+- Return timing stayed beat-like: mean period shifted by about `7%`, within the audit tolerance, so the `51^3` rows mostly preserve return spacing.
+- The half-height peak-width metric did not show `51^3` peak smearing; width decreased in this scalar metric, so the strict loss is not explained by simple wider scalar shell-energy peaks.
+- The source-shaping conclusion is still strong: hard `51^3`, smooth-envelope, phase-conjugate, and shuffled-patch rows share a tight reconstruction/participation signature and the same strict-count loss. This supports treating smooth-envelope/source-shape/patch-mask work as exhausted for now.
+
 ### Central HF Scattering Branch
 
 Command:
@@ -2129,14 +2186,14 @@ Interpretation:
 
 ## Current Next Step
 
-Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, precompensation design, source-spectrum design audit, smooth-envelope `51^3` rescue test, and measured boundary phase-conjugate mirror are complete, so do not tune nearby cutoffs or broaden controls based on those results:
+Run no new physics unless explicitly requested. The blind confirmation, half-dt numerical validation, fixed half-dt recentering map, quarter-dt proof pack, one-step `51^3` resolution lift, read-only postmortem, first central HF scattering ladder, read-only modal audit, read-only dispersion audit, spatial phase instrumentation reproduction, precompensation design, source-spectrum design audit, smooth-envelope `51^3` rescue test, measured boundary phase-conjugate mirror, and read-only modal sparsity audit are complete, so do not tune nearby cutoffs or broaden controls based on those results:
 
 - Use `41^3`.
 - Use the inner-sponge-edge source location and stronger sponge at the original width.
 - Use neutral lattice as the primary reference.
 - Treat the frozen proof-pack setup as canonical at `41^3`: neutral lattice, stronger sponge, inner-sponge-edge sign-flip cubic boundary source, frequency `0.92`, matched work per physical source area, radius-5 shell window, no active second pulses, no resonator layer.
 - Use 9/8 as the conservative robust-count floor for the top cluster; do not claim 11/10 is threshold-invariant.
-- Treat the failed `51^3` lift as a spatial phase decoherence/scale-loss problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design, the smooth-envelope source-spectrum test did not rescue count or coherence, and the measured patch-level boundary phase-conjugate mirror also failed the joint count/coherence gates.
+- Treat the failed `51^3` lift as a spatial phase decoherence/scale-loss problem unless new evidence says otherwise. The captured sector/radius phase maps did not produce a safe low-dimensional precompensation design, the smooth-envelope source-spectrum test did not rescue count or coherence, the measured patch-level boundary phase-conjugate mirror also failed the joint count/coherence gates, and the modal sparsity audit found the source-shaped `51^3` rows share the same modal reconstruction/participation signature.
 - Treat the confirmed strong pocket as centered near phase 0.50 cycles at baseline dt, the half-dt strict-clean window as shifted upward to `17.9375-17.945`, and the quarter-dt proof span as `17.94-17.945` with phase `0.5048-0.5094`.
 - Keep primary injected work matched per physical source area.
 - Do not repeat active second-pulse tests; direct-at-peak, reduced-work, first-refocus travel-time, and second-refocus travel-time pulses all disturbed the clean cycle.
@@ -2149,7 +2206,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
 - Current conservative state: `41^3` passive release-phase proof supported; scalable passive packet-control law not established.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
-- Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, or patch-mask tuning. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, and measured phase-conjugate patches failed. Any future scale check should be explicitly justified, not automatic.
+- Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, modal-sparsity-derived source variants, or patch-mask tuning. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, measured phase-conjugate patches failed, and the modal sparsity audit did not identify a separating source-control signature. Any future scale check should be explicitly justified, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.
 - Do not run broad neighboring-frequency long sweeps yet.
 
