@@ -253,6 +253,17 @@ class Lattice3D:
         strength = float(self.config.memory_mechanism_strength or 0.0)
         if profile_name == "none" or abs(strength) <= EPSILON:
             return
+        if profile_name in {
+            "isochronous_anchor_angular_cleanup",
+            "isochronous_anchor_medium_angular_cleanup",
+            "isochronous_anchor_cubic_preserving_angular_cleanup",
+        }:
+            anchor_strength = float(getattr(self.config, "_anchor_memory_strength", 0.5 * 0.035))
+            anchor_profile = _memory_mechanism_profile(self.config, self.coords, "isochronous_cubic_anchor")
+            self.stiffness *= np.clip(1.0 + anchor_strength * anchor_profile, 0.05, None)
+            damping_profile = _memory_mechanism_profile(self.config, self.coords, profile_name)
+            self.damping += abs(strength) * np.clip(damping_profile, 0.0, None)
+            return
         profile = _memory_mechanism_profile(self.config, self.coords, profile_name)
         if profile_name in {
             "anisotropy_anchor",
@@ -273,6 +284,12 @@ class Lattice3D:
         elif profile_name == "nonlinear_phase_memory":
             shell = np.clip(profile, 0.0, 1.0)
             self.nonlinear_strength += abs(strength) * shell
+        elif profile_name in {
+            "angular_high_mode_cleanup",
+            "angular_high_mode_cleanup_cubic_preserving",
+            "random_angular_cleanup",
+        }:
+            self.damping += abs(strength) * np.clip(profile, 0.0, None)
         else:
             raise ValueError(f"Unsupported passive memory mechanism profile: {profile_name}")
 
@@ -742,6 +759,16 @@ def _memory_mechanism_profile(
         rng = np.random.default_rng(config.memory_mechanism_seed or 0)
         raw = rng.normal(size=radius.shape)
         return _normalized_active_profile(raw, active)
+    if profile_name == "angular_high_mode_cleanup":
+        return _angular_high_mode_cleanup_profile(config, coords, active, cubic_preserving=False)
+    if profile_name == "angular_high_mode_cleanup_cubic_preserving":
+        return _angular_high_mode_cleanup_profile(config, coords, active, cubic_preserving=True)
+    if profile_name in {"isochronous_anchor_angular_cleanup", "isochronous_anchor_medium_angular_cleanup"}:
+        return _angular_high_mode_cleanup_profile(config, coords, active, cubic_preserving=False)
+    if profile_name == "isochronous_anchor_cubic_preserving_angular_cleanup":
+        return _angular_high_mode_cleanup_profile(config, coords, active, cubic_preserving=True)
+    if profile_name == "random_angular_cleanup":
+        return _random_angular_cleanup_profile(config, coords, active)
     raise ValueError(f"Unsupported passive memory mechanism profile: {profile_name}")
 
 
@@ -795,6 +822,60 @@ def _smooth_radial_compensation_profile(
     taper = np.where(np.abs(radius - center) <= support, taper, 0.0)
     raw = (broad - shell) * taper
     return _normalized_active_profile(raw, active)
+
+
+def _angular_high_mode_cleanup_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+    *,
+    cubic_preserving: bool,
+) -> np.ndarray:
+    radius = np.maximum(coords["radius"].astype(float), config.dx)
+    center = config.memory_mechanism_shell_radius
+    if center is None:
+        center = float(config.defect_radius + 2.0 * config.dx)
+    width = max(float(config.memory_mechanism_shell_width or (4.0 * config.dx)), config.dx)
+    shell = np.exp(-0.5 * ((radius - center) / width) ** 2)
+    x = coords["x"].astype(float)
+    y = coords["y"].astype(float)
+    z = coords["z"].astype(float)
+    r4 = np.maximum(radius**4, EPSILON)
+    r6 = np.maximum(radius**6, EPSILON)
+    cubic4 = (x**4 + y**4 + z**4) / r4
+    cubic6 = (x**6 + y**6 + z**6) / r6
+    shell_active = active & (shell > 1.0e-4)
+    if np.any(shell_active):
+        c4_values = cubic4[shell_active] - float(np.mean(cubic4[shell_active]))
+        c6_values = cubic6[shell_active] - float(np.mean(cubic6[shell_active]))
+        angular = np.zeros_like(radius, dtype=float)
+        if cubic_preserving:
+            denom = float(np.dot(c4_values, c4_values))
+            projection = float(np.dot(c6_values, c4_values) / max(denom, EPSILON))
+            residual = c6_values - projection * c4_values
+            angular[shell_active] = np.abs(residual)
+        else:
+            angular[shell_active] = np.abs(c6_values)
+    else:
+        angular = np.zeros_like(radius, dtype=float)
+    raw = shell * angular
+    return _rms_normalized_active_profile(raw, active)
+
+
+def _random_angular_cleanup_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+) -> np.ndarray:
+    radius = coords["radius"].astype(float)
+    center = config.memory_mechanism_shell_radius
+    if center is None:
+        center = float(config.defect_radius + 2.0 * config.dx)
+    width = max(float(config.memory_mechanism_shell_width or (4.0 * config.dx)), config.dx)
+    shell = np.exp(-0.5 * ((radius - center) / width) ** 2)
+    rng = np.random.default_rng(config.memory_mechanism_seed or 0)
+    raw = shell * rng.random(size=radius.shape)
+    return _rms_normalized_active_profile(raw, active)
 
 
 def _normalized_active_profile(raw: np.ndarray, active: np.ndarray) -> np.ndarray:

@@ -558,6 +558,14 @@ python main.py prototype-3d-isochronous-anchor-cleanup-control --config configs\
 
 This command tests only whether fixed smooth-taper cleanup profiles can keep the `isochronous_anchor_0p5x` memory/strict/comb gains while reducing the small off-comb penalty. It runs seven fixed `41^3` rows: neutral reference, randomized matched `0.5x`, current `isochronous_anchor_0p5x` reference, smooth taper, wide smooth taper, weaker compensation, and smooth radial compensation only. It does not tune cutoff, frequency, source, `51^3`, `61^3`, active pulses, resonators, or source shaping. Current result: `runs\isochronous_anchor_cleanup_3d_20260621_193641` classified as `cleanup_memory_only_tradeoff`. Wide smooth taper kept the memory/strict/comb gains (`0.631012`, strict `9/8`, comb `0.724866`) but off-comb stayed high (`0.171705`). Smooth taper reduced off-comb (`0.126083`) but dropped to strict `8/7` and comb `0.506173`.
 
+Run the fixed 41^3 angular-mode cleanup control with:
+
+```powershell
+python main.py prototype-3d-angular-mode-cleanup-control --config configs\long_validation_peak_0_92.json
+```
+
+This command tests a different passive cleanup mechanism for the `isochronous_anchor_0p5x` off-comb penalty: weak angular high-mode damping on the shell, with a cubic-preserving variant and a randomized matched damping control. It runs eight fixed `41^3` rows: neutral reference, randomized equivalent `0.5x`, current `isochronous_anchor_0p5x` reference, weak angular cleanup only, anchor plus weak cleanup, anchor plus medium cleanup, anchor plus cubic-preserving cleanup, and randomized matched damping. It does not tune cutoff, frequency, source, `51^3`, `61^3`, active pulses, resonators, or taper profiles. Current state: implemented and not yet run; the result classification will be one of `angular_cleanup_supported`, `angular_cleanup_memory_only_tradeoff`, `angular_cleanup_no_signal`, or `invalid_angular_cleanup_test`.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1335,6 +1343,23 @@ When `prototype-3d-isochronous-anchor-cleanup-control` is used, the control fold
 - supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `isochronous_anchor_cleanup_`
 
 The cleanup control is a fixed `41^3` follow-up to the incomplete isochronous-anchor decoupling result. It asks whether smoothing/tapering the compensation can keep memory above neutral/random, preserve strict `9/8`, keep comb near neutral, and reduce off-comb to neutral plus a fixed tolerance. Current result: `runs\isochronous_anchor_cleanup_3d_20260621_193641` classified as `cleanup_memory_only_tradeoff`, not `isochronous_anchor_cleanup_supported`: cleanup rows split into off-comb-clean but strict/comb-damaged rows, and memory/strict/comb-preserving but off-comb-dirty rows.
+
+When `prototype-3d-angular-mode-cleanup-control` is used, the control folder includes:
+
+- `angular_mode_cleanup_report.md`
+- `angular_mode_cleanup_summary.csv`
+- `angular_mode_cleanup_by_return.csv`
+- `angular_mode_cleanup_comparison.csv`
+- `angular_mode_cleanup_summary.json`
+- `angular_mode_spectrum.csv`
+- `angular_cleanup_memory_plot.png`
+- `angular_cleanup_strict_count_plot.png`
+- `angular_cleanup_comb_score_plot.png`
+- `angular_cleanup_off_comb_energy_plot.png`
+- `angular_mode_spectrum_plot.png`
+- supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `angular_mode_cleanup_`
+
+The angular-mode cleanup control is a fixed `41^3` mechanism follow-up to the incomplete isochronous-anchor decoupling result. It asks whether weak passive shell damping of high-angular components can reduce off-comb versus the anchor reference while keeping memory above neutral/randomized controls, preserving strict `9/8`, and keeping comb near neutral. It is not a taper continuation, not a closed-branch rescue, and not a default `51^3` path. Current state: implemented and not yet run.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

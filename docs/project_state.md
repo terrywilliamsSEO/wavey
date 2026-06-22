@@ -80,6 +80,7 @@ Current interpretation:
 - The read-only `prototype-3d-cubic-memory-survivor-bias-audit` run in `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`: standard cubic rows retain some neutral-window matched memory gain, but the strongest sign-flipped gains have low neutral-window coverage, so the artifact set cannot cleanly separate same-window mechanism from survivor bias.
 - The `prototype-3d-isochronous-cubic-memory-anchor` run in `runs\isochronous_cubic_anchor_3d_20260621_184841` classified as `memory_only_anchor_tradeoff`: the watched `isochronous_anchor_0p5x` row improved memory (`0.631984`) over neutral (`0.486969`) and matched randomized control (`0.480804`), preserved strict `9/8`, kept comb near neutral (`0.723992` versus `0.726785`), and passed clean gates, but off-comb energy worsened (`0.170717` versus neutral `0.156175`). This is not full decoupling.
 - The `prototype-3d-isochronous-anchor-cleanup-control` run in `runs\isochronous_anchor_cleanup_3d_20260621_193641` classified as `cleanup_memory_only_tradeoff`: smooth taper and weaker compensation reduced off-comb below neutral but dropped to strict `8/7` and damaged comb, while wide smooth taper preserved memory/strict/comb but left off-comb high. No cleanup row achieved `isochronous_anchor_cleanup_supported`.
+- `prototype-3d-angular-mode-cleanup-control` is implemented and not yet run. It is a fixed `41^3` passive shell angular high-mode damping test for the `isochronous_anchor_0p5x` off-comb penalty, with weak/medium/cubic-preserving cleanup rows and randomized matched damping control. Treat it as a distinct mechanism test, not taper tuning and not a default `51^3` path.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2678,6 +2679,71 @@ Expected outputs:
 - `cleanup_strict_count_plot.png`
 - `cleanup_comb_score_plot.png`
 - `cleanup_off_comb_energy_plot.png`
+
+### Angular-Mode Cleanup Control
+
+Command:
+
+```powershell
+python main.py prototype-3d-angular-mode-cleanup-control --config configs\long_validation_peak_0_92.json
+```
+
+Status:
+
+- Implemented; physics not yet run.
+- Fixed `41^3` passive mechanism control under the independent spatial-memory branch.
+- Not a continuation or rescue of the closed passive scale-lift branch.
+- No optional `51^3` path exists for this command.
+
+Mechanism:
+
+- Tests a weak passive angular high-mode damping shell around the existing `isochronous_anchor_0p5x`.
+- The intent is to damp non-family/high-angular shell components while leaving the main cubic return family mostly intact.
+- Includes a cubic-preserving cleanup profile and a randomized matched damping control.
+- This is not a continuation of the smooth-taper cleanup test and should not be widened into taper tuning.
+
+Fixed setup:
+
+- Neutral lattice.
+- Stronger sponge.
+- Inner-sponge-edge sign-flip cubic boundary source.
+- Frequency `0.92`.
+- Cutoff `17.94`; do not tune cutoff phase.
+- Matched work per physical source area.
+- Radius-5 shell metrics.
+- No `51^3`, `61^3`, source-shape variants, active pulses, or resonators.
+
+Fixed rows:
+
+- Neutral reference.
+- Randomized equivalent `0.5x` control.
+- Current `isochronous_anchor_0p5x` reference.
+- `angular_cleanup_only_weak`.
+- `anchor_0p5x_weak_angular_cleanup`.
+- `anchor_0p5x_medium_angular_cleanup`.
+- `anchor_0p5x_cubic_preserving_angular_cleanup`.
+- `randomized_matched_damping_control`.
+
+Classification:
+
+- `angular_cleanup_supported`: a cleanup row beats neutral, randomized `0.5x`, and randomized damping controls on memory, preserves strict `9/8`, keeps comb near neutral, reduces off-comb versus the anchor reference, and passes clean gates.
+- `angular_cleanup_memory_only_tradeoff`: a cleanup row keeps a memory advantage, but strict count, comb score, or off-comb reduction remains incomplete.
+- `angular_cleanup_no_signal`: cleanup rows do not beat neutral/randomized controls on memory.
+- `invalid_angular_cleanup_test`: required controls, artifacts, accounting, or clean gates fail.
+
+Expected outputs:
+
+- `angular_mode_cleanup_summary.csv`
+- `angular_mode_cleanup_by_return.csv`
+- `angular_mode_cleanup_comparison.csv`
+- `angular_mode_cleanup_report.md`
+- `angular_mode_cleanup_summary.json`
+- `angular_mode_spectrum.csv`
+- `angular_cleanup_memory_plot.png`
+- `angular_cleanup_strict_count_plot.png`
+- `angular_cleanup_comb_score_plot.png`
+- `angular_cleanup_off_comb_energy_plot.png`
+- `angular_mode_spectrum_plot.png`
 
 ### Central HF Scattering Branch
 

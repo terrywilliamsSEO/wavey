@@ -18,6 +18,8 @@ The fixed isochronous cubic-memory anchor run in `runs\isochronous_cubic_anchor_
 
 The fixed cleanup follow-up in `runs\isochronous_anchor_cleanup_3d_20260621_193641` classified as `cleanup_memory_only_tradeoff`. The smooth-taper and weaker-compensation rows reduced off-comb below neutral (`0.126083` and `0.127034` versus neutral `0.156175`) but dropped to strict `8/7` and comb near `0.506`, losing the strict/comb gains. The wide smooth taper preserved the anchor-like memory/strict/comb behavior (`0.631012`, strict `9/8`, comb `0.724866`) but left off-comb high (`0.171705`). No row achieved `isochronous_anchor_cleanup_supported`.
 
+The fixed `prototype-3d-angular-mode-cleanup-control` command is implemented but not yet run. It tests a different passive cleanup mechanism, not another taper: weak shell-local angular high-mode damping, anchor plus weak/medium cleanup, anchor plus cubic-preserving cleanup, and randomized matched damping control. It remains `41^3` only by default and keeps cutoff, frequency, source, sponge, work matching, and shell metrics fixed. Success requires memory above neutral and randomized controls, strict `9/8`, near-neutral comb, reduced off-comb versus the `isochronous_anchor_0p5x` reference, and clean gates.
+
 ## Status
 
 ### Done
@@ -320,6 +322,7 @@ The fixed cleanup follow-up in `runs\isochronous_anchor_cleanup_3d_20260621_1936
 - Ran `prototype-3d-isochronous-cubic-memory-anchor` in `runs\isochronous_cubic_anchor_3d_20260621_184841`; after a classifier-only fix so a failed radial-only diagnostic row does not invalidate passing required controls/anchors, the saved artifacts classified as `memory_only_anchor_tradeoff`.
 - Added `prototype-3d-isochronous-anchor-cleanup-control`, a fixed 41^3-only cleanup follow-up for the `isochronous_anchor_0p5x` off-comb penalty. It exports cleanup summary, by-return, comparison, Markdown report, JSON, and plots for memory, strict count, comb score, and off-comb energy.
 - Ran `prototype-3d-isochronous-anchor-cleanup-control` in `runs\isochronous_anchor_cleanup_3d_20260621_193641`; classification was `cleanup_memory_only_tradeoff`.
+- Added `prototype-3d-angular-mode-cleanup-control`, a fixed 41^3-only passive angular high-mode cleanup test for the `isochronous_anchor_0p5x` off-comb penalty. It exports angular-cleanup summary, by-return, comparison, angular-mode spectrum CSV, Markdown report, JSON, and plots for memory, strict count, comb score, off-comb energy, and angular-mode spectrum. It has not run physics yet.
 
 ### In Progress
 
@@ -329,10 +332,12 @@ The fixed cleanup follow-up in `runs\isochronous_anchor_cleanup_3d_20260621_1936
 - The read-only survivor-bias audit is complete. It left the cubic-memory interpretation mixed: some standard cubic memory survives neutral-window matching, while sign-flipped high-memory rows are coverage-limited.
 - The isochronous cubic anchor run is complete. It did not produce full memory/comb/off-comb decoupling: the best anchor preserved strict `9/8` and near-neutral comb, but off-comb energy rose above neutral.
 - The cleanup control is complete. It did not solve the off-comb penalty without damaging strict/comb behavior; the cleanup rows split into off-comb-clean but strict/comb-damaged rows versus memory/strict/comb-preserving but off-comb-dirty rows.
+- The angular-mode cleanup control is implemented and ready for a fixed `41^3` run. It should be run exactly as designed before interpretation; do not widen it into taper tuning, cutoff tuning, default `51^3`, or source shaping.
 
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
+- The next mechanism action, when physics is requested, is the fixed command `python main.py prototype-3d-angular-mode-cleanup-control --config configs\long_validation_peak_0_92.json`.
 - If pursuing the new spatial-memory branch, design the next step around why weak passive structure improves memory at `41^3` but fails the optional `51^3` memory comparison. Do not tune cutoff, source shape, or grid size from this result.
 - No follow-up physics command is currently justified by the cleanup control alone. Any next mechanism work must explain why off-comb-clean tapering damages strict/comb while wide taper preserves memory/strict/comb but not off-comb; do not widen this into a taper/strength sweep without a new mechanism predicting joint improvement.
 - Do not keep repeating active second-pulse controls; first-refocus and second-refocus travel-time adjustment did not fix the active-pulse disruption.
