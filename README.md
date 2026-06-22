@@ -556,7 +556,7 @@ Run the fixed 41^3 isochronous-anchor cleanup control with:
 python main.py prototype-3d-isochronous-anchor-cleanup-control --config configs\long_validation_peak_0_92.json
 ```
 
-This command tests only whether fixed smooth-taper cleanup profiles can keep the `isochronous_anchor_0p5x` memory/strict/comb gains while reducing the small off-comb penalty. It runs seven fixed `41^3` rows: neutral reference, randomized matched `0.5x`, current `isochronous_anchor_0p5x` reference, smooth taper, wide smooth taper, weaker compensation, and smooth radial compensation only. It does not tune cutoff, frequency, source, `51^3`, `61^3`, active pulses, resonators, or source shaping. Current project state: command implemented but not yet run.
+This command tests only whether fixed smooth-taper cleanup profiles can keep the `isochronous_anchor_0p5x` memory/strict/comb gains while reducing the small off-comb penalty. It runs seven fixed `41^3` rows: neutral reference, randomized matched `0.5x`, current `isochronous_anchor_0p5x` reference, smooth taper, wide smooth taper, weaker compensation, and smooth radial compensation only. It does not tune cutoff, frequency, source, `51^3`, `61^3`, active pulses, resonators, or source shaping. Current result: `runs\isochronous_anchor_cleanup_3d_20260621_193641` classified as `cleanup_memory_only_tradeoff`. Wide smooth taper kept the memory/strict/comb gains (`0.631012`, strict `9/8`, comb `0.724866`) but off-comb stayed high (`0.171705`). Smooth taper reduced off-comb (`0.126083`) but dropped to strict `8/7` and comb `0.506173`.
 
 Run the firewalled central high-frequency scattering branch with:
 
@@ -1334,7 +1334,7 @@ When `prototype-3d-isochronous-anchor-cleanup-control` is used, the control fold
 - `cleanup_off_comb_energy_plot.png`
 - supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `isochronous_anchor_cleanup_`
 
-The cleanup control is a fixed `41^3` follow-up to the incomplete isochronous-anchor decoupling result. It asks whether smoothing/tapering the compensation can keep memory above neutral/random, preserve strict `9/8`, keep comb near neutral, and reduce off-comb to neutral plus a fixed tolerance. Current project state: command implemented but not yet run.
+The cleanup control is a fixed `41^3` follow-up to the incomplete isochronous-anchor decoupling result. It asks whether smoothing/tapering the compensation can keep memory above neutral/random, preserve strict `9/8`, keep comb near neutral, and reduce off-comb to neutral plus a fixed tolerance. Current result: `runs\isochronous_anchor_cleanup_3d_20260621_193641` classified as `cleanup_memory_only_tradeoff`, not `isochronous_anchor_cleanup_supported`: cleanup rows split into off-comb-clean but strict/comb-damaged rows, and memory/strict/comb-preserving but off-comb-dirty rows.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 
