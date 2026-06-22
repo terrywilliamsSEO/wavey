@@ -548,7 +548,7 @@ Run the fixed 41^3 isochronous cubic-memory anchor test with:
 python main.py prototype-3d-isochronous-cubic-memory-anchor --config configs\long_validation_peak_0_92.json
 ```
 
-This command tests whether a weak cubic degeneracy split plus a fixed smooth radial compensation profile can preserve spatial-pattern memory while keeping return timing/comb score closer to the neutral reference. It runs a fixed `41^3` row set only: neutral reference, standard cubic split `0.5x/1.0x`, radial compensation only, isochronous cubic anchor `0.5x/1.0x`, and randomized matched-strength controls `0.5x/1.0x`. It does not expose cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, resonators, or old-branch rescue logic. Current project state: command implemented but not yet run.
+This command tests whether a weak cubic degeneracy split plus a fixed smooth radial compensation profile can preserve spatial-pattern memory while keeping return timing/comb score closer to the neutral reference. It runs a fixed `41^3` row set only: neutral reference, standard cubic split `0.5x/1.0x`, radial compensation only, isochronous cubic anchor `0.5x/1.0x`, and randomized matched-strength controls `0.5x/1.0x`. It does not expose cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, resonators, or old-branch rescue logic. Current project state: `runs\isochronous_cubic_anchor_3d_20260621_184841` classified as `memory_only_anchor_tradeoff`: `isochronous_anchor_0p5x` improved memory (`0.631984` versus neutral `0.486969` and randomized `0.480804`) while preserving strict `9/8` and near-neutral comb, but off-comb energy worsened (`0.170717` versus neutral `0.156175`).
 
 Run the firewalled central high-frequency scattering branch with:
 
@@ -1311,7 +1311,7 @@ When `prototype-3d-isochronous-cubic-memory-anchor` is used, the control folder 
 - `modal_participation_plot.png`
 - supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `isochronous_anchor_`
 
-The isochronous cubic-memory anchor is a small fixed `41^3` mechanism test. It asks whether radial compensation can decouple the cubic memory gain from strict-count and comb penalties; it does not authorize cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, or resonators. Current project state: command implemented but not yet run.
+The isochronous cubic-memory anchor is a small fixed `41^3` mechanism test. It asks whether radial compensation can decouple the cubic memory gain from strict-count, comb, and off-comb penalties; it does not authorize cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, or resonators. Current result: `runs\isochronous_cubic_anchor_3d_20260621_184841` classified as `memory_only_anchor_tradeoff`, not full `isochronous_cubic_anchor_supported`, because the best anchor kept strict count and comb but did not keep off-comb energy at or below neutral.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

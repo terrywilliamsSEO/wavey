@@ -213,22 +213,29 @@ def classify_isochronous_cubic_anchor(
         if not any(row.get("mechanism_role") == role for row in rows):
             missing.append(role)
     missing.extend([str(row.get("variant")) for row in rows if int(_float(row.get("pattern_memory_pair_count"))) <= 0])
-    invalid_rows = [
+    accounting_failures = [
         str(row.get("variant"))
         for row in rows
         if not _bool(row.get("energy_accounting_clean"))
         or not _bool(row.get("no_post_cutoff_external_work"))
-        or not _bool(row.get("clean_gates_passed"))
+    ]
+    control_failures = [
+        str(row.get("variant"))
+        for row in ([neutral] if neutral is not None else []) + random_controls
+        if row is not None
+        and not _bool(row.get("clean_gates_passed"))
     ]
     checks = {
         "missing_required_artifacts": missing,
-        "invalid_rows": invalid_rows,
+        "accounting_failures": accounting_failures,
+        "control_clean_gate_failures": control_failures,
         "neutral_pattern_memory": neutral.get("pattern_memory_score") if neutral else None,
         "neutral_comb_score": neutral.get("return_timing_comb_score") if neutral else None,
+        "neutral_off_comb_energy": neutral.get("off_comb_energy_ratio") if neutral else None,
         "strict_floor": f"{options.min_strict_major_peaks}/{options.min_strict_refocus_peaks}",
         "max_comb_score_drop": options.max_comb_score_drop,
     }
-    if missing or invalid_rows:
+    if missing or accounting_failures or control_failures:
         return {
             "label": "invalid_anchor_test",
             "reason": "Required controls, artifacts, clean gates, or work accounting failed.",
@@ -247,12 +254,18 @@ def classify_isochronous_cubic_anchor(
     supported = [
         row
         for row in eligible
-        if _bool(row.get("preserves_strict_9_8")) and _bool(row.get("comb_near_neutral"))
+        if _bool(row.get("preserves_strict_9_8"))
+        and _bool(row.get("comb_near_neutral"))
+        and _bool(row.get("off_comb_not_worse"))
     ]
     memory_only = [
         row
         for row in eligible
-        if not (_bool(row.get("preserves_strict_9_8")) and _bool(row.get("comb_near_neutral")))
+        if not (
+            _bool(row.get("preserves_strict_9_8"))
+            and _bool(row.get("comb_near_neutral"))
+            and _bool(row.get("off_comb_not_worse"))
+        )
     ]
     best_pool = supported or memory_only or anchor_rows or comparison_rows
     best = max(
@@ -260,6 +273,7 @@ def classify_isochronous_cubic_anchor(
         key=lambda row: (
             _bool(row.get("preserves_strict_9_8")),
             _bool(row.get("comb_near_neutral")),
+            _bool(row.get("off_comb_not_worse")),
             _float(row.get("memory_delta_vs_neutral")),
             _float(row.get("memory_delta_vs_matched_random")),
         ),
@@ -271,14 +285,16 @@ def classify_isochronous_cubic_anchor(
             "best_memory_delta_vs_neutral": best.get("memory_delta_vs_neutral"),
             "best_memory_delta_vs_matched_random": best.get("memory_delta_vs_matched_random"),
             "best_comb_delta_vs_neutral": best.get("comb_score_delta_vs_neutral"),
+            "best_off_comb_delta_vs_neutral": best.get("off_comb_delta_vs_neutral"),
             "best_preserves_strict_9_8": best.get("preserves_strict_9_8"),
             "best_comb_near_neutral": best.get("comb_near_neutral"),
+            "best_off_comb_not_worse": best.get("off_comb_not_worse"),
         }
     )
     if supported:
         return {
             "label": "isochronous_cubic_anchor_supported",
-            "reason": "An isochronous cubic anchor improved memory versus neutral and matched randomized controls while preserving strict 9/8, near-neutral comb score, and clean gates.",
+            "reason": "An isochronous cubic anchor improved memory versus neutral and matched randomized controls while preserving strict 9/8, near-neutral comb score, non-worsened off-comb energy, and clean gates.",
             "best_variant": best.get("variant"),
             "best_role": best.get("mechanism_role"),
             "checks": checks,
@@ -286,7 +302,7 @@ def classify_isochronous_cubic_anchor(
     if memory_only:
         return {
             "label": "memory_only_anchor_tradeoff",
-            "reason": "An isochronous cubic anchor improved memory versus controls, but strict count or comb score still traded down.",
+            "reason": "An isochronous cubic anchor improved memory versus controls, but strict count, comb score, or off-comb energy still traded down.",
             "best_variant": best.get("variant"),
             "best_role": best.get("mechanism_role"),
             "checks": checks,
@@ -406,6 +422,7 @@ def _comparison_rows(
             else 0.0
         )
         comb_delta = _float(row.get("return_timing_comb_score")) - _float(neutral.get("return_timing_comb_score"))
+        off_comb_delta = _float(row.get("off_comb_energy_ratio")) - _float(neutral.get("off_comb_energy_ratio"))
         preserves_strict = (
             _int(row.get("conservative_major_peaks")) >= int(options.min_strict_major_peaks)
             and _int(row.get("conservative_refocus_peaks")) >= int(options.min_strict_refocus_peaks)
@@ -427,7 +444,8 @@ def _comparison_rows(
                 "preserves_strict_9_8": preserves_strict,
                 "comb_score_delta_vs_neutral": comb_delta,
                 "comb_near_neutral": abs(comb_delta) <= float(options.max_comb_score_drop),
-                "off_comb_delta_vs_neutral": _float(row.get("off_comb_energy_ratio")) - _float(neutral.get("off_comb_energy_ratio")),
+                "off_comb_delta_vs_neutral": off_comb_delta,
+                "off_comb_not_worse": off_comb_delta <= EPSILON,
                 "modal_participation_delta_vs_neutral": _float(row.get("modal_participation_ratio")) - _float(neutral.get("modal_participation_ratio")),
                 "clean_gates_passed": row.get("clean_gates_passed"),
                 "beats_neutral_memory": memory_delta_vs_neutral > EPSILON,
@@ -490,8 +508,8 @@ def _write_report(
             "",
             "## Comparisons",
             "",
-            "| Role | Matched random | Memory delta vs neutral | Memory delta vs random | Strict floor | Comb near neutral | Clean |",
-            "| --- | --- | ---: | ---: | --- | --- | --- |",
+            "| Role | Matched random | Memory delta vs neutral | Memory delta vs random | Strict floor | Comb near neutral | Off-comb not worse | Clean |",
+            "| --- | --- | ---: | ---: | --- | --- | --- | --- |",
         ]
     )
     for row in comparison_rows:
@@ -499,7 +517,8 @@ def _write_report(
             f"| {row.get('mechanism_role')} | {row.get('matched_random_role') or 'n/a'} | "
             f"{_format(row.get('memory_delta_vs_neutral'))} | "
             f"{_format(row.get('memory_delta_vs_matched_random'))} | "
-            f"{row.get('preserves_strict_9_8')} | {row.get('comb_near_neutral')} | {row.get('clean_gates_passed')} |"
+            f"{row.get('preserves_strict_9_8')} | {row.get('comb_near_neutral')} | "
+            f"{row.get('off_comb_not_worse')} | {row.get('clean_gates_passed')} |"
         )
     lines.extend(
         [
@@ -525,9 +544,9 @@ def _write_report(
 def _interpretation_text(classification: dict[str, Any], options: IsochronousCubicMemoryAnchorOptions) -> str:
     label = classification["label"]
     if label == "isochronous_cubic_anchor_supported":
-        return "A fixed isochronous cubic anchor decoupled spatial memory from strict-return and comb penalties at 41^3. This is still not scale validation."
+        return "A fixed isochronous cubic anchor decoupled spatial memory from strict-return, comb, and off-comb penalties at 41^3. This is still not scale validation."
     if label == "memory_only_anchor_tradeoff":
-        return "The anchor improved spatial memory, but the strict-count or comb-score penalty remains."
+        return "The anchor improved spatial memory, but a strict-count, comb-score, or off-comb penalty remains."
     if label == "no_isochronous_anchor_signal":
         return "The fixed isochronous anchor rows did not beat neutral and matched randomized controls on spatial memory."
     return "The test was invalid because required artifacts, accounting, or clean gates failed."
@@ -687,6 +706,7 @@ def _comparison_fields() -> list[str]:
         "comb_score_delta_vs_neutral",
         "comb_near_neutral",
         "off_comb_delta_vs_neutral",
+        "off_comb_not_worse",
         "modal_participation_delta_vs_neutral",
         "clean_gates_passed",
         "beats_neutral_memory",

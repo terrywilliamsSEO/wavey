@@ -47,12 +47,12 @@ class IsochronousCubicMemoryAnchorTests(unittest.TestCase):
         self.assertEqual(getattr(by_role["isochronous_anchor_0p5x"], "_matched_random_role"), "random_equivalent_0p5x")
         self.assertEqual(getattr(by_role["isochronous_anchor_1p0x"], "_matched_random_role"), "random_equivalent_1p0x")
 
-    def test_supported_when_memory_strict_and_comb_all_pass(self) -> None:
+    def test_supported_when_memory_strict_comb_and_off_comb_all_pass(self) -> None:
         rows = [
             self._row("neutral", "neutral_reference", 0.50, 9, 8, 0.70, True),
             self._row("random_half", "random_equivalent_0p5x", 0.52, 9, 8, 0.69, True),
             self._row("random", "random_equivalent_1p0x", 0.53, 9, 8, 0.68, True),
-            self._row("anchor", "isochronous_anchor_1p0x", 0.62, 9, 8, 0.66, True, matched="random_equivalent_1p0x"),
+            self._row("anchor", "isochronous_anchor_1p0x", 0.62, 9, 8, 0.66, True, matched="random_equivalent_1p0x", off_comb=0.09),
         ]
         comparisons = _comparison_rows(rows, IsochronousCubicMemoryAnchorOptions())
 
@@ -60,18 +60,33 @@ class IsochronousCubicMemoryAnchorTests(unittest.TestCase):
 
         self.assertEqual(result["label"], "isochronous_cubic_anchor_supported")
 
-    def test_memory_only_when_anchor_beats_controls_but_comb_or_strict_drops(self) -> None:
+    def test_memory_only_when_anchor_beats_controls_but_comb_strict_or_off_comb_drops(self) -> None:
         rows = [
             self._row("neutral", "neutral_reference", 0.50, 9, 8, 0.70, True),
             self._row("random_half", "random_equivalent_0p5x", 0.52, 9, 8, 0.69, True),
             self._row("random", "random_equivalent_1p0x", 0.53, 9, 8, 0.68, True),
-            self._row("anchor", "isochronous_anchor_1p0x", 0.62, 8, 7, 0.50, True, matched="random_equivalent_1p0x"),
+            self._row("anchor", "isochronous_anchor_1p0x", 0.62, 9, 8, 0.68, True, matched="random_equivalent_1p0x", off_comb=0.12),
         ]
         comparisons = _comparison_rows(rows, IsochronousCubicMemoryAnchorOptions())
 
         result = classify_isochronous_cubic_anchor(rows, comparisons, IsochronousCubicMemoryAnchorOptions())
 
         self.assertEqual(result["label"], "memory_only_anchor_tradeoff")
+
+    def test_diagnostic_row_clean_failure_does_not_invalidate_anchor_test(self) -> None:
+        rows = [
+            self._row("neutral", "neutral_reference", 0.50, 9, 8, 0.70, True),
+            self._row("random_half", "random_equivalent_0p5x", 0.52, 9, 8, 0.69, True),
+            self._row("random", "random_equivalent_1p0x", 0.53, 9, 8, 0.68, True),
+            self._row("radial", "radial_compensation_only", 0.54, 6, 5, 0.68, False),
+            self._row("anchor", "isochronous_anchor_1p0x", 0.62, 9, 8, 0.66, True, matched="random_equivalent_1p0x", off_comb=0.09),
+        ]
+        comparisons = _comparison_rows(rows, IsochronousCubicMemoryAnchorOptions())
+
+        result = classify_isochronous_cubic_anchor(rows, comparisons, IsochronousCubicMemoryAnchorOptions())
+
+        self.assertEqual(result["label"], "isochronous_cubic_anchor_supported")
+        self.assertEqual(result["checks"]["control_clean_gate_failures"], [])
 
     def test_no_signal_when_anchor_does_not_beat_random_control(self) -> None:
         rows = [
@@ -110,6 +125,7 @@ class IsochronousCubicMemoryAnchorTests(unittest.TestCase):
         clean: bool,
         *,
         matched: str = "",
+        off_comb: float = 0.1,
     ) -> dict[str, object]:
         return {
             "variant": variant,
@@ -124,7 +140,7 @@ class IsochronousCubicMemoryAnchorTests(unittest.TestCase):
             "conservative_major_peaks": major,
             "conservative_refocus_peaks": refocus,
             "return_timing_comb_score": comb,
-            "off_comb_energy_ratio": 0.1,
+            "off_comb_energy_ratio": off_comb,
             "modal_participation_ratio": 1.0,
             "energy_accounting_clean": True,
             "no_post_cutoff_external_work": True,

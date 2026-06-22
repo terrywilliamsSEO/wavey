@@ -14,7 +14,7 @@ The mechanism-specific local tradeoff map in `runs\cubic_memory_tradeoff_map_3d_
 
 The read-only survivor-bias audit in `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538` classified as `cubic_memory_tradeoff_inconclusive`. Standard cubic rows retain some matched neutral-window memory gain, but the largest sign-flipped memory gains coincide with low neutral-window coverage. The audit therefore does not support a clean claim that cubic memory is purely same-window improvement, nor a clean claim that it is entirely survivor bias.
 
-Next fixed mechanism question, now implemented but not yet run: `prototype-3d-isochronous-cubic-memory-anchor` tests whether a weak cubic degeneracy split plus a smooth radial compensation profile can keep the spatial-memory signal while preserving strict `9/8` and near-neutral comb score. It is a small `41^3`-only map: neutral, cubic split `0.5x/1.0x`, radial compensation only, isochronous anchor `0.5x/1.0x`, and randomized matched controls `0.5x/1.0x`. It must not run `51^3` by default and must not tune cutoff, source shape, active pulses, resonators, or `61^3`.
+The fixed isochronous cubic-memory anchor run in `runs\isochronous_cubic_anchor_3d_20260621_184841` classified as `memory_only_anchor_tradeoff`. The watched `isochronous_anchor_0p5x` row improved memory (`0.631984`) over neutral (`0.486969`) and matched randomized control (`0.480804`), preserved strict `9/8`, kept comb score near neutral (`0.723992` versus `0.726785`), and passed clean gates. It did not achieve full decoupling because off-comb energy worsened (`0.170717` versus neutral `0.156175`). Treat this as useful memory evidence with a remaining off-comb penalty, not `isochronous_cubic_anchor_supported`.
 
 ## Status
 
@@ -315,6 +315,7 @@ Next fixed mechanism question, now implemented but not yet run: `prototype-3d-is
 - Added and ran `prototype-3d-cubic-memory-survivor-bias-audit` in `runs\cubic_memory_survivor_bias_audit_3d_20260621_150538`; classification was `cubic_memory_tradeoff_inconclusive`.
 - Cubic survivor-bias audit result: neutral surviving/neutral-window memory was `0.486969`. Standard cubic `0.5x` scored surviving `0.548333`, first-N `0.610478`, and neutral-window `0.561309` with `0.818182` pair coverage versus randomized `0.5x` neutral-window `0.504878`. Sign-flipped `0.5x` scored the largest surviving memory (`0.725354`) but only `0.454545` neutral-window pair coverage. The memory gain is partially same-window, but the strongest gain is inflated by missing/surviving return windows.
 - Added `prototype-3d-isochronous-cubic-memory-anchor`, a fixed 41^3-only mechanism test combining weak cubic degeneracy splitting with a smooth radial compensation profile. It exports isochronous-anchor summary, by-return, matched-control comparison, Markdown report, JSON, and plots for memory versus strict count, off-comb energy, comb score, and modal participation.
+- Ran `prototype-3d-isochronous-cubic-memory-anchor` in `runs\isochronous_cubic_anchor_3d_20260621_184841`; after a classifier-only fix so a failed radial-only diagnostic row does not invalidate passing required controls/anchors, the saved artifacts classified as `memory_only_anchor_tradeoff`.
 
 ### In Progress
 
@@ -322,13 +323,13 @@ Next fixed mechanism question, now implemented but not yet run: `prototype-3d-is
 - The separate `spatial_memory_mechanism_lab` branch has a supported `41^3` mechanism signal, but the optional `51^3` follow-up did not preserve the memory advantage. It should not be used to tune the old `51^3` row or reopen the closed passive scale-lift branch by implication.
 - The fixed `prototype-3d-cubic-memory-tradeoff-map` run is complete. It supports a memory-only local tradeoff, not a strict-count-preserving cubic setting and not a scale-lift path.
 - The read-only survivor-bias audit is complete. It left the cubic-memory interpretation mixed: some standard cubic memory survives neutral-window matching, while sign-flipped high-memory rows are coverage-limited.
-- The `prototype-3d-isochronous-cubic-memory-anchor` command exists but has not been run yet. It is the next fixed mechanism test only if the goal is to probe the cubic memory/comb decoupling hypothesis.
+- The isochronous cubic anchor run is complete. It did not produce full memory/comb/off-comb decoupling: the best anchor preserved strict `9/8` and near-neutral comb, but off-comb energy rose above neutral.
 
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
 - If pursuing the new spatial-memory branch, design the next step around why weak passive structure improves memory at `41^3` but fails the optional `51^3` memory comparison. Do not tune cutoff, source shape, or grid size from this result.
-- The next allowed fixed mechanism command, if requested, is `python main.py prototype-3d-isochronous-cubic-memory-anchor --config configs\long_validation_peak_0_92.json`; judge it by memory versus neutral and matched randomized controls, strict `9/8` preservation, and comb score staying near neutral. Do not widen it into a strength sweep unless the fixed rows produce a clear mechanism-derived reason.
+- No follow-up physics command is currently justified by the isochronous anchor result alone. Any next mechanism work must explain how to preserve the `0.5x` anchor's memory/strict/comb gains without raising off-comb energy; do not widen it into a strength sweep unless a new mechanism predicts that off-comb improvement.
 - Do not keep repeating active second-pulse controls; first-refocus and second-refocus travel-time adjustment did not fix the active-pulse disruption.
 - Do not expand the passive boundary-inner-edge resonator layer yet; the first weak-coupling tuned/below/above/cubic/high-damping pass stored/exchanged energy passively but degraded strict counts.
 - Preserve matched injected work per physical source area, stronger sponge, inner-sponge-edge source placement, neutral lattice, and the same radius-5 physical shell window when interpreting any follow-up.
