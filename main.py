@@ -198,6 +198,10 @@ from simulation.prototype_3d_isochronous_cubic_memory_anchor import (
     IsochronousCubicMemoryAnchorOptions,
     run_3d_isochronous_cubic_memory_anchor,
 )
+from simulation.prototype_3d_isochronous_anchor_cleanup_control import (
+    IsochronousAnchorCleanupOptions,
+    run_3d_isochronous_anchor_cleanup_control,
+)
 from simulation.prototype_3d_release_phase_dispersion_audit import (
     DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
     DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
@@ -1211,6 +1215,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     isochronous_anchor_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed 41^3 isochronous cubic anchor test")
     isochronous_anchor_parser.add_argument("--output-root", default="runs", help="Directory for isochronous cubic anchor outputs")
+
+    cleanup_anchor_parser = subparsers.add_parser(
+        "prototype-3d-isochronous-anchor-cleanup-control",
+        help="Fixed 41^3 cleanup control for the isochronous anchor off-comb penalty",
+    )
+    cleanup_anchor_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed 41^3 isochronous anchor cleanup control")
+    cleanup_anchor_parser.add_argument("--output-root", default="runs", help="Directory for isochronous anchor cleanup outputs")
 
     release_phase_dispersion_audit_parser = subparsers.add_parser(
         "prototype-3d-release-phase-dispersion-audit",
@@ -2594,6 +2605,14 @@ def main() -> None:
             options=IsochronousCubicMemoryAnchorOptions(output_root=args.output_root),
         )
         _print_3d_isochronous_cubic_memory_anchor_summary(result)
+        return
+
+    if args.command == "prototype-3d-isochronous-anchor-cleanup-control":
+        result = run_3d_isochronous_anchor_cleanup_control(
+            _load_sim_config(args.config),
+            options=IsochronousAnchorCleanupOptions(output_root=args.output_root),
+        )
+        _print_3d_isochronous_anchor_cleanup_control_summary(result)
         return
 
     if args.command == "prototype-3d-release-phase-dispersion-audit":
@@ -4214,6 +4233,35 @@ def _print_3d_isochronous_cubic_memory_anchor_summary(result: dict[str, Any]) ->
     if classification.get("best_variant"):
         print(f"best variant: {classification['best_variant']}")
     print("anchor rows:")
+    for row in result.get("summary_rows", []):
+        print(
+            f"  - {row.get('mechanism_role')}: "
+            f"profile={row.get('mechanism_profile')}, "
+            f"strength={_format_optional(row.get('mechanism_strength_factor'))}, "
+            f"memory={_format_optional(row.get('pattern_memory_score'))}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"comb={_format_optional(row.get('return_timing_comb_score'))}, "
+            f"off_comb={_format_optional(row.get('off_comb_energy_ratio'))}, "
+            f"clean={row.get('clean_gates_passed')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"by-return CSV: {result['by_return_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
+    print("plots:")
+    for name, path in result.get("plots", {}).items():
+        print(f"  - {name}: {path}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_isochronous_anchor_cleanup_control_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D isochronous anchor cleanup control complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    if classification.get("best_variant"):
+        print(f"best variant: {classification['best_variant']}")
+    print("cleanup rows:")
     for row in result.get("summary_rows", []):
         print(
             f"  - {row.get('mechanism_role')}: "

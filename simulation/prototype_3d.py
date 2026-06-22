@@ -259,6 +259,10 @@ class Lattice3D:
             "cubic_degeneracy_split",
             "radial_compensation",
             "isochronous_cubic_anchor",
+            "isochronous_cubic_anchor_smooth_taper",
+            "isochronous_cubic_anchor_wide_smooth_taper",
+            "isochronous_cubic_anchor_weaker_compensation",
+            "smooth_radial_compensation",
             "random_equivalent",
         }:
             self.stiffness *= np.clip(1.0 + strength * profile, 0.05, None)
@@ -706,6 +710,20 @@ def _memory_mechanism_profile(
         cubic = _cubic_degeneracy_profile(config, coords, active)
         radial = _radial_compensation_profile(config, coords, active)
         return _normalized_active_profile(cubic + 0.45 * radial, active)
+    if profile_name == "isochronous_cubic_anchor_smooth_taper":
+        cubic = _cubic_degeneracy_profile(config, coords, active)
+        radial = _smooth_radial_compensation_profile(config, coords, active, width_scale=1.0)
+        return _normalized_active_profile(cubic + 0.45 * radial, active)
+    if profile_name == "isochronous_cubic_anchor_wide_smooth_taper":
+        cubic = _cubic_degeneracy_profile(config, coords, active)
+        radial = _smooth_radial_compensation_profile(config, coords, active, width_scale=1.6)
+        return _normalized_active_profile(cubic + 0.45 * radial, active)
+    if profile_name == "isochronous_cubic_anchor_weaker_compensation":
+        cubic = _cubic_degeneracy_profile(config, coords, active)
+        radial = _smooth_radial_compensation_profile(config, coords, active, width_scale=1.0)
+        return _normalized_active_profile(cubic + 0.25 * radial, active)
+    if profile_name == "smooth_radial_compensation":
+        return _smooth_radial_compensation_profile(config, coords, active, width_scale=1.0)
     if profile_name == "shell_band_isolation":
         center = config.memory_mechanism_shell_radius
         if center is None:
@@ -753,6 +771,29 @@ def _radial_compensation_profile(
     shell = np.exp(-0.5 * ((radius - center) / width) ** 2)
     broad = np.exp(-0.5 * ((radius - center) / max(2.5 * width, config.dx)) ** 2)
     raw = broad - shell
+    return _normalized_active_profile(raw, active)
+
+
+def _smooth_radial_compensation_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+    *,
+    width_scale: float,
+) -> np.ndarray:
+    radius = coords["radius"].astype(float)
+    center = config.memory_mechanism_shell_radius
+    if center is None:
+        center = float(config.defect_radius + 2.0 * config.dx)
+    width = max(float(config.memory_mechanism_shell_width or (4.0 * config.dx)), config.dx)
+    base_width = max(width * float(width_scale), config.dx)
+    shell = np.exp(-0.5 * ((radius - center) / base_width) ** 2)
+    broad = np.exp(-0.5 * ((radius - center) / max(2.5 * base_width, config.dx)) ** 2)
+    support = max(3.0 * base_width, config.dx)
+    phase = np.clip(np.abs(radius - center) / support, 0.0, 1.0)
+    taper = 0.5 * (1.0 + np.cos(np.pi * phase))
+    taper = np.where(np.abs(radius - center) <= support, taper, 0.0)
+    raw = (broad - shell) * taper
     return _normalized_active_profile(raw, active)
 
 

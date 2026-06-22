@@ -550,6 +550,14 @@ python main.py prototype-3d-isochronous-cubic-memory-anchor --config configs\lon
 
 This command tests whether a weak cubic degeneracy split plus a fixed smooth radial compensation profile can preserve spatial-pattern memory while keeping return timing/comb score closer to the neutral reference. It runs a fixed `41^3` row set only: neutral reference, standard cubic split `0.5x/1.0x`, radial compensation only, isochronous cubic anchor `0.5x/1.0x`, and randomized matched-strength controls `0.5x/1.0x`. It does not expose cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, resonators, or old-branch rescue logic. Current project state: `runs\isochronous_cubic_anchor_3d_20260621_184841` classified as `memory_only_anchor_tradeoff`: `isochronous_anchor_0p5x` improved memory (`0.631984` versus neutral `0.486969` and randomized `0.480804`) while preserving strict `9/8` and near-neutral comb, but off-comb energy worsened (`0.170717` versus neutral `0.156175`).
 
+Run the fixed 41^3 isochronous-anchor cleanup control with:
+
+```powershell
+python main.py prototype-3d-isochronous-anchor-cleanup-control --config configs\long_validation_peak_0_92.json
+```
+
+This command tests only whether fixed smooth-taper cleanup profiles can keep the `isochronous_anchor_0p5x` memory/strict/comb gains while reducing the small off-comb penalty. It runs seven fixed `41^3` rows: neutral reference, randomized matched `0.5x`, current `isochronous_anchor_0p5x` reference, smooth taper, wide smooth taper, weaker compensation, and smooth radial compensation only. It does not tune cutoff, frequency, source, `51^3`, `61^3`, active pulses, resonators, or source shaping. Current project state: command implemented but not yet run.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1312,6 +1320,21 @@ When `prototype-3d-isochronous-cubic-memory-anchor` is used, the control folder 
 - supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `isochronous_anchor_`
 
 The isochronous cubic-memory anchor is a small fixed `41^3` mechanism test. It asks whether radial compensation can decouple the cubic memory gain from strict-count, comb, and off-comb penalties; it does not authorize cutoff tuning, `51^3`, `61^3`, source shaping, active pulses, or resonators. Current result: `runs\isochronous_cubic_anchor_3d_20260621_184841` classified as `memory_only_anchor_tradeoff`, not full `isochronous_cubic_anchor_supported`, because the best anchor kept strict count and comb but did not keep off-comb energy at or below neutral.
+
+When `prototype-3d-isochronous-anchor-cleanup-control` is used, the control folder includes:
+
+- `isochronous_anchor_cleanup_report.md`
+- `isochronous_anchor_cleanup_summary.csv`
+- `isochronous_anchor_cleanup_by_return.csv`
+- `isochronous_anchor_cleanup_comparison.csv`
+- `isochronous_anchor_cleanup_summary.json`
+- `cleanup_memory_plot.png`
+- `cleanup_strict_count_plot.png`
+- `cleanup_comb_score_plot.png`
+- `cleanup_off_comb_energy_plot.png`
+- supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `isochronous_anchor_cleanup_`
+
+The cleanup control is a fixed `41^3` follow-up to the incomplete isochronous-anchor decoupling result. It asks whether smoothing/tapering the compensation can keep memory above neutral/random, preserve strict `9/8`, keep comb near neutral, and reduce off-comb to neutral plus a fixed tolerance. Current project state: command implemented but not yet run.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 
