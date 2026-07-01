@@ -206,6 +206,10 @@ from simulation.prototype_3d_angular_mode_cleanup_control import (
     AngularModeCleanupOptions,
     run_3d_angular_mode_cleanup_control,
 )
+from simulation.prototype_3d_sacred_geometry_memory_anchor import (
+    SacredGeometryMemoryAnchorOptions,
+    run_3d_sacred_geometry_memory_anchor,
+)
 from simulation.prototype_3d_release_phase_dispersion_audit import (
     DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
     DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
@@ -1233,6 +1237,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     angular_cleanup_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed 41^3 angular-mode cleanup control")
     angular_cleanup_parser.add_argument("--output-root", default="runs", help="Directory for angular-mode cleanup outputs")
+
+    sacred_geometry_parser = subparsers.add_parser(
+        "prototype-3d-sacred-geometry-memory-anchor",
+        help="Fixed 41^3 sacred-geometry memory anchor mechanism test",
+    )
+    sacred_geometry_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed 41^3 sacred-geometry memory anchor")
+    sacred_geometry_parser.add_argument("--output-root", default="runs", help="Directory for sacred-geometry memory anchor outputs")
 
     release_phase_dispersion_audit_parser = subparsers.add_parser(
         "prototype-3d-release-phase-dispersion-audit",
@@ -2632,6 +2643,14 @@ def main() -> None:
             options=AngularModeCleanupOptions(output_root=args.output_root),
         )
         _print_3d_angular_mode_cleanup_control_summary(result)
+        return
+
+    if args.command == "prototype-3d-sacred-geometry-memory-anchor":
+        result = run_3d_sacred_geometry_memory_anchor(
+            _load_sim_config(args.config),
+            options=SacredGeometryMemoryAnchorOptions(output_root=args.output_root),
+        )
+        _print_3d_sacred_geometry_memory_anchor_summary(result)
         return
 
     if args.command == "prototype-3d-release-phase-dispersion-audit":
@@ -4326,6 +4345,36 @@ def _print_3d_angular_mode_cleanup_control_summary(result: dict[str, Any]) -> No
     print(f"by-return CSV: {result['by_return_csv']}")
     print(f"comparison CSV: {result['comparison_csv']}")
     print(f"angular-mode spectrum CSV: {result['angular_mode_spectrum_csv']}")
+    print("plots:")
+    for name, path in result.get("plots", {}).items():
+        print(f"  - {name}: {path}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_sacred_geometry_memory_anchor_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    print("3D sacred-geometry memory anchor complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    if classification.get("best_variant"):
+        print(f"best variant: {classification['best_variant']}")
+    print("sacred geometry rows:")
+    for row in result.get("summary_rows", []):
+        print(
+            f"  - {row.get('mechanism_role')}: "
+            f"profile={row.get('mechanism_profile')}, "
+            f"strength={_format_optional(row.get('mechanism_strength_factor'))}, "
+            f"memory={_format_optional(row.get('pattern_memory_score'))}, "
+            f"strict={row.get('conservative_major_peaks')}/{row.get('conservative_refocus_peaks')}, "
+            f"comb={_format_optional(row.get('return_timing_comb_score'))}, "
+            f"off_comb={_format_optional(row.get('off_comb_energy_ratio'))}, "
+            f"clean={row.get('clean_gates_passed')}"
+        )
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"by-return CSV: {result['by_return_csv']}")
+    print(f"comparison CSV: {result['comparison_csv']}")
+    print(f"pattern-similarity CSV: {result['pattern_similarity_csv']}")
     print("plots:")
     for name, path in result.get("plots", {}).items():
         print(f"  - {name}: {path}")

@@ -566,6 +566,14 @@ python main.py prototype-3d-angular-mode-cleanup-control --config configs\long_v
 
 This command tests a different passive cleanup mechanism for the `isochronous_anchor_0p5x` off-comb penalty: weak angular high-mode damping on the shell, with a cubic-preserving variant and a randomized matched damping control. It runs eight fixed `41^3` rows: neutral reference, randomized equivalent `0.5x`, current `isochronous_anchor_0p5x` reference, weak angular cleanup only, anchor plus weak cleanup, anchor plus medium cleanup, anchor plus cubic-preserving cleanup, and randomized matched damping. It does not tune cutoff, frequency, source, `51^3`, `61^3`, active pulses, resonators, or taper profiles. Current result: `runs\angular_mode_cleanup_3d_20260621_210741` classified as `angular_cleanup_memory_only_tradeoff`. The best cleanup row, `anchor_0p5x_weak_angular_cleanup`, kept memory above neutral and both randomized controls (`0.601371` versus neutral `0.486969`, random `0.480804`, and random damping `0.538221`) and kept comb near neutral (`0.697852`), but dropped to strict `7/6` and raised off-comb to `0.204026` versus the anchor reference `0.170717`.
 
+Run the fixed 41^3 sacred-geometry memory anchor test with:
+
+```powershell
+python main.py prototype-3d-sacred-geometry-memory-anchor --config configs\long_validation_peak_0_92.json
+```
+
+This command tests high-symmetry non-cubic passive geometry anchors, interpreted scientifically as icosahedral, dodecahedral, golden-ratio double-shell, and hex/flower shell stiffness patterns near the shell window. It runs seven fixed `41^3` rows: neutral reference, current `isochronous_anchor_0p5x` reference, icosahedral shell anchor, dodecahedral shell anchor, golden-ratio double-shell anchor, hex/flower shell projection anchor, and randomized matched-strength control. It keeps cutoff `17.94`, frequency `0.92`, source/work/sponge/shell setup fixed and does not tune cutoff/source/frequency, run `51^3`, run `61^3`, add source shaping, active pulses, or resonators. Current state: implemented and not yet run; the result classification will be one of `sacred_geometry_anchor_supported`, `sacred_geometry_memory_only_tradeoff`, `sacred_geometry_no_signal`, or `invalid_sacred_geometry_test`.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1360,6 +1368,23 @@ When `prototype-3d-angular-mode-cleanup-control` is used, the control folder inc
 - supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `angular_mode_cleanup_`
 
 The angular-mode cleanup control is a fixed `41^3` mechanism follow-up to the incomplete isochronous-anchor decoupling result. It asks whether weak passive shell damping of high-angular components can reduce off-comb versus the anchor reference while keeping memory above neutral/randomized controls, preserving strict `9/8`, and keeping comb near neutral. It is not a taper continuation, not a closed-branch rescue, and not a default `51^3` path. Current result: `runs\angular_mode_cleanup_3d_20260621_210741` classified as `angular_cleanup_memory_only_tradeoff`, not `angular_cleanup_supported`: the cleanup rows preserved a memory signal but reduced strict counts and worsened off-comb rather than cleaning it.
+
+When `prototype-3d-sacred-geometry-memory-anchor` is used, the control folder includes:
+
+- `sacred_geometry_anchor_report.md`
+- `sacred_geometry_anchor_summary.csv`
+- `sacred_geometry_by_return.csv`
+- `sacred_geometry_control_comparison.csv`
+- `sacred_geometry_anchor_summary.json`
+- `sacred_geometry_pattern_similarity.csv`
+- `sacred_geometry_memory_plot.png`
+- `sacred_geometry_strict_count_plot.png`
+- `sacred_geometry_comb_score_plot.png`
+- `sacred_geometry_off_comb_energy_plot.png`
+- `sacred_geometry_pattern_similarity_plot.png`
+- supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `sacred_geometry_`
+
+The sacred-geometry memory anchor is a fixed `41^3` mechanism follow-up to the incomplete off-comb decoupling problem. It asks whether quasi-isotropic non-cubic shell stiffness patterns can preserve spatial-pattern memory while reducing off-comb versus the `isochronous_anchor_0p5x` reference. It is not a source-shape, cutoff, frequency, active-pulse, resonator, default `51^3`, or `61^3` path. Current state: implemented and not yet run.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

@@ -20,6 +20,8 @@ The fixed cleanup follow-up in `runs\isochronous_anchor_cleanup_3d_20260621_1936
 
 The fixed angular-mode cleanup follow-up in `runs\angular_mode_cleanup_3d_20260621_210741` classified as `angular_cleanup_memory_only_tradeoff`. The best cleanup row, `anchor_0p5x_weak_angular_cleanup`, kept memory above neutral and both randomized controls (`0.601371` versus neutral `0.486969`, random `0.480804`, and random damping `0.538221`) and kept comb near neutral (`0.697852` versus neutral `0.726785`), but dropped to strict/default/loose `7/6`, `9/8`, `10/9` and worsened off-comb to `0.204026` versus anchor reference `0.170717`. The cubic-preserving cleanup behaved similarly (`0.596721`, strict `7/6`, off-comb `0.201416`), and medium cleanup failed clean gates. No row achieved `angular_cleanup_supported`.
 
+The fixed `prototype-3d-sacred-geometry-memory-anchor` command is implemented but not yet run. It tests high-symmetry non-cubic passive stiffness anchors near the shell window: icosahedral, dodecahedral, golden-ratio double-shell, hex/flower shell projection, and randomized matched-strength control. It remains `41^3` only by default and keeps cutoff `17.94`, frequency `0.92`, source/work/sponge/shell setup fixed. Success requires memory above neutral/random, strict `9/8`, near-neutral comb, reduced off-comb versus `isochronous_anchor_0p5x`, and clean gates.
+
 ## Status
 
 ### Done
@@ -324,6 +326,7 @@ The fixed angular-mode cleanup follow-up in `runs\angular_mode_cleanup_3d_202606
 - Ran `prototype-3d-isochronous-anchor-cleanup-control` in `runs\isochronous_anchor_cleanup_3d_20260621_193641`; classification was `cleanup_memory_only_tradeoff`.
 - Added `prototype-3d-angular-mode-cleanup-control`, a fixed 41^3-only passive angular high-mode cleanup test for the `isochronous_anchor_0p5x` off-comb penalty. It exports angular-cleanup summary, by-return, comparison, angular-mode spectrum CSV, Markdown report, JSON, and plots for memory, strict count, comb score, off-comb energy, and angular-mode spectrum.
 - Ran `prototype-3d-angular-mode-cleanup-control` in `runs\angular_mode_cleanup_3d_20260621_210741`; classification was `angular_cleanup_memory_only_tradeoff`.
+- Added `prototype-3d-sacred-geometry-memory-anchor`, a fixed 41^3-only non-cubic passive geometry anchor test for the `isochronous_anchor_0p5x` off-comb penalty. It exports sacred-geometry summary, by-return, comparison, pattern-similarity CSV, Markdown report, JSON, and plots for memory, strict count, comb score, off-comb energy, and angular/spatial pattern similarity. It has not run physics yet.
 
 ### In Progress
 
@@ -334,10 +337,12 @@ The fixed angular-mode cleanup follow-up in `runs\angular_mode_cleanup_3d_202606
 - The isochronous cubic anchor run is complete. It did not produce full memory/comb/off-comb decoupling: the best anchor preserved strict `9/8` and near-neutral comb, but off-comb energy rose above neutral.
 - The cleanup control is complete. It did not solve the off-comb penalty without damaging strict/comb behavior; the cleanup rows split into off-comb-clean but strict/comb-damaged rows versus memory/strict/comb-preserving but off-comb-dirty rows.
 - The angular-mode cleanup control is complete. It did not reduce the anchor off-comb penalty while preserving strict `9/8`; angular damping kept a memory signal but damaged strict count and worsened off-comb.
+- The sacred-geometry memory anchor command is implemented and ready for a fixed `41^3` run. It should be run exactly as designed before interpretation; do not widen it into geometry sweeps, cutoff tuning, source tuning, default `51^3`, or source shaping.
 
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
+- The next mechanism action, when physics is requested, is the fixed command `python main.py prototype-3d-sacred-geometry-memory-anchor --config configs\long_validation_peak_0_92.json`.
 - If pursuing the new spatial-memory branch, design the next step around why weak passive structure improves memory at `41^3` but fails the optional `51^3` memory comparison. Do not tune cutoff, source shape, or grid size from this result.
 - No follow-up physics command is currently justified by the cleanup control alone. Any next mechanism work must explain why off-comb-clean tapering damages strict/comb while wide taper preserves memory/strict/comb but not off-comb; do not widen this into a taper/strength sweep without a new mechanism predicting joint improvement.
 - Do not keep repeating active second-pulse controls; first-refocus and second-refocus travel-time adjustment did not fix the active-pulse disruption.

@@ -274,6 +274,11 @@ class Lattice3D:
             "isochronous_cubic_anchor_wide_smooth_taper",
             "isochronous_cubic_anchor_weaker_compensation",
             "smooth_radial_compensation",
+            "icosahedral_shell_anchor",
+            "dodecahedral_shell_anchor",
+            "golden_ratio_double_shell_anchor",
+            "hex_flower_shell_projection_anchor",
+            "random_sacred_geometry_anchor",
             "random_equivalent",
         }:
             self.stiffness *= np.clip(1.0 + strength * profile, 0.05, None)
@@ -769,6 +774,16 @@ def _memory_mechanism_profile(
         return _angular_high_mode_cleanup_profile(config, coords, active, cubic_preserving=True)
     if profile_name == "random_angular_cleanup":
         return _random_angular_cleanup_profile(config, coords, active)
+    if profile_name == "icosahedral_shell_anchor":
+        return _polyhedral_shell_anchor_profile(config, coords, active, family="icosahedral")
+    if profile_name == "dodecahedral_shell_anchor":
+        return _polyhedral_shell_anchor_profile(config, coords, active, family="dodecahedral")
+    if profile_name == "golden_ratio_double_shell_anchor":
+        return _golden_ratio_double_shell_anchor_profile(config, coords, active)
+    if profile_name == "hex_flower_shell_projection_anchor":
+        return _hex_flower_shell_projection_anchor_profile(config, coords, active)
+    if profile_name == "random_sacred_geometry_anchor":
+        return _random_sacred_geometry_anchor_profile(config, coords, active)
     raise ValueError(f"Unsupported passive memory mechanism profile: {profile_name}")
 
 
@@ -876,6 +891,143 @@ def _random_angular_cleanup_profile(
     rng = np.random.default_rng(config.memory_mechanism_seed or 0)
     raw = shell * rng.random(size=radius.shape)
     return _rms_normalized_active_profile(raw, active)
+
+
+def _polyhedral_shell_anchor_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+    *,
+    family: str,
+) -> np.ndarray:
+    shell = _memory_shell_envelope(config, coords)
+    unit = _unit_coordinate_stack(config, coords)
+    directions = _icosahedral_directions() if family == "icosahedral" else _dodecahedral_directions()
+    angular = np.zeros_like(shell, dtype=float)
+    for direction in directions:
+        projection = unit[0] * direction[0] + unit[1] * direction[1] + unit[2] * direction[2]
+        angular += projection**8
+    raw = shell * angular
+    return _normalized_active_profile(raw, active)
+
+
+def _golden_ratio_double_shell_anchor_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+) -> np.ndarray:
+    radius = coords["radius"].astype(float)
+    center = config.memory_mechanism_shell_radius
+    if center is None:
+        center = float(config.defect_radius + 2.0 * config.dx)
+    width = max(float(config.memory_mechanism_shell_width or (4.0 * config.dx)), config.dx)
+    phi = 0.5 * (1.0 + np.sqrt(5.0))
+    inner_width = max(width / phi, config.dx)
+    outer_width = max(width * phi, config.dx)
+    inner = np.exp(-0.5 * ((radius - (center - 0.35 * width / phi)) / inner_width) ** 2)
+    outer = np.exp(-0.5 * ((radius - (center + 0.35 * width / phi)) / outer_width) ** 2)
+    dodeca = _polyhedral_shell_anchor_raw(config, coords, family="dodecahedral")
+    raw = (inner - 0.72 * outer) + 0.35 * _memory_shell_envelope(config, coords) * dodeca
+    return _normalized_active_profile(raw, active)
+
+
+def _hex_flower_shell_projection_anchor_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+) -> np.ndarray:
+    shell = _memory_shell_envelope(config, coords)
+    x = coords["x"].astype(float)
+    y = coords["y"].astype(float)
+    z = coords["z"].astype(float)
+    theta_xy = np.arctan2(y, x)
+    theta_yz = np.arctan2(z, y)
+    theta_zx = np.arctan2(x, z)
+    flower = np.cos(6.0 * theta_xy) + np.cos(6.0 * theta_yz) + np.cos(6.0 * theta_zx)
+    raw = shell * flower
+    return _normalized_active_profile(raw, active)
+
+
+def _random_sacred_geometry_anchor_profile(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    active: np.ndarray,
+) -> np.ndarray:
+    shell = _memory_shell_envelope(config, coords)
+    rng = np.random.default_rng(config.memory_mechanism_seed or 0)
+    raw = shell * rng.normal(size=shell.shape)
+    return _normalized_active_profile(raw, active)
+
+
+def _polyhedral_shell_anchor_raw(
+    config: Prototype3DConfig,
+    coords: dict[str, np.ndarray],
+    *,
+    family: str,
+) -> np.ndarray:
+    unit = _unit_coordinate_stack(config, coords)
+    directions = _icosahedral_directions() if family == "icosahedral" else _dodecahedral_directions()
+    angular = np.zeros_like(coords["radius"], dtype=float)
+    for direction in directions:
+        projection = unit[0] * direction[0] + unit[1] * direction[1] + unit[2] * direction[2]
+        angular += projection**8
+    return angular
+
+
+def _memory_shell_envelope(config: Prototype3DConfig, coords: dict[str, np.ndarray]) -> np.ndarray:
+    radius = coords["radius"].astype(float)
+    center = config.memory_mechanism_shell_radius
+    if center is None:
+        center = float(config.defect_radius + 2.0 * config.dx)
+    width = max(float(config.memory_mechanism_shell_width or (4.0 * config.dx)), config.dx)
+    return np.exp(-0.5 * ((radius - center) / width) ** 2)
+
+
+def _unit_coordinate_stack(config: Prototype3DConfig, coords: dict[str, np.ndarray]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    radius = np.maximum(coords["radius"].astype(float), config.dx)
+    return (
+        coords["x"].astype(float) / radius,
+        coords["y"].astype(float) / radius,
+        coords["z"].astype(float) / radius,
+    )
+
+
+def _icosahedral_directions() -> tuple[tuple[float, float, float], ...]:
+    phi = 0.5 * (1.0 + np.sqrt(5.0))
+    raw = []
+    for a in (-1.0, 1.0):
+        for b in (-1.0, 1.0):
+            raw.append((0.0, a, b * phi))
+            raw.append((a, b * phi, 0.0))
+            raw.append((a * phi, 0.0, b))
+    return _normalized_direction_tuple(raw)
+
+
+def _dodecahedral_directions() -> tuple[tuple[float, float, float], ...]:
+    phi = 0.5 * (1.0 + np.sqrt(5.0))
+    inv_phi = 1.0 / phi
+    raw = []
+    for sx in (-1.0, 1.0):
+        for sy in (-1.0, 1.0):
+            for sz in (-1.0, 1.0):
+                raw.append((sx, sy, sz))
+    for a in (-1.0, 1.0):
+        for b in (-1.0, 1.0):
+            raw.append((0.0, a * inv_phi, b * phi))
+            raw.append((a * inv_phi, b * phi, 0.0))
+            raw.append((a * phi, 0.0, b * inv_phi))
+    return _normalized_direction_tuple(raw)
+
+
+def _normalized_direction_tuple(raw: list[tuple[float, float, float]]) -> tuple[tuple[float, float, float], ...]:
+    out = []
+    for vector in raw:
+        arr = np.asarray(vector, dtype=float)
+        norm = float(np.linalg.norm(arr))
+        if norm > EPSILON:
+            scaled = arr / norm
+            out.append((float(scaled[0]), float(scaled[1]), float(scaled[2])))
+    return tuple(out)
 
 
 def _normalized_active_profile(raw: np.ndarray, active: np.ndarray) -> np.ndarray:
