@@ -24,6 +24,8 @@ The fixed sacred-geometry memory anchor run in `runs\sacred_geometry_memory_anch
 
 The fixed golden/cubic hybrid anchor run in `runs\golden_cubic_hybrid_anchor_3d_20260701_162316` classified as `hybrid_memory_only_tradeoff`. The best hybrid row, `hybrid_cubic_0p5x_golden_0p5x`, reached memory `0.600682` versus neutral `0.486969` and randomized `0.508722`, and reduced off-comb to `0.072402` versus the isochronous anchor reference `0.170717`, but dropped to strict/default/loose `7/6`, `9/8`, `10/9` and comb `0.584586`. No row achieved `golden_cubic_hybrid_supported`.
 
+The read-only return-mode-null golden design audit in `runs\return_mode_null_golden_design_3d_20260701_170424` classified as `return_mode_null_golden_candidate_supported`. The raw golden-ratio profile had desired-return-basis overlap `0.711976`; subtracting the neutral/isochronous return-mode projection reduced that overlap to `3.75579e-16` while retaining `0.702204` node-space golden strength and `1.00610` sector strength, with RMS renormalization multiplier `1.42409`. Treat this as a design-supported future fixed-candidate clue, not a physics validation.
+
 ## Status
 
 ### Done
@@ -331,6 +333,7 @@ The fixed golden/cubic hybrid anchor run in `runs\golden_cubic_hybrid_anchor_3d_
 - Added `prototype-3d-sacred-geometry-memory-anchor`, a fixed 41^3-only non-cubic passive geometry anchor test for the `isochronous_anchor_0p5x` off-comb penalty. It exports sacred-geometry summary, by-return, comparison, pattern-similarity CSV, Markdown report, JSON, and plots for memory, strict count, comb score, off-comb energy, and angular/spatial pattern similarity.
 - Ran `prototype-3d-sacred-geometry-memory-anchor` in `runs\sacred_geometry_memory_anchor_3d_20260701_154048`; classification was `sacred_geometry_memory_only_tradeoff`.
 - Added `prototype-3d-golden-cubic-hybrid-anchor`, a fixed 41^3-only hybrid mechanism test combining the isochronous cubic timing scaffold with weak golden-ratio double-shell cleaning. It exports hybrid summary, by-return, control comparison, mechanism-comparison CSV, Markdown report, JSON, and plots for memory, strict count, comb score, off-comb energy, and mechanism comparison. The first run classified as `hybrid_memory_only_tradeoff`.
+- Added and ran `prototype-3d-return-mode-null-golden-design`, a read-only design audit that projects the raw golden-ratio double-shell profile away from the neutral/isochronous return-mode node basis. It exports design summary, projection components, return-mode basis summary, JSON, Markdown report, and raw-vs-null coefficient plot. The first run classified as `return_mode_null_golden_candidate_supported`.
 
 ### In Progress
 
@@ -343,10 +346,12 @@ The fixed golden/cubic hybrid anchor run in `runs\golden_cubic_hybrid_anchor_3d_
 - The angular-mode cleanup control is complete. It did not reduce the anchor off-comb penalty while preserving strict `9/8`; angular damping kept a memory signal but damaged strict count and worsened off-comb.
 - The sacred-geometry memory anchor run is complete. It produced the strongest memory/off-comb split so far, but not full decoupling: non-cubic anchors reduced off-comb and improved memory/coherence, while strict count and comb timing traded down.
 - The golden/cubic hybrid anchor run is complete. It preserved a hybrid memory/off-comb signal but did not preserve strict `9/8` or near-neutral comb, so it is not a broad-map justification.
+- The return-mode-null golden design audit is complete. It supports one future fixed design candidate in principle, but it did not run physics and does not justify a sweep.
 
 ### Next
 
 - Keep the work targeted; do not run a broad 3D sweep or another defect-parameter expansion.
+- If this design is pursued, the next step should be one explicitly fixed return-mode-null golden guard physics command, not an additive golden/cubic retry or local tuning map.
 - No follow-up physics command is currently justified by the golden/cubic hybrid result alone. Any future mechanism must explain why adding golden-ratio cleanup reduces off-comb but damages strict count and comb timing; do not tune cutoff, source shape, or grid size from this result.
 - No follow-up physics command is currently justified by the cleanup control alone. Any next mechanism work must explain why off-comb-clean tapering damages strict/comb while wide taper preserves memory/strict/comb but not off-comb; do not widen this into a taper/strength sweep without a new mechanism predicting joint improvement.
 - Do not keep repeating active second-pulse controls; first-refocus and second-refocus travel-time adjustment did not fix the active-pulse disruption.

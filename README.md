@@ -582,6 +582,14 @@ python main.py prototype-3d-golden-cubic-hybrid-anchor --config configs\long_val
 
 This command combines the complementary previous mechanisms: the `isochronous_anchor_0p5x` timing scaffold that preserved strict `9/8` and near-neutral comb, plus weak golden-ratio double-shell spatial/off-comb cleaning that reduced off-comb but lost strict/comb timing by itself. It runs seven fixed `41^3` rows: neutral reference, `isochronous_anchor_0p5x` reference, golden-ratio double-shell reference, three golden/cubic hybrid rows, and one randomized matched-strength hybrid control. It keeps cutoff `17.94`, frequency `0.92`, source/work/sponge/shell setup fixed and does not tune cutoff/source/frequency, run `51^3`, run `61^3`, add source shaping, active pulses, or resonators. Current result: `runs\golden_cubic_hybrid_anchor_3d_20260701_162316` classified as `hybrid_memory_only_tradeoff`. The best hybrid row, `hybrid_cubic_0p5x_golden_0p5x`, reached memory `0.600682` versus neutral `0.486969` and randomized `0.508722`, reduced off-comb to `0.072402` versus anchor `0.170717`, and passed clean gates, but dropped to strict/default/loose `7/6`, `9/8`, `10/9` with comb `0.584586`. No row achieved `golden_cubic_hybrid_supported`.
 
+Run the read-only return-mode-null golden design audit with:
+
+```powershell
+python main.py prototype-3d-return-mode-null-golden-design
+```
+
+This command does not run physics. It reads the saved isochronous anchor, cleanup, sacred-geometry, and golden/cubic hybrid artifacts, estimates a desired return-mode basis from neutral and `isochronous_anchor_0p5x` return-window node frames, builds the raw golden-ratio double-shell profile vector, and subtracts its projection onto that desired return family. Current result: `runs\return_mode_null_golden_design_3d_20260701_170424` classified as `return_mode_null_golden_candidate_supported`. Raw golden desired-basis overlap was `0.711976`, null overlap fell to `3.75579e-16`, retained golden strength was `0.702204`, and RMS renormalization multiplier was `1.42409`. This is a design gate only; it does not validate a physics candidate or authorize broad tuning.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1410,6 +1418,17 @@ When `prototype-3d-golden-cubic-hybrid-anchor` is used, the control folder inclu
 - supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `golden_cubic_hybrid_`
 
 The golden/cubic hybrid anchor is a fixed `41^3` mechanism follow-up to the split between isochronous timing support and golden-ratio off-comb cleanup. It asks whether a weak golden-ratio double-shell cleaner can be added to the isochronous cubic scaffold without losing strict `9/8` or near-neutral comb timing. It is not a source-shape, cutoff, frequency, active-pulse, resonator, default `51^3`, or `61^3` path. The first run in `runs\golden_cubic_hybrid_anchor_3d_20260701_162316` classified as `hybrid_memory_only_tradeoff`: hybrid rows preserved a memory signal and reduced off-comb below the isochronous anchor, but strict return count and near-neutral comb timing traded down. The report is `runs\golden_cubic_hybrid_anchor_3d_20260701_162316\golden_cubic_hybrid_report.md`.
+
+When `prototype-3d-return-mode-null-golden-design` is used, the design-audit folder includes:
+
+- `return_mode_null_golden_design_report.md`
+- `return_mode_null_golden_design_summary.csv`
+- `golden_projection_components.csv`
+- `return_mode_basis_summary.csv`
+- `return_mode_null_golden_design_summary.json`
+- `raw_vs_null_golden_profile_coefficients.png`
+
+The return-mode-null golden design audit is read-only. It asks whether the golden-ratio double-shell profile can be orthogonalized against the neutral/isochronous return-family node basis before any physics run. The first run in `runs\return_mode_null_golden_design_3d_20260701_170424` classified as `return_mode_null_golden_candidate_supported`: projection removed the desired-return-family overlap while retaining enough golden structure to define a future fixed candidate. This is not an additive hybrid retry, not cutoff/source/frequency tuning, and not a default `51^3` or `61^3` path.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 

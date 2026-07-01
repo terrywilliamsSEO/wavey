@@ -83,6 +83,7 @@ Current interpretation:
 - The `prototype-3d-angular-mode-cleanup-control` run in `runs\angular_mode_cleanup_3d_20260621_210741` classified as `angular_cleanup_memory_only_tradeoff`: weak and cubic-preserving angular cleanup rows kept memory above neutral/random controls, but dropped to strict `7/6` and worsened off-comb versus the anchor reference; medium cleanup dropped to strict `6/5` and failed clean gates. No row achieved `angular_cleanup_supported`.
 - The `prototype-3d-sacred-geometry-memory-anchor` run in `runs\sacred_geometry_memory_anchor_3d_20260701_154048` classified as `sacred_geometry_memory_only_tradeoff`: golden-ratio double-shell produced the strongest memory score (`0.690023`) and reduced off-comb (`0.094257` versus anchor `0.170717`), while icosahedral/dodecahedral rows reduced off-comb even further, but all sacred rows lost strict `9/8` and near-neutral comb. No row achieved `sacred_geometry_anchor_supported`.
 - The `prototype-3d-golden-cubic-hybrid-anchor` run in `runs\golden_cubic_hybrid_anchor_3d_20260701_162316` classified as `hybrid_memory_only_tradeoff`: the best hybrid row, `hybrid_cubic_0p5x_golden_0p5x`, improved memory (`0.600682` versus neutral `0.486969` and randomized `0.508722`) and reduced off-comb (`0.072402` versus anchor `0.170717`), but dropped to strict/default/loose `7/6`, `9/8`, `10/9` with comb `0.584586`. No row achieved `golden_cubic_hybrid_supported`.
+- The read-only `prototype-3d-return-mode-null-golden-design` run in `runs\return_mode_null_golden_design_3d_20260701_170424` classified as `return_mode_null_golden_candidate_supported`: raw golden desired-return-basis overlap was `0.711976`, null overlap fell to `3.75579e-16`, retained golden strength was `0.702204`, sector retained strength was `1.00610`, and the RMS renormalization multiplier was `1.42409`. This is a design-supported future fixed-candidate clue, not a physics result.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2908,6 +2909,50 @@ Result:
 - Best hybrid memory/strict/default/loose/comb/off-comb: `0.600682`, `7/6`, `9/8`, `10/9`, `0.584586`, `0.072402`.
 - Clean gates passed for the best hybrid, but strict `9/8` and near-neutral comb did not hold, so the result is not `golden_cubic_hybrid_supported`.
 
+### Return-Mode-Null Golden Design
+
+Command:
+
+```powershell
+python main.py prototype-3d-return-mode-null-golden-design
+```
+
+Status:
+
+- Run complete: `runs\return_mode_null_golden_design_3d_20260701_170424`.
+- Report path: `runs\return_mode_null_golden_design_3d_20260701_170424\return_mode_null_golden_design_report.md`.
+- Classification: `return_mode_null_golden_candidate_supported`.
+- Read-only design audit; no physics was run.
+- Uses existing isochronous anchor, cleanup, sacred-geometry, and golden/cubic hybrid artifacts.
+
+Design result:
+
+- Desired return basis: neutral plus `isochronous_anchor_0p5x` node frames, 24 frames, 2556 common shell nodes, 5 basis vectors.
+- Raw golden desired-basis overlap: `0.711976`.
+- Null golden desired-basis overlap: `3.75579e-16`.
+- Desired-overlap reduction: `1.0`.
+- Retained golden strength fraction: `0.702204`.
+- Sector retained strength fraction: `1.00610`.
+- RMS renormalization multiplier: `1.42409`.
+- Expected perturbation strength after RMS renormalization: `0.0249215`.
+- Artifacts were sufficient for a candidate design.
+
+Classification:
+
+- `return_mode_null_golden_candidate_supported`: projection removes meaningful desired-mode overlap while retaining enough golden/off-comb structure to test.
+- `null_golden_design_inconclusive`: projection is possible but artifacts, basis, or retained strength are not convincing.
+- `null_golden_not_viable`: projection removes most golden structure or does not reduce desired-mode overlap.
+- `insufficient_artifacts`: required return-window frames or sector artifacts are missing.
+
+Outputs:
+
+- `return_mode_null_golden_design_summary.csv`
+- `golden_projection_components.csv`
+- `return_mode_basis_summary.csv`
+- `return_mode_null_golden_design_report.md`
+- `return_mode_null_golden_design_summary.json`
+- `raw_vs_null_golden_profile_coefficients.png`
+
 ### Central HF Scattering Branch
 
 Command:
@@ -2976,7 +3021,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
 - Current conservative state: `41^3` passive release-phase proof supported; scalable passive packet-control law not established; passive scale-lift branch closed until a genuinely new stable spatial-pattern-memory mechanism appears.
 - The `spatial_memory_mechanism_lab` has now produced a control-separated `41^3` memory signal, but its optional `51^3` follow-up did not preserve the memory advantage. Any next mechanism work must explain that split directly; do not convert this into cutoff tuning, source shaping, or grid escalation.
-- The fixed `prototype-3d-cubic-memory-tradeoff-map` judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. The read-only survivor-bias audit then showed mixed evidence: standard cubic rows retain some neutral-window memory gain, while strongest sign-flipped gains are coverage-limited. The fixed isochronous cubic anchor preserved strict `9/8` and near-neutral comb in its `0.5x` anchor row while keeping the memory gain, but off-comb energy worsened. Cleanup and angular cleanup controls did not solve that tradeoff, sacred-geometry anchors inverted it by improving memory/off-comb while losing strict/comb, and the golden/cubic hybrid preserved some memory/off-comb cleanup but still lost strict count and near-neutral comb. Do not widen this into a tuning map without a new mechanism explaining memory/count/coverage and off-comb behavior.
+- The fixed `prototype-3d-cubic-memory-tradeoff-map` judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. The read-only survivor-bias audit then showed mixed evidence: standard cubic rows retain some neutral-window memory gain, while strongest sign-flipped gains are coverage-limited. The fixed isochronous cubic anchor preserved strict `9/8` and near-neutral comb in its `0.5x` anchor row while keeping the memory gain, but off-comb energy worsened. Cleanup and angular cleanup controls did not solve that tradeoff, sacred-geometry anchors inverted it by improving memory/off-comb while losing strict/comb, and the golden/cubic hybrid preserved some memory/off-comb cleanup but still lost strict count and near-neutral comb. The return-mode-null golden design audit supports one possible fixed candidate by subtracting golden overlap with the desired return basis, but no physics has validated it yet. Do not widen this into a tuning map without a new mechanism explaining memory/count/coverage and off-comb behavior.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, modal-sparsity-derived source variants, return-gate-derived detector tuning, off-comb-derived source masks, patch-mask tuning, symmetry-lock runs, or `61^3` escalation. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, measured phase-conjugate patches failed, the modal sparsity audit did not identify a separating source-control signature, the return-family gate audit did not support detector-only rescue, the off-comb leakage audit did not identify a safe correction axis, and the closure report archived the branch. Any future scale check should be explicitly justified by a new stable-memory mechanism, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.

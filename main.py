@@ -214,6 +214,15 @@ from simulation.prototype_3d_golden_cubic_hybrid_anchor import (
     GoldenCubicHybridAnchorOptions,
     run_3d_golden_cubic_hybrid_anchor,
 )
+from simulation.prototype_3d_return_mode_null_golden_design import (
+    DEFAULT_CLEANUP_ROOT as DEFAULT_RETURN_MODE_NULL_GOLDEN_CLEANUP_ROOT,
+    DEFAULT_CONFIG_PATH as DEFAULT_RETURN_MODE_NULL_GOLDEN_CONFIG_PATH,
+    DEFAULT_HYBRID_ROOT as DEFAULT_RETURN_MODE_NULL_GOLDEN_HYBRID_ROOT,
+    DEFAULT_ISOCHRONOUS_ROOT as DEFAULT_RETURN_MODE_NULL_GOLDEN_ISOCHRONOUS_ROOT,
+    DEFAULT_SACRED_ROOT as DEFAULT_RETURN_MODE_NULL_GOLDEN_SACRED_ROOT,
+    ReturnModeNullGoldenDesignOptions,
+    run_3d_return_mode_null_golden_design,
+)
 from simulation.prototype_3d_release_phase_dispersion_audit import (
     DEFAULT_CONFIG_PATH as DEFAULT_DISPERSION_CONFIG_PATH,
     DEFAULT_LIFT_ROOT as DEFAULT_DISPERSION_LIFT_ROOT,
@@ -1255,6 +1264,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     golden_cubic_hybrid_parser.add_argument("--config", type=Path, required=True, help="JSON SimulationConfig for fixed 41^3 golden/cubic hybrid anchor")
     golden_cubic_hybrid_parser.add_argument("--output-root", default="runs", help="Directory for golden/cubic hybrid anchor outputs")
+
+    return_mode_null_golden_parser = subparsers.add_parser(
+        "prototype-3d-return-mode-null-golden-design",
+        help="Read-only design audit for a return-mode-null golden guard profile",
+    )
+    return_mode_null_golden_parser.add_argument("--output-root", default="runs", help="Directory for return-mode-null golden design outputs")
+    return_mode_null_golden_parser.add_argument("--config", dest="config_path", default=DEFAULT_RETURN_MODE_NULL_GOLDEN_CONFIG_PATH, help="Baseline JSON SimulationConfig used only to reconstruct static profile geometry")
+    return_mode_null_golden_parser.add_argument("--isochronous-root", default=DEFAULT_RETURN_MODE_NULL_GOLDEN_ISOCHRONOUS_ROOT, help="Existing isochronous cubic anchor run root")
+    return_mode_null_golden_parser.add_argument("--cleanup-root", default=DEFAULT_RETURN_MODE_NULL_GOLDEN_CLEANUP_ROOT, help="Existing isochronous cleanup run root")
+    return_mode_null_golden_parser.add_argument("--sacred-root", default=DEFAULT_RETURN_MODE_NULL_GOLDEN_SACRED_ROOT, help="Existing sacred-geometry memory anchor run root")
+    return_mode_null_golden_parser.add_argument("--hybrid-root", default=DEFAULT_RETURN_MODE_NULL_GOLDEN_HYBRID_ROOT, help="Existing golden/cubic hybrid run root")
+    return_mode_null_golden_parser.add_argument("--max-basis-vectors", type=int, default=5, help="Maximum low-rank return-family node basis vectors")
+    return_mode_null_golden_parser.add_argument("--min-common-nodes", type=int, default=128, help="Minimum common shell nodes required for a candidate design")
+    return_mode_null_golden_parser.add_argument("--min-retained-strength-fraction", type=float, default=0.35, help="Minimum retained null-profile norm fraction")
 
     release_phase_dispersion_audit_parser = subparsers.add_parser(
         "prototype-3d-release-phase-dispersion-audit",
@@ -2670,6 +2693,23 @@ def main() -> None:
             options=GoldenCubicHybridAnchorOptions(output_root=args.output_root),
         )
         _print_3d_golden_cubic_hybrid_anchor_summary(result)
+        return
+
+    if args.command == "prototype-3d-return-mode-null-golden-design":
+        result = run_3d_return_mode_null_golden_design(
+            options=ReturnModeNullGoldenDesignOptions(
+                output_root=args.output_root,
+                config_path=args.config_path,
+                isochronous_root=args.isochronous_root,
+                cleanup_root=args.cleanup_root,
+                sacred_root=args.sacred_root,
+                hybrid_root=args.hybrid_root,
+                max_basis_vectors=args.max_basis_vectors,
+                min_common_nodes=args.min_common_nodes,
+                min_retained_strength_fraction=args.min_retained_strength_fraction,
+            )
+        )
+        _print_3d_return_mode_null_golden_design_summary(result)
         return
 
     if args.command == "prototype-3d-release-phase-dispersion-audit":
@@ -4429,6 +4469,30 @@ def _print_3d_golden_cubic_hybrid_anchor_summary(result: dict[str, Any]) -> None
     print("plots:")
     for name, path in result.get("plots", {}).items():
         print(f"  - {name}: {path}")
+    print(f"report: {result['report_path']}")
+
+
+def _print_3d_return_mode_null_golden_design_summary(result: dict[str, Any]) -> None:
+    classification = result["classification"]
+    summary = result.get("summary_row", {})
+    print("3D return-mode-null golden design audit complete")
+    print(f"control ID: {result['control_id']}")
+    print(f"classification: {classification['label']}")
+    print(f"reason: {classification['reason']}")
+    print("projection:")
+    print(f"  - raw desired overlap: {_format_optional(summary.get('raw_golden_desired_basis_overlap'))}")
+    print(f"  - null desired overlap: {_format_optional(summary.get('null_golden_desired_basis_overlap'))}")
+    print(f"  - overlap reduction: {_format_optional(summary.get('desired_overlap_reduction_fraction'))}")
+    print(f"  - retained strength: {_format_optional(summary.get('retained_golden_strength_fraction'))}")
+    print(f"  - sector retained strength: {_format_optional(summary.get('sector_retained_strength_fraction'))}")
+    print(f"  - renormalization multiplier: {_format_optional(summary.get('renormalization_multiplier'))}")
+    print(f"  - expected perturbation strength: {_format_optional(summary.get('expected_perturbation_strength_after_rms_renormalization'))}")
+    print(f"  - artifacts sufficient: {summary.get('artifacts_sufficient_for_candidate')}")
+    print(f"summary CSV: {result['summary_csv']}")
+    print(f"projection CSV: {result['golden_projection_components_csv']}")
+    print(f"basis CSV: {result['return_mode_basis_summary_csv']}")
+    if result.get("plot"):
+        print(f"plot: {result['plot']}")
     print(f"report: {result['report_path']}")
 
 
