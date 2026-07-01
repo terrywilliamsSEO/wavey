@@ -82,7 +82,7 @@ Current interpretation:
 - The `prototype-3d-isochronous-anchor-cleanup-control` run in `runs\isochronous_anchor_cleanup_3d_20260621_193641` classified as `cleanup_memory_only_tradeoff`: smooth taper and weaker compensation reduced off-comb below neutral but dropped to strict `8/7` and damaged comb, while wide smooth taper preserved memory/strict/comb but left off-comb high. No cleanup row achieved `isochronous_anchor_cleanup_supported`.
 - The `prototype-3d-angular-mode-cleanup-control` run in `runs\angular_mode_cleanup_3d_20260621_210741` classified as `angular_cleanup_memory_only_tradeoff`: weak and cubic-preserving angular cleanup rows kept memory above neutral/random controls, but dropped to strict `7/6` and worsened off-comb versus the anchor reference; medium cleanup dropped to strict `6/5` and failed clean gates. No row achieved `angular_cleanup_supported`.
 - The `prototype-3d-sacred-geometry-memory-anchor` run in `runs\sacred_geometry_memory_anchor_3d_20260701_154048` classified as `sacred_geometry_memory_only_tradeoff`: golden-ratio double-shell produced the strongest memory score (`0.690023`) and reduced off-comb (`0.094257` versus anchor `0.170717`), while icosahedral/dodecahedral rows reduced off-comb even further, but all sacred rows lost strict `9/8` and near-neutral comb. No row achieved `sacred_geometry_anchor_supported`.
-- The `prototype-3d-golden-cubic-hybrid-anchor` command is implemented but not yet run. It is a fixed `41^3` hybrid mechanism test that combines the isochronous cubic `0.5x` timing scaffold with weak golden-ratio double-shell cleaning; classification is pending until physics artifacts are produced.
+- The `prototype-3d-golden-cubic-hybrid-anchor` run in `runs\golden_cubic_hybrid_anchor_3d_20260701_162316` classified as `hybrid_memory_only_tradeoff`: the best hybrid row, `hybrid_cubic_0p5x_golden_0p5x`, improved memory (`0.600682` versus neutral `0.486969` and randomized `0.508722`) and reduced off-comb (`0.072402` versus anchor `0.170717`), but dropped to strict/default/loose `7/6`, `9/8`, `10/9` with comb `0.584586`. No row achieved `golden_cubic_hybrid_supported`.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2844,9 +2844,9 @@ python main.py prototype-3d-golden-cubic-hybrid-anchor --config configs\long_val
 
 Status:
 
-- Command implemented; physics not yet run.
-- Expected report path: `runs\golden_cubic_hybrid_anchor_3d_YYYYMMDD_HHMMSS\golden_cubic_hybrid_report.md`.
-- Classification pending: one of `golden_cubic_hybrid_supported`, `hybrid_memory_only_tradeoff`, `hybrid_no_signal`, or `invalid_hybrid_test`.
+- Run complete: `runs\golden_cubic_hybrid_anchor_3d_20260701_162316`.
+- Report path: `runs\golden_cubic_hybrid_anchor_3d_20260701_162316\golden_cubic_hybrid_report.md`.
+- Classification: `hybrid_memory_only_tradeoff`.
 - Fixed `41^3` passive mechanism control under the independent spatial-memory branch.
 - Not a continuation or rescue of the closed passive scale-lift branch.
 - No optional `51^3` path exists for this command.
@@ -2898,6 +2898,15 @@ Expected outputs:
 - `golden_cubic_hybrid_comb_score_plot.png`
 - `golden_cubic_hybrid_off_comb_energy_plot.png`
 - `golden_cubic_hybrid_mechanism_comparison_plot.png`
+
+Result:
+
+- Best hybrid: `hybrid_cubic_0p5x_golden_0p5x`.
+- Neutral memory/strict/default/loose/comb/off-comb: `0.486969`, `9/8`, `10/9`, `11/10`, `0.726785`, `0.156175`.
+- Randomized matched hybrid control memory/strict/default/loose/comb/off-comb: `0.508722`, `9/8`, `9/8`, `11/10`, `0.673755`, `0.255517`.
+- Isochronous anchor reference memory/strict/default/loose/comb/off-comb: `0.631984`, `9/8`, `10/9`, `11/10`, `0.723992`, `0.170717`.
+- Best hybrid memory/strict/default/loose/comb/off-comb: `0.600682`, `7/6`, `9/8`, `10/9`, `0.584586`, `0.072402`.
+- Clean gates passed for the best hybrid, but strict `9/8` and near-neutral comb did not hold, so the result is not `golden_cubic_hybrid_supported`.
 
 ### Central HF Scattering Branch
 
@@ -2967,7 +2976,7 @@ Run no new physics unless explicitly requested. The blind confirmation, half-dt 
 - The modal audit supports a `resolution_blur_mechanism_supported` interpretation: the `51^3` rows retain the same dominant shell-energy band as the `41^3` proof cluster, but strict returns shrink, bandwidth grows, and tail radius moves outward. It does not identify a mechanism-derived source correction.
 - Current conservative state: `41^3` passive release-phase proof supported; scalable passive packet-control law not established; passive scale-lift branch closed until a genuinely new stable spatial-pattern-memory mechanism appears.
 - The `spatial_memory_mechanism_lab` has now produced a control-separated `41^3` memory signal, but its optional `51^3` follow-up did not preserve the memory advantage. Any next mechanism work must explain that split directly; do not convert this into cutoff tuning, source shaping, or grid escalation.
-- The fixed `prototype-3d-cubic-memory-tradeoff-map` judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. The read-only survivor-bias audit then showed mixed evidence: standard cubic rows retain some neutral-window memory gain, while strongest sign-flipped gains are coverage-limited. The fixed isochronous cubic anchor preserved strict `9/8` and near-neutral comb in its `0.5x` anchor row while keeping the memory gain, but off-comb energy worsened. Cleanup and angular cleanup controls did not solve that tradeoff, and sacred-geometry anchors inverted it by improving memory/off-comb while losing strict/comb. The implemented golden/cubic hybrid command is the next fixed test for that split; do not widen it into a tuning map without a result-driven mechanism explaining memory/count/coverage and off-comb behavior.
+- The fixed `prototype-3d-cubic-memory-tradeoff-map` judged the local 41^3 cubic strength/orientation question: memory can improve versus neutral and matched randomized controls, but the tested cubic rows do not preserve strict `9/8`. The read-only survivor-bias audit then showed mixed evidence: standard cubic rows retain some neutral-window memory gain, while strongest sign-flipped gains are coverage-limited. The fixed isochronous cubic anchor preserved strict `9/8` and near-neutral comb in its `0.5x` anchor row while keeping the memory gain, but off-comb energy worsened. Cleanup and angular cleanup controls did not solve that tradeoff, sacred-geometry anchors inverted it by improving memory/off-comb while losing strict/comb, and the golden/cubic hybrid preserved some memory/off-comb cleanup but still lost strict count and near-neutral comb. Do not widen this into a tuning map without a new mechanism explaining memory/count/coverage and off-comb behavior.
 - Do not expand defect variants again unless there is a specific mechanism-driven design.
 - Do not add traps, rotation, medium shaping, defects, frequency combinations, active second pulses, source-shape sweeps, modal-sparsity-derived source variants, return-gate-derived detector tuning, off-comb-derived source masks, patch-mask tuning, symmetry-lock runs, or `61^3` escalation. The release-phase-recalibrated `51^3` candidate plus controls has already been run and failed strict gates; the postmortem says no single retry is predicted, smooth temporal narrowing failed, measured phase-conjugate patches failed, the modal sparsity audit did not identify a separating source-control signature, the return-family gate audit did not support detector-only rescue, the off-comb leakage audit did not identify a safe correction axis, and the closure report archived the branch. Any future scale check should be explicitly justified by a new stable-memory mechanism, not automatic.
 - Keep `central_hf_scattering_branch` firewalled. The first pass classified as `central_burst_transient`; any future central-scattering work needs a specific new mechanism rather than a wider ladder.
