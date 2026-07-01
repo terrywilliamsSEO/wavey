@@ -81,7 +81,7 @@ Current interpretation:
 - The `prototype-3d-isochronous-cubic-memory-anchor` run in `runs\isochronous_cubic_anchor_3d_20260621_184841` classified as `memory_only_anchor_tradeoff`: the watched `isochronous_anchor_0p5x` row improved memory (`0.631984`) over neutral (`0.486969`) and matched randomized control (`0.480804`), preserved strict `9/8`, kept comb near neutral (`0.723992` versus `0.726785`), and passed clean gates, but off-comb energy worsened (`0.170717` versus neutral `0.156175`). This is not full decoupling.
 - The `prototype-3d-isochronous-anchor-cleanup-control` run in `runs\isochronous_anchor_cleanup_3d_20260621_193641` classified as `cleanup_memory_only_tradeoff`: smooth taper and weaker compensation reduced off-comb below neutral but dropped to strict `8/7` and damaged comb, while wide smooth taper preserved memory/strict/comb but left off-comb high. No cleanup row achieved `isochronous_anchor_cleanup_supported`.
 - The `prototype-3d-angular-mode-cleanup-control` run in `runs\angular_mode_cleanup_3d_20260621_210741` classified as `angular_cleanup_memory_only_tradeoff`: weak and cubic-preserving angular cleanup rows kept memory above neutral/random controls, but dropped to strict `7/6` and worsened off-comb versus the anchor reference; medium cleanup dropped to strict `6/5` and failed clean gates. No row achieved `angular_cleanup_supported`.
-- `prototype-3d-sacred-geometry-memory-anchor` is implemented and not yet run. It is a fixed `41^3` passive non-cubic shell-geometry stiffness test for the `isochronous_anchor_0p5x` off-comb penalty, with icosahedral, dodecahedral, golden-ratio double-shell, hex/flower projection, and randomized matched-strength rows. Treat it as a distinct mechanism test, not source shaping, cutoff tuning, or a default `51^3` path.
+- The `prototype-3d-sacred-geometry-memory-anchor` run in `runs\sacred_geometry_memory_anchor_3d_20260701_154048` classified as `sacred_geometry_memory_only_tradeoff`: golden-ratio double-shell produced the strongest memory score (`0.690023`) and reduced off-comb (`0.094257` versus anchor `0.170717`), while icosahedral/dodecahedral rows reduced off-comb even further, but all sacred rows lost strict `9/8` and near-neutral comb. No row achieved `sacred_geometry_anchor_supported`.
 - The passive release-phase island refinement classified as `cutoff_phase_single_point_best`: `sign_flip_cutoff_minus_0p06` at cutoff `17.94` and cutoff phase `0.5048` cycles reached eleven major shell-window peaks, ten refocus peaks, retention `0.314`, outer/shell `0.631`, decay `-0.02396`, no exit, and no global outer flag.
 - The ultra-fine passive phase-lock needle map classified as `cutoff_phase_timing_island_supported`, but its new width section classified the optimum as `narrow`, not broad: cutoffs `17.93`, `17.935`, and `17.94` all reached eleven/ten peaks, spanning only `0.01` cutoff units.
 - The best ultra-fine row is `sign_flip_cutoff_minus_0p07`: cutoff `17.93`, release phase `0.4956`, eleven major peaks, ten refocus peaks, retention `0.317`, outer/shell `0.639`, no exit, and global outer false.
@@ -2768,7 +2768,8 @@ python main.py prototype-3d-sacred-geometry-memory-anchor --config configs\long_
 
 Status:
 
-- Implemented; physics not yet run.
+- Run folder: `runs\sacred_geometry_memory_anchor_3d_20260701_154048`
+- Classification: `sacred_geometry_memory_only_tradeoff`.
 - Fixed `41^3` passive mechanism control under the independent spatial-memory branch.
 - Not a continuation or rescue of the closed passive scale-lift branch.
 - No optional `51^3` path exists for this command.
@@ -2821,6 +2822,16 @@ Expected outputs:
 - `sacred_geometry_comb_score_plot.png`
 - `sacred_geometry_off_comb_energy_plot.png`
 - `sacred_geometry_pattern_similarity_plot.png`
+
+Result details:
+
+- Neutral reference: memory `0.486969`, strict/default/loose `9/8`, `10/9`, `11/10`, comb `0.726785`, off-comb `0.156175`, pattern proxy `0.690251`, clean gates passed.
+- Current `isochronous_anchor_0p5x` reference: memory `0.631984`, strict/default/loose `9/8`, `10/9`, `11/10`, comb `0.723992`, off-comb `0.170717`, pattern proxy `0.702663`, clean gates passed.
+- `icosahedral_shell_anchor`: memory `0.563527`, strict/default/loose `7/6`, `9/8`, `10/9`, comb `0.583307`, off-comb `0.073458`, pattern proxy `0.758087`, clean gates passed. It reduced off-comb and improved coherence, but lost strict `9/8` and near-neutral comb.
+- `dodecahedral_shell_anchor`: memory `0.580694`, strict/default/loose `7/6`, `9/8`, `10/9`, comb `0.582903`, off-comb `0.072026`, pattern proxy `0.764014`, clean gates passed. It behaved similarly to icosahedral with slightly better memory/proxy and slightly lower off-comb.
+- `golden_ratio_double_shell_anchor`: memory `0.690023`, strict/default/loose `7/6`, `9/8`, `10/9`, comb `0.546204`, off-comb `0.094257`, pattern proxy `0.799234`, clean gates passed. It beat neutral, randomized, and isochronous anchor on memory and reduced off-comb versus the anchor by `0.076460`, but failed strict and comb support gates.
+- `hex_flower_shell_projection_anchor`: memory `0.550103`, strict/default/loose `8/7`, `9/8`, `10/9`, comb `0.508173`, off-comb `0.126658`, pattern proxy `0.717625`, clean gates passed. It reduced off-comb but had the weakest sacred-anchor memory and the lowest comb score.
+- `randomized_matched_strength_control`: memory `0.508704`, strict/default/loose `9/8`, `9/8`, `11/10`, comb `0.673599`, off-comb `0.255427`, pattern proxy `0.695174`, clean gates passed.
 
 ### Central HF Scattering Branch
 
