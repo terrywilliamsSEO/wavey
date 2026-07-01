@@ -264,6 +264,14 @@ class Lattice3D:
             damping_profile = _memory_mechanism_profile(self.config, self.coords, profile_name)
             self.damping += abs(strength) * np.clip(damping_profile, 0.0, None)
             return
+        if profile_name == "golden_cubic_hybrid_anchor":
+            cubic_strength = float(getattr(self.config, "_hybrid_cubic_strength", 0.5 * 0.035))
+            golden_strength = float(getattr(self.config, "_hybrid_golden_strength", 0.5 * 0.035))
+            cubic_profile = _memory_mechanism_profile(self.config, self.coords, "isochronous_cubic_anchor")
+            golden_profile = _memory_mechanism_profile(self.config, self.coords, "golden_ratio_double_shell_anchor")
+            combined = cubic_strength * cubic_profile + golden_strength * golden_profile
+            self.stiffness *= np.clip(1.0 + combined, 0.05, None)
+            return
         profile = _memory_mechanism_profile(self.config, self.coords, profile_name)
         if profile_name in {
             "anisotropy_anchor",
@@ -279,6 +287,7 @@ class Lattice3D:
             "golden_ratio_double_shell_anchor",
             "hex_flower_shell_projection_anchor",
             "random_sacred_geometry_anchor",
+            "random_golden_cubic_hybrid_anchor",
             "random_equivalent",
         }:
             self.stiffness *= np.clip(1.0 + strength * profile, 0.05, None)
@@ -783,6 +792,8 @@ def _memory_mechanism_profile(
     if profile_name == "hex_flower_shell_projection_anchor":
         return _hex_flower_shell_projection_anchor_profile(config, coords, active)
     if profile_name == "random_sacred_geometry_anchor":
+        return _random_sacred_geometry_anchor_profile(config, coords, active)
+    if profile_name == "random_golden_cubic_hybrid_anchor":
         return _random_sacred_geometry_anchor_profile(config, coords, active)
     raise ValueError(f"Unsupported passive memory mechanism profile: {profile_name}")
 

@@ -574,6 +574,14 @@ python main.py prototype-3d-sacred-geometry-memory-anchor --config configs\long_
 
 This command tests high-symmetry non-cubic passive geometry anchors, interpreted scientifically as icosahedral, dodecahedral, golden-ratio double-shell, and hex/flower shell stiffness patterns near the shell window. It runs seven fixed `41^3` rows: neutral reference, current `isochronous_anchor_0p5x` reference, icosahedral shell anchor, dodecahedral shell anchor, golden-ratio double-shell anchor, hex/flower shell projection anchor, and randomized matched-strength control. It keeps cutoff `17.94`, frequency `0.92`, source/work/sponge/shell setup fixed and does not tune cutoff/source/frequency, run `51^3`, run `61^3`, add source shaping, active pulses, or resonators. Current result: `runs\sacred_geometry_memory_anchor_3d_20260701_154048` classified as `sacred_geometry_memory_only_tradeoff`. The best row, `golden_ratio_double_shell_anchor`, reached memory `0.690023` versus neutral `0.486969`, randomized `0.508704`, and anchor reference `0.631984`, and reduced off-comb to `0.094257` versus anchor `0.170717`, but dropped to strict `7/6` and comb `0.546204`.
 
+Run the fixed 41^3 golden/cubic hybrid anchor test with:
+
+```powershell
+python main.py prototype-3d-golden-cubic-hybrid-anchor --config configs\long_validation_peak_0_92.json
+```
+
+This command combines the complementary previous mechanisms: the `isochronous_anchor_0p5x` timing scaffold that preserved strict `9/8` and near-neutral comb, plus weak golden-ratio double-shell spatial/off-comb cleaning that reduced off-comb but lost strict/comb timing by itself. It runs seven fixed `41^3` rows: neutral reference, `isochronous_anchor_0p5x` reference, golden-ratio double-shell reference, three golden/cubic hybrid rows, and one randomized matched-strength hybrid control. It keeps cutoff `17.94`, frequency `0.92`, source/work/sponge/shell setup fixed and does not tune cutoff/source/frequency, run `51^3`, run `61^3`, add source shaping, active pulses, or resonators. Classification is pending until the physics command is run.
+
 Run the firewalled central high-frequency scattering branch with:
 
 ```powershell
@@ -1385,6 +1393,23 @@ When `prototype-3d-sacred-geometry-memory-anchor` is used, the control folder in
 - supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `sacred_geometry_`
 
 The sacred-geometry memory anchor is a fixed `41^3` mechanism follow-up to the incomplete off-comb decoupling problem. It asks whether quasi-isotropic non-cubic shell stiffness patterns can preserve spatial-pattern memory while reducing off-comb versus the `isochronous_anchor_0p5x` reference. It is not a source-shape, cutoff, frequency, active-pulse, resonator, default `51^3`, or `61^3` path. Current result: `runs\sacred_geometry_memory_anchor_3d_20260701_154048` classified as `sacred_geometry_memory_only_tradeoff`, not `sacred_geometry_anchor_supported`: non-cubic anchors improved memory and reduced off-comb, but did not preserve strict `9/8` or near-neutral comb.
+
+When `prototype-3d-golden-cubic-hybrid-anchor` is used, the control folder includes:
+
+- `golden_cubic_hybrid_report.md`
+- `golden_cubic_hybrid_summary.csv`
+- `golden_cubic_hybrid_by_return.csv`
+- `golden_cubic_hybrid_control_comparison.csv`
+- `golden_cubic_hybrid_mechanism_comparison.csv`
+- `golden_cubic_hybrid_summary.json`
+- `golden_cubic_hybrid_memory_plot.png`
+- `golden_cubic_hybrid_strict_count_plot.png`
+- `golden_cubic_hybrid_comb_score_plot.png`
+- `golden_cubic_hybrid_off_comb_energy_plot.png`
+- `golden_cubic_hybrid_mechanism_comparison_plot.png`
+- supporting spatial-frame, threshold, lifecycle, event, and coherence CSVs prefixed with `golden_cubic_hybrid_`
+
+The golden/cubic hybrid anchor is a fixed `41^3` mechanism follow-up to the split between isochronous timing support and golden-ratio off-comb cleanup. It asks whether a weak golden-ratio double-shell cleaner can be added to the isochronous cubic scaffold without losing strict `9/8` or near-neutral comb timing. It is not a source-shape, cutoff, frequency, active-pulse, resonator, default `51^3`, or `61^3` path. Classification remains unknown until the command is run; the report path will be `runs\golden_cubic_hybrid_anchor_3d_YYYYMMDD_HHMMSS\golden_cubic_hybrid_report.md`.
 
 When `prototype-3d-central-burst-control` is used, the control folder includes:
 
